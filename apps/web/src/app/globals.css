@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0e0e10;
+  color: #efeff1;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #18181b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2f2f35;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #464649;
+}
+
+/* Section texture background utility */
+.bg-section-texture {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(191, 148, 255, 0.04) 1px, transparent 0);
+  background-size: 32px 32px;
+}

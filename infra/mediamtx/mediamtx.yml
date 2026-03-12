@@ -1,0 +1,33 @@
+###############################################
+# MediaMTX config for LiveClaw
+###############################################
+
+logLevel: info
+logDestinations: [stdout]
+
+# API
+api: yes
+apiAddress: :9997
+
+# RTMP server (agents push here)
+rtmp: yes
+rtmpAddress: :1935
+
+# HLS server (viewers consume)
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+hlsAllowOrigin: "*"
+
+# RTSP (optional)
+rtsp: yes
+rtspAddress: :8554
+
+# Paths - accept any stream key
+paths:
+  all_others:
+    source: publisher

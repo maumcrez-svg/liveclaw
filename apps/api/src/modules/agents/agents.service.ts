@@ -1,0 +1,125 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AgentEntity } from './agent.entity';
+import { CreateAgentDto, UpdateAgentDto } from './agents.dto';
+import { v4 as uuidv4 } from 'uuid';
+
+@Injectable()
+export class AgentsService {
+  constructor(
+    @InjectRepository(AgentEntity)
+    private readonly agentRepo: Repository<AgentEntity>,
+  ) {}
+
+  async findAll(): Promise<AgentEntity[]> {
+    return this.agentRepo.find({ order: { createdAt: 'DESC' } });
+  }
+
+  async findLive(): Promise<AgentEntity[]> {
+    return this.agentRepo.find({
+      where: { status: 'live' },
+      relations: ['streams'],
+      order: { followerCount: 'DESC' },
+    });
+  }
+
+  async findBySlug(slug: string): Promise<AgentEntity> {
+    const agent = await this.agentRepo.findOne({
+      where: { slug },
+      relations: ['streams', 'defaultCategory'],
+    });
+    if (!agent) throw new NotFoundException(`Agent ${slug} not found`);
+    return agent;
+  }
+
+  async findById(id: string): Promise<AgentEntity> {
+    const agent = await this.agentRepo.findOne({ where: { id } });
+    if (!agent) throw new NotFoundException(`Agent ${id} not found`);
+    return agent;
+  }
+
+  async findByStreamKey(streamKey: string): Promise<AgentEntity | null> {
+    return this.agentRepo.findOne({ where: { streamKey } });
+  }
+
+  async findByCategory(categorySlug: string): Promise<AgentEntity[]> {
+    return this.agentRepo.find({
+      where: { defaultCategory: { slug: categorySlug } },
+      relations: ['defaultCategory'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findByOwner(ownerId: string): Promise<AgentEntity[]> {
+    return this.agentRepo.find({
+      where: { ownerId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async create(dto: CreateAgentDto): Promise<AgentEntity> {
+    const agent = this.agentRepo.create({
+      ...dto,
+      streamKey: uuidv4().replace(/-/g, ''),
+    });
+    return this.agentRepo.save(agent);
+  }
+
+  async update(id: string, dto: UpdateAgentDto): Promise<AgentEntity> {
+    const agent = await this.findById(id);
+
+    if (
+      dto.streamingMode &&
+      dto.streamingMode !== agent.streamingMode &&
+      agent.status !== 'offline'
+    ) {
+      throw new BadRequestException(
+        'Cannot change streaming mode while the agent is live. Stop the stream first.',
+      );
+    }
+
+    Object.assign(agent, dto);
+    return this.agentRepo.save(agent);
+  }
+
+  async updateStatus(
+    id: string,
+    status: string,
+    containerId?: string | null,
+  ): Promise<AgentEntity> {
+    const agent = await this.findById(id);
+    agent.status = status;
+    if (containerId !== undefined) agent.containerId = containerId;
+    return this.agentRepo.save(agent);
+  }
+
+  async rotateStreamKey(agentId: string): Promise<AgentEntity> {
+    const agent = await this.findById(agentId);
+
+    if (agent.status !== 'offline') {
+      throw new BadRequestException(
+        'Cannot rotate stream key while the agent is live. Stop the stream first.',
+      );
+    }
+
+    agent.streamKey = uuidv4().replace(/-/g, '');
+    return this.agentRepo.save(agent);
+  }
+
+  async search(query: string): Promise<AgentEntity[]> {
+    return this.agentRepo
+      .createQueryBuilder('agent')
+      .where('agent.name ILIKE :q OR agent.description ILIKE :q', {
+        q: `%${query}%`,
+      })
+      .orderBy('agent.status', 'ASC') // live first
+      .addOrderBy('agent.followerCount', 'DESC')
+      .limit(20)
+      .getMany();
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.agentRepo.delete(id);
+  }
+}

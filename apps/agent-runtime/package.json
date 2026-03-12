@@ -1,0 +1,13 @@
+{
+  "name": "agent-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Use docker build'",
+    "dev": "node src/agents/run.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.0.0",
+    "ioredis": "^5.4.2"
+  }
+}
