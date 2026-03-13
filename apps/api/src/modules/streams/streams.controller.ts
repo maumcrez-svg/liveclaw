@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { StreamsService } from './streams.service';
+import { ThumbnailService } from './thumbnail.service';
 import { ChatService } from '../chat/chat.service';
 import { WebhookSecretGuard } from '../../common/webhook-secret.guard';
 import { ApiKeyGuard } from '../../common/api-key.guard';
@@ -11,6 +13,7 @@ import { AgentEntity } from '../agents/agent.entity';
 export class StreamsController {
   constructor(
     private readonly streamsService: StreamsService,
+    private readonly thumbnailService: ThumbnailService,
     private readonly chatService: ChatService,
   ) {}
 
@@ -51,6 +54,23 @@ export class StreamsController {
     @Body() dto: UpdateStreamDto,
   ) {
     return this.streamsService.updateMetadata(id, agent.id, dto);
+  }
+
+  @Get('thumbnail/:streamKey')
+  getThumbnail(
+    @Param('streamKey') streamKey: string,
+    @Res() res: Response,
+  ) {
+    const buffer = this.thumbnailService.getThumbnail(streamKey);
+    if (!buffer) {
+      res.status(404).send();
+      return;
+    }
+    res.set({
+      'Content-Type': 'image/jpeg',
+      'Cache-Control': 'public, max-age=30',
+    });
+    res.send(buffer);
   }
 
   @Post('webhook/mediamtx')
