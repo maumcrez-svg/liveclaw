@@ -13,10 +13,10 @@ import { CommonModule } from '../../common/common.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([DonationEntity]),
-    ChatModule,
+    forwardRef(() => ChatModule),
     forwardRef(() => UsersModule),
-    AuthModule,
-    AgentsModule,
+    forwardRef(() => AuthModule),
+    forwardRef(() => AgentsModule),
     forwardRef(() => StripeModule),
     CommonModule,
   ],
