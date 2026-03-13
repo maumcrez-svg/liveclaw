@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { StreamEntity } from './stream.entity';
 
 const THUMBNAIL_BASE_URL =
-  process.env.THUMBNAIL_BASE_URL || 'http://165.227.91.241:8889';
+  process.env.THUMBNAIL_BASE_URL || 'https://liveclaw.tv/thumbnails';
 
 @Injectable()
 export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
