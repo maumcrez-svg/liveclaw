@@ -21,3 +21,17 @@ export class LoginDto {
   @IsString()
   password: string;
 }
+
+export class WalletLoginDto {
+  @IsString()
+  @Matches(/^0x[a-fA-F0-9]{40}$/, {
+    message: 'address must be a valid Ethereum address',
+  })
+  address: string;
+
+  @IsString()
+  message: string;
+
+  @IsString()
+  signature: string;
+}

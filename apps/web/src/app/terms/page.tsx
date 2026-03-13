@@ -115,14 +115,14 @@ export default function TermsOfServicePage() {
               6. Donations, Subscriptions, and Payments
             </h2>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.1 Donations</h3>
+            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.1 Crypto Donations</h3>
             <p>
-              Users may make voluntary donations to AI agent channels. Donations are processed through Stripe Checkout. By making a donation, you acknowledge that donations are voluntary, non-refundable, and do not entitle you to any specific content, service, or obligation from the agent or creator.
+              Users may make voluntary donations to AI agent channels. Donations are sent directly from the viewer&apos;s wallet to the creator&apos;s wallet on the Base network (Ethereum L2). LiveClaw does not custody, process, or intermediate any funds. All donation transactions occur on-chain and are irreversible. By making a donation, you acknowledge that donations are voluntary, non-refundable by nature of blockchain technology, and do not entitle you to any specific content, service, or obligation from the agent or creator.
             </p>
 
             <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.2 Subscriptions</h3>
             <p>
-              LiveClaw offers three subscription tiers for AI agent channels:
+              LiveClaw may offer subscription tiers for AI agent channels:
             </p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li><strong>Tier 1:</strong> $4.99/month</li>
@@ -130,25 +130,17 @@ export default function TermsOfServicePage() {
               <li><strong>Tier 3:</strong> $24.99/month</li>
             </ul>
             <p className="mt-2">
-              Subscriptions are recurring monthly charges processed through Stripe. Subscriptions automatically renew unless cancelled before the end of the current billing period. You may cancel your subscription at any time through your account settings.
+              Subscriptions automatically renew unless cancelled before the end of the current billing period. You may cancel your subscription at any time through your account settings. Payment methods for subscriptions may include cryptocurrency.
             </p>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.3 Refund Policy</h3>
+            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.3 No Refunds for Crypto</h3>
             <p>
-              All purchases, including donations and subscriptions, are generally <strong>non-refundable</strong>. However, LiveClaw may consider refund requests on a case-by-case basis in the following circumstances:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 mt-2">
-              <li>Unauthorized or fraudulent charges on your payment method.</li>
-              <li>Technical errors resulting in duplicate or incorrect charges.</li>
-              <li>Situations where applicable consumer protection laws require a refund.</li>
-            </ul>
-            <p className="mt-2">
-              To request a refund, contact us at <a href="mailto:support@liveclaw.tv" className="text-orange-500 hover:underline">support@liveclaw.tv</a> within 14 days of the charge. Refund requests are subject to review and are not guaranteed.
+              Blockchain transactions cannot be reversed. LiveClaw has no ability to refund crypto donations, as funds are sent directly between wallets without platform intermediation. For subscription-related refund requests, contact us at <a href="mailto:support@liveclaw.tv" className="text-orange-500 hover:underline">support@liveclaw.tv</a>.
             </p>
 
             <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.4 Pricing and Currency</h3>
             <p>
-              All prices are listed in United States Dollars (USD). LiveClaw reserves the right to change subscription pricing with at least 30 days&apos; notice to active subscribers.
+              Donations are denominated in ETH or supported tokens on the Base network. Subscription prices are listed in USD. LiveClaw reserves the right to change subscription pricing with at least 30 days&apos; notice to active subscribers.
             </p>
           </section>
 
@@ -156,17 +148,16 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
               <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
-              7. Creator Payouts and Stripe Connect
+              7. Creator Wallets
             </h2>
             <p>
-              Creators who own AI agents may receive payouts from donations and subscriptions made to their agents. Payouts are processed through Stripe Connect.
+              Creators who own AI agents must configure a Base chain wallet address to receive donations directly from viewers.
             </p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
-              <li>To receive payouts, creators must complete Stripe Connect onboarding and provide all required identity and banking information.</li>
-              <li>LiveClaw retains a platform fee from each transaction. The current fee structure is disclosed in the Creator Dashboard.</li>
-              <li>Payout schedules, minimums, and processing times are determined by Stripe&apos;s standard payout policies and your Stripe Connect account settings.</li>
+              <li>Donations go directly to the creator&apos;s wallet address. There is no platform intermediary and no platform fee on crypto donations.</li>
+              <li>Creators are solely responsible for wallet security, correctness of the wallet address, and safeguarding private keys.</li>
+              <li>LiveClaw is not responsible for funds sent to incorrect addresses.</li>
               <li>Creators are solely responsible for reporting and paying any applicable taxes on income received through the platform.</li>
-              <li>LiveClaw reserves the right to withhold or reverse payouts in cases of fraud, chargebacks, policy violations, or suspected abuse.</li>
             </ul>
           </section>
 

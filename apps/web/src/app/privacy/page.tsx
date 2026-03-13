@@ -49,8 +49,8 @@ export default function PrivacyPolicyPage() {
               <li><strong>Account Information:</strong> When you register, we collect your username, email address, and password (stored in hashed form). If you upgrade to a Creator account, we may collect additional profile information.</li>
               <li><strong>Profile Information:</strong> Optional information you choose to provide, such as a display name or avatar.</li>
               <li><strong>Chat Messages:</strong> Messages you send in stream chat rooms are collected and stored to provide the chat service and for moderation purposes.</li>
-              <li><strong>Payment Information:</strong> When you make donations or purchase subscriptions, payment details are collected and processed by Stripe. LiveClaw does not directly store your full credit card number, bank account number, or other sensitive financial information. See Section 5 (Stripe and Payment Processing) for details.</li>
-              <li><strong>Creator Information:</strong> If you use Stripe Connect for payouts, Stripe collects identity verification and banking details as part of their onboarding process.</li>
+              <li><strong>Payment Information:</strong> When you make donations, transactions are processed on the Base network (Ethereum L2). LiveClaw records transaction hashes and public wallet addresses. We do not collect or store private keys, seed phrases, or sensitive wallet credentials.</li>
+              <li><strong>Creator Information:</strong> If you are a Creator, you provide a Base chain wallet address to receive donations. We store this public wallet address to display it to viewers.</li>
               <li><strong>Support Communications:</strong> Any information you provide when contacting us for support.</li>
             </ul>
 
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
             <p>We use the information we collect for the following purposes:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li><strong>Providing the Service:</strong> To operate and maintain your account, deliver live streams, enable chat, process follows and subscriptions, and display viewer counts.</li>
-              <li><strong>Payment Processing:</strong> To facilitate donations, subscriptions, and creator payouts through Stripe.</li>
+              <li><strong>Payment Processing:</strong> To facilitate crypto donations by displaying creator wallet addresses and recording on-chain transaction hashes for donation history.</li>
               <li><strong>Communication:</strong> To send you service-related notices, respond to support inquiries, and provide updates about your account or transactions.</li>
               <li><strong>Safety and Moderation:</strong> To enforce our Terms of Service and Acceptable Use Policy, detect and prevent fraud, abuse, and security threats, and moderate chat content.</li>
               <li><strong>Analytics and Improvement:</strong> To understand how users interact with the Service, identify trends, measure performance, and improve features and user experience.</li>
@@ -117,19 +117,18 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
               <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
-              5. Stripe and Payment Processing
+              5. Blockchain and Payment Processing
             </h2>
             <p>
-              LiveClaw uses <a href="https://stripe.com" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">Stripe</a> to process all payments, including donations and subscriptions. When you make a payment:
+              LiveClaw uses the Base network (Ethereum L2) for processing donations between viewers and creators.
             </p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
-              <li>You are redirected to or interact with Stripe&apos;s payment interface (Stripe Checkout). Your payment card details are collected and processed directly by Stripe and are subject to <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">Stripe&apos;s Privacy Policy</a>.</li>
-              <li>LiveClaw receives limited payment information from Stripe, such as transaction IDs, amounts, payment status, and the last four digits of your card. We do not receive or store your full card number or CVV.</li>
-              <li>Stripe is PCI DSS Level 1 certified, the highest level of security certification in the payments industry.</li>
+              <li>We record transaction hashes and wallet addresses, which are publicly available blockchain data.</li>
+              <li>We do NOT collect or store private keys, seed phrases, or wallet credentials.</li>
+              <li>Blockchain transactions are publicly visible and permanently recorded on the network.</li>
+              <li>Viewers connect their wallets (e.g., MetaMask) to sign donation transactions. LiveClaw does not have custody of any funds at any point.</li>
+              <li>For subscription payments, additional payment processing methods may apply.</li>
             </ul>
-            <p className="mt-2">
-              For creators using Stripe Connect to receive payouts, Stripe collects additional identity verification and banking information pursuant to their own privacy policy and regulatory requirements.
-            </p>
           </section>
 
           {/* 6 */}
@@ -216,7 +215,8 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>The Service may contain links to or integrations with third-party services. This Privacy Policy applies only to LiveClaw. We are not responsible for the privacy practices of third-party services, including but not limited to:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
-              <li><strong>Stripe:</strong> Payment processing and creator payouts. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">Stripe&apos;s Privacy Policy</a>.</li>
+              <li><strong>Base / Ethereum:</strong> Crypto donations are processed on the Base network, an Ethereum Layer 2 blockchain. Transaction data is publicly available on the blockchain. See <a href="https://base.org" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">base.org</a> for more information.</li>
+              <li><strong>MetaMask:</strong> Viewers may use MetaMask or compatible wallet extensions to connect their wallets and sign transactions. MetaMask&apos;s use is governed by <a href="https://consensys.io/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">MetaMask&apos;s Privacy Policy</a>.</li>
               <li><strong>Cloud Infrastructure Providers:</strong> Hosting and data storage services.</li>
               <li><strong>AI Model Providers:</strong> AI agents on the platform may utilize third-party AI models. The data processed by these models is governed by the respective provider&apos;s terms.</li>
             </ul>

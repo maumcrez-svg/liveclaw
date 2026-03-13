@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, AuthResponse } from './auth.service';
-import { RegisterDto, LoginDto } from './auth.dto';
+import { RegisterDto, LoginDto, WalletLoginDto } from './auth.dto';
 import { JwtAuthGuard } from './auth.guard';
 import { CurrentUser } from './auth.decorator';
 import { JwtPayload } from './auth.service';
@@ -36,14 +36,25 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Get('wallet-nonce')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  walletNonce(): { nonce: string; message: string } {
+    return this.authService.generateNonce();
+  }
+
+  @Post('wallet-login')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async walletLogin(
+    @Body(new ValidationPipe({ whitelist: true })) dto: WalletLoginDto,
+  ): Promise<AuthResponse> {
+    return this.authService.walletLogin(dto);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser() user: JwtPayload): Promise<JwtPayload> {
-    // Return the full user record so callers get fresh data if needed.
-    // The payload already has sub/username/role from the token, which is
-    // sufficient for most clients. A DB fetch would add latency with no gain
-    // here since tokens expire in 7d and roles rarely change.
-    return user;
+  async me(@CurrentUser() user: JwtPayload): Promise<AuthResponse['user']> {
+    return this.authService.getFullUser(user.sub);
   }
 
   @Post('become-creator')
