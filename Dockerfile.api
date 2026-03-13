@@ -18,8 +18,8 @@ COPY packages/shared packages/shared
 COPY apps/api apps/api
 
 # Build shared types then API
-RUN pnpm --filter @liveclaw/shared build
-RUN pnpm --filter api build
+RUN cd packages/shared && npx tsc --skipLibCheck
+RUN cd apps/api && npx nest build
 
 # --- Production stage ---
 FROM node:20-alpine AS runner
