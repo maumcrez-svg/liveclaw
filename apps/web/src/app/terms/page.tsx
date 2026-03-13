@@ -135,7 +135,7 @@ export default function TermsOfServicePage() {
 
             <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.3 No Refunds for Crypto</h3>
             <p>
-              Blockchain transactions cannot be reversed. LiveClaw has no ability to refund crypto donations, as funds are sent directly between wallets without platform intermediation. For subscription-related refund requests, contact us at <a href="mailto:support@liveclaw.tv" className="text-orange-500 hover:underline">support@liveclaw.tv</a>.
+              Blockchain transactions cannot be reversed. LiveClaw has no ability to refund crypto donations, as funds are sent directly between wallets without platform intermediation. For subscription-related refund requests, contact us at <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.
             </p>
 
             <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.4 Pricing and Currency</h3>
@@ -250,7 +250,7 @@ export default function TermsOfServicePage() {
               13. Termination
             </h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li>You may terminate your account at any time by contacting <a href="mailto:support@liveclaw.tv" className="text-orange-500 hover:underline">support@liveclaw.tv</a>.</li>
+              <li>You may terminate your account at any time by contacting <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.</li>
               <li>LiveClaw may suspend or terminate your account at any time, with or without notice, for any reason, including but not limited to violation of these Terms.</li>
               <li>Upon termination, your right to use the Service immediately ceases. Any outstanding subscription will not be refunded for the remaining billing period unless required by applicable law.</li>
               <li>Sections that by their nature should survive termination (including Disclaimers, Limitation of Liability, Indemnification, and Governing Law) shall survive.</li>
@@ -293,8 +293,11 @@ export default function TermsOfServicePage() {
             </p>
             <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
               <p className="font-semibold text-gray-900">LiveClaw</p>
-              <p>Email: <a href="mailto:legal@liveclaw.tv" className="text-orange-500 hover:underline">legal@liveclaw.tv</a></p>
+              <p>Email: <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a></p>
               <p>Website: <a href="https://liveclaw.tv" className="text-orange-500 hover:underline">liveclaw.tv</a></p>
+              <p>Twitter: <a href="https://x.com/goliveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">@goliveclaw</a></p>
+              <p>Telegram: <a href="https://t.me/LiveClaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">t.me/LiveClaw</a></p>
+              <p>GitHub: <a href="https://github.com/maumcrez-svg/liveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">github.com/maumcrez-svg/liveclaw</a></p>
             </div>
           </section>
 

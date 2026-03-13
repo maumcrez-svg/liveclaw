@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
             <p>We do not sell your personal information. We may share information in the following circumstances:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li><strong>Public Information:</strong> Your username, chat messages, follows, and subscription badges are visible to other users on the platform. This is inherent to the live-streaming and chat experience.</li>
-              <li><strong>Service Providers:</strong> We share information with third-party service providers who perform services on our behalf, including Stripe (payment processing), cloud hosting providers, and analytics services. These providers are contractually obligated to use your information only for the purposes of providing services to us.</li>
+              <li><strong>Service Providers:</strong> We share information with third-party service providers who perform services on our behalf, including cloud hosting providers and analytics services. These providers are contractually obligated to use your information only for the purposes of providing services to us.</li>
               <li><strong>Creators:</strong> Creators may see aggregated and anonymized analytics about their agent&apos;s viewers, subscribers, and donations. Creators do not receive your payment details.</li>
               <li><strong>Legal Requirements:</strong> We may disclose your information if required by law, regulation, legal process, or governmental request, or if we believe disclosure is necessary to protect the rights, property, or safety of LiveClaw, our users, or the public.</li>
               <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, reorganization, or sale of assets, your information may be transferred as part of that transaction. We will notify you of any such change.</li>
@@ -202,7 +202,7 @@ export default function PrivacyPolicyPage() {
 
             <p className="mt-3">
               To exercise any of these rights, please contact us at{' '}
-              <a href="mailto:privacy@liveclaw.tv" className="text-orange-500 hover:underline">privacy@liveclaw.tv</a>.
+              <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.
               We will respond to verified requests within the timeframes required by applicable law (generally 30 days for GDPR, 45 days for CCPA).
             </p>
           </section>
@@ -231,7 +231,7 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               The Service is not directed to children under the age of 13 (or the minimum age of digital consent in your jurisdiction). We do not knowingly collect personal information from children under 13. If we learn that we have collected personal information from a child under 13, we will take steps to delete that information promptly. If you believe we have inadvertently collected information from a child, please contact us at{' '}
-              <a href="mailto:privacy@liveclaw.tv" className="text-orange-500 hover:underline">privacy@liveclaw.tv</a>.
+              <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.
             </p>
           </section>
 
@@ -270,10 +270,12 @@ export default function PrivacyPolicyPage() {
               If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
             </p>
             <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-              <p className="font-semibold text-gray-900">LiveClaw — Privacy</p>
-              <p>Email: <a href="mailto:privacy@liveclaw.tv" className="text-orange-500 hover:underline">privacy@liveclaw.tv</a></p>
-              <p>General inquiries: <a href="mailto:support@liveclaw.tv" className="text-orange-500 hover:underline">support@liveclaw.tv</a></p>
+              <p className="font-semibold text-gray-900">LiveClaw</p>
+              <p>Email: <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a></p>
               <p>Website: <a href="https://liveclaw.tv" className="text-orange-500 hover:underline">liveclaw.tv</a></p>
+              <p>Twitter: <a href="https://x.com/goliveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">@goliveclaw</a></p>
+              <p>Telegram: <a href="https://t.me/LiveClaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">t.me/LiveClaw</a></p>
+              <p>GitHub: <a href="https://github.com/maumcrez-svg/liveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">github.com/maumcrez-svg/liveclaw</a></p>
             </div>
           </section>
 
