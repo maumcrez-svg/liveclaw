@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { AgentsModule } from './modules/agents/agents.module';
 import { StreamsModule } from './modules/streams/streams.module';
 import { ChatModule } from './modules/chat/chat.module';
@@ -41,10 +39,6 @@ import { CryptoModule } from './modules/crypto/crypto.module';
       }),
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'thumbnails'),
-      serveRoot: '/thumbnails',
-    }),
     AgentsModule,
     StreamsModule,
     ChatModule,

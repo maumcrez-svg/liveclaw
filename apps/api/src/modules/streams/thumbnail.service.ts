@@ -3,17 +3,25 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StreamEntity } from './stream.entity';
 import { execFile } from 'child_process';
-import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
+import { readFile, unlink } from 'fs/promises';
+
+interface CachedThumbnail {
+  buffer: Buffer;
+  capturedAt: number;
+}
 
 @Injectable()
 export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ThumbnailService.name);
   private interval: NodeJS.Timeout | null = null;
-  private readonly thumbnailDir = join(process.cwd(), 'thumbnails');
   private readonly hlsBaseUrl =
     process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888';
   private generating = false;
+
+  /** In-memory thumbnail cache: streamKey → JPEG buffer */
+  private readonly cache = new Map<string, CachedThumbnail>();
 
   constructor(
     @InjectRepository(StreamEntity)
@@ -21,11 +29,7 @@ export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (!existsSync(this.thumbnailDir)) {
-      mkdirSync(this.thumbnailDir, { recursive: true });
-    }
     this.interval = setInterval(() => this.generateThumbnails(), 60_000);
-    // Generate once on startup after a short delay for HLS to be ready
     setTimeout(() => this.generateThumbnails(), 15_000);
   }
 
@@ -33,8 +37,19 @@ export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
     if (this.interval) clearInterval(this.interval);
   }
 
+  /** Return cached JPEG buffer for a stream key, or null. */
+  getThumbnail(streamKey: string): Buffer | null {
+    const cached = this.cache.get(streamKey);
+    if (!cached) return null;
+    // Expire after 5 minutes
+    if (Date.now() - cached.capturedAt > 5 * 60_000) {
+      this.cache.delete(streamKey);
+      return null;
+    }
+    return cached.buffer;
+  }
+
   private async generateThumbnails() {
-    // Prevent overlapping runs
     if (this.generating) return;
     this.generating = true;
 
@@ -44,14 +59,21 @@ export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
         relations: ['agent'],
       });
 
+      // Evict stale entries
+      const liveKeys = new Set(
+        liveStreams.map((s) => s.agent?.streamKey).filter(Boolean),
+      );
+      for (const key of this.cache.keys()) {
+        if (!liveKeys.has(key)) this.cache.delete(key);
+      }
+
       for (const stream of liveStreams) {
         if (!stream.agent?.streamKey) continue;
         try {
           await this.captureFrame(stream);
         } catch (err) {
-          // Keep existing thumbnail on failure — don't clear it
           this.logger.warn(
-            `Thumbnail capture failed for stream ${stream.id}: ${err}`,
+            `Thumbnail capture failed for ${stream.agent.slug}: ${err}`,
           );
         }
       }
@@ -62,22 +84,18 @@ export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
 
   private captureFrame(stream: StreamEntity): Promise<void> {
     const hlsUrl = `${this.hlsBaseUrl}/${stream.agent.streamKey}/index.m3u8`;
-    const outputPath = join(this.thumbnailDir, `${stream.id}.jpg`);
+    const tmpPath = join(tmpdir(), `thumb-${stream.agent.streamKey}.jpg`);
 
     return new Promise((resolve, reject) => {
       execFile(
         'ffmpeg',
         [
           '-y',
-          '-i',
-          hlsUrl,
-          '-vframes',
-          '1',
-          '-s',
-          '640x360',
-          '-q:v',
-          '2',
-          outputPath,
+          '-i', hlsUrl,
+          '-vframes', '1',
+          '-s', '640x360',
+          '-q:v', '2',
+          tmpPath,
         ],
         { timeout: 15_000 },
         async (error) => {
@@ -86,12 +104,20 @@ export class ThumbnailService implements OnModuleInit, OnModuleDestroy {
             return;
           }
           try {
-            // Store relative URL with cache-bust timestamp
-            const thumbnailUrl = `/thumbnails/${stream.id}.jpg?v=${Date.now()}`;
-            await this.streamRepo.update(stream.id, { thumbnailUrl });
+            const buffer = await readFile(tmpPath);
+            await unlink(tmpPath).catch(() => {});
+            this.cache.set(stream.agent.streamKey, {
+              buffer,
+              capturedAt: Date.now(),
+            });
+            // Store endpoint URL in DB for frontend compatibility
+            const thumbnailUrl = `/streams/thumbnail/${stream.agent.streamKey}`;
+            await this.streamRepo
+              .update(stream.id, { thumbnailUrl })
+              .catch(() => {});
             resolve();
-          } catch (dbErr) {
-            reject(dbErr);
+          } catch (e) {
+            reject(e);
           }
         },
       );
