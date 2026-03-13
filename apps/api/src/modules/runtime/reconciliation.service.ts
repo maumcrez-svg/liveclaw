@@ -16,6 +16,7 @@ export class ReconciliationService implements OnModuleInit {
   private readonly logger = new Logger(ReconciliationService.name);
   private readonly docker: Dockerode;
   private readonly mediamtxApiUrl: string;
+  private dockerAvailable = false;
 
   constructor(
     private readonly agentsService: AgentsService,
@@ -29,14 +30,22 @@ export class ReconciliationService implements OnModuleInit {
     );
   }
 
-  onModuleInit() {
-    this.logger.log('Reconciliation loop initialized (30s interval)');
+  async onModuleInit() {
+    try {
+      await this.docker.ping();
+      this.dockerAvailable = true;
+      this.logger.log('Reconciliation loop initialized (30s interval) — Docker available');
+    } catch {
+      this.logger.log('Reconciliation loop initialized (30s interval) — Docker not available, skipping container checks');
+    }
   }
 
   @Interval(30_000)
   async reconcile() {
     try {
-      await this.reconcileContainers();
+      if (this.dockerAvailable) {
+        await this.reconcileContainers();
+      }
       await this.reconcileMediaMTXPaths();
       await this.reconcileOrphanStreams();
     } catch (error) {

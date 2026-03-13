@@ -8,11 +8,19 @@ export class RuntimeService {
   private readonly logger = new Logger(RuntimeService.name);
   private readonly docker: Dockerode;
 
+  private dockerAvailable = false;
+
   constructor(
     private readonly agentsService: AgentsService,
     private readonly streamsService: StreamsService,
   ) {
     this.docker = new Dockerode({ socketPath: '/var/run/docker.sock' });
+    this.docker.ping().then(() => {
+      this.dockerAvailable = true;
+      this.logger.log('Docker runtime available');
+    }).catch(() => {
+      this.logger.warn('Docker runtime not available — native streaming mode disabled');
+    });
   }
 
   async startAgent(agentId: string): Promise<{ containerId: string }> {
@@ -21,6 +29,12 @@ export class RuntimeService {
     if (agent.streamingMode === 'external') {
       throw new BadRequestException(
         'This agent uses an external encoder. Switch to native mode in settings first.',
+      );
+    }
+
+    if (!this.dockerAvailable) {
+      throw new BadRequestException(
+        'Native streaming is not available on this server. Use external streaming mode instead.',
       );
     }
 
