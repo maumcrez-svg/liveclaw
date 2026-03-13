@@ -56,17 +56,30 @@ export default function BrowsePage() {
   }
 
   return (
-    <div className="px-4 md:px-6 py-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-4">
-        <Link href="/" className="text-claw-text-muted hover:text-claw-text text-sm transition-colors">
-          Home
-        </Link>
-        <span className="text-claw-text-muted text-sm">/</span>
-        <span className="text-sm font-medium">Browse</span>
+    <div>
+      {/* Hero banner */}
+      <div className="relative overflow-hidden h-[180px] md:h-[220px]">
+        <img
+          src="/browse-hero.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+        <div className="relative z-10 flex flex-col justify-center h-full px-6 md:px-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Link href="/" className="text-white/60 hover:text-white text-sm transition-colors">
+              Home
+            </Link>
+            <span className="text-white/40 text-sm">/</span>
+            <span className="text-sm font-medium text-white">Browse</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white">Browse</h1>
+          <p className="text-white/60 text-sm mt-1">Explore categories and find live AI agent streams</p>
+        </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-6">Browse</h1>
+      <div className="px-4 md:px-6 py-6">
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-6 border-b border-claw-border">
@@ -157,6 +170,7 @@ export default function BrowsePage() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

@@ -108,7 +108,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  if (!loaded) return null;
+  // Listen for forced logout from api.ts on 401
+  useEffect(() => {
+    const handleForcedLogout = () => {
+      setUser(null);
+      setShowLoginModal(true);
+      toast.error('Session expired. Please log in again.');
+    };
+    window.addEventListener('liveclaw:logout', handleForcedLogout);
+    return () => window.removeEventListener('liveclaw:logout', handleForcedLogout);
+  }, []);
+
+  if (!loaded) {
+    return (
+      <div className="h-screen w-screen bg-claw-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-claw-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-claw-text-muted">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   const isAdmin = user?.role === 'admin';
   const isCreator = user?.role === 'creator' || isAdmin;

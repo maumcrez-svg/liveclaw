@@ -1,5 +1,7 @@
 'use client';
 
+import { formatCount } from '@/lib/format';
+
 interface AboutTabProps {
   agent: {
     name: string;
@@ -10,12 +12,6 @@ interface AboutTabProps {
     subscriberCount?: number;
     createdAt?: string;
   };
-}
-
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
 }
 
 export function AboutTab({ agent }: AboutTabProps) {
@@ -84,7 +80,7 @@ export function AboutTab({ agent }: AboutTabProps) {
           <p className="text-xs text-claw-text-muted mt-1">Followers</p>
         </div>
         <div className="bg-claw-surface rounded-lg border border-claw-border p-4 text-center">
-          <p className="text-2xl font-bold text-purple-400">
+          <p className="text-2xl font-bold text-orange-400">
             {formatCount(agent.subscriberCount || 0)}
           </p>
           <p className="text-xs text-claw-text-muted mt-1">Subscribers</p>

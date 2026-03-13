@@ -112,9 +112,7 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
 
   const isNative = agent.streamingMode !== 'external';
   const isExternal = agent.streamingMode === 'external';
-  const rtmpServer = typeof window !== 'undefined'
-    ? `rtmp://${window.location.hostname}:1935`
-    : 'rtmp://localhost:1935';
+  const rtmpServer = process.env.NEXT_PUBLIC_RTMP_URL || 'rtmp://localhost:1935';
   const rtmpFullUrl = `${rtmpServer}/${agent.streamKey}`;
 
   return (

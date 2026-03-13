@@ -1,18 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
-  return String(n);
-}
-
-function formatCurrency(n: number): string {
-  return '$' + n.toFixed(2);
-}
+import { formatCount, formatCurrency } from '@/lib/format';
 
 export default function AgentDashboardPage({ params }: { params: { agentSlug: string } }) {
   const { isLoggedIn, setShowLoginModal } = useUser();
@@ -94,10 +86,10 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <StatCard
           label="Followers"
-          value={formatNumber(agent.followerCount || 0)}
+          value={formatCount(agent.followerCount || 0)}
           icon={
             <svg className="w-5 h-5 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -106,7 +98,7 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
         />
         <StatCard
           label="Subscribers"
-          value={formatNumber(agent.subscriberCount || 0)}
+          value={formatCount(agent.subscriberCount || 0)}
           icon={
             <svg className="w-5 h-5 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -115,7 +107,7 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
         />
         <StatCard
           label="Total Streams"
-          value={formatNumber(streams.length)}
+          value={formatCount(streams.length)}
           icon={
             <svg className="w-5 h-5 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -124,7 +116,7 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
         />
         <StatCard
           label="Peak Viewers"
-          value={formatNumber(peakViewers)}
+          value={formatCount(peakViewers)}
           icon={
             <svg className="w-5 h-5 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -142,20 +134,58 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
           }
         />
         <StatCard
-          label="Active Subs"
-          value={formatNumber(subStats?.activeCount || 0)}
+          label="MRR"
+          value={formatCurrency(subStats?.mrr || 0)}
           icon={
-            <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           }
         />
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        <Link
+          href={`/dashboard/${params.agentSlug}/settings`}
+          className="flex items-center gap-2 px-4 py-3 bg-claw-card border border-claw-border rounded-lg hover:border-claw-accent/50 transition-colors text-sm font-medium text-claw-text-muted hover:text-claw-text"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </Link>
+        <Link
+          href={`/dashboard/${params.agentSlug}/stream`}
+          className="flex items-center gap-2 px-4 py-3 bg-claw-card border border-claw-border rounded-lg hover:border-claw-accent/50 transition-colors text-sm font-medium text-claw-text-muted hover:text-claw-text"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Stream Control
+        </Link>
+        <Link
+          href={`/${params.agentSlug}`}
+          className="flex items-center gap-2 px-4 py-3 bg-claw-card border border-claw-border rounded-lg hover:border-claw-accent/50 transition-colors text-sm font-medium text-claw-text-muted hover:text-claw-text"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          View Channel
+        </Link>
+      </div>
+
+      {/* Stream Key (external mode) */}
+      {agent.streamingMode === 'external' && agent.streamKey && (
+        <StreamKeyCard streamKey={agent.streamKey} />
+      )}
+
       {/* Recent Donations */}
-      {donationStats?.recent?.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Recent Donations</h2>
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4">Recent Donations</h2>
+        {donationStats?.recent?.length > 0 ? (
           <div className="space-y-2">
             {donationStats.recent.slice(0, 10).map((d: any) => (
               <div key={d.id} className="bg-claw-card border border-claw-border rounded p-3 flex items-center gap-4">
@@ -174,17 +204,20 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8 text-claw-text-muted bg-claw-card border border-claw-border rounded-lg">
+            <img src="/mascot.png" alt="" className="w-14 h-14 mx-auto mb-2 opacity-20 grayscale" />
+            <p className="text-sm">No donations yet</p>
+          </div>
+        )}
+      </div>
 
       {/* Recent streams */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Recent Streams</h2>
         {streams.length === 0 ? (
           <div className="text-center py-12 text-claw-text-muted bg-claw-card border border-claw-border rounded-lg">
-            <svg className="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
+            <img src="/mascot.png" alt="" className="w-16 h-16 mx-auto mb-3 opacity-25 grayscale" />
             <p className="text-sm">No streams yet. Start your first stream!</p>
           </div>
         ) : (
@@ -217,6 +250,30 @@ function StatCard({ label, value, icon }: { label: string; value: string | numbe
         {icon}
       </div>
       <p className="text-2xl font-bold">{value}</p>
+    </div>
+  );
+}
+
+function StreamKeyCard({ streamKey }: { streamKey: string }) {
+  const [copied, setCopied] = useState(false);
+  const truncated = streamKey.slice(0, 8) + '...' + streamKey.slice(-4);
+
+  return (
+    <div className="mb-8 bg-claw-card border border-claw-border rounded-lg p-4 flex items-center justify-between">
+      <div>
+        <p className="text-xs text-claw-text-muted uppercase tracking-wide mb-1">Stream Key</p>
+        <code className="text-sm font-mono text-claw-text">{truncated}</code>
+      </div>
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(streamKey);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+        className="px-3 py-1.5 text-xs font-medium bg-claw-accent/10 text-claw-accent rounded hover:bg-claw-accent/20 transition-colors"
+      >
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
     </div>
   );
 }

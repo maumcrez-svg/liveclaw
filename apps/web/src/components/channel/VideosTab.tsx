@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDuration } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,17 +25,6 @@ function resolveThumbnailUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   return `${API_URL}${url}`;
-}
-
-function formatDuration(startedAt: string, endedAt: string | null): string {
-  if (!endedAt) return 'Live';
-  const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime();
-  if (ms < 0) return '—';
-  const totalMinutes = Math.floor(ms / 60_000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
 }
 
 function formatDate(iso: string): string {

@@ -10,11 +10,16 @@ import {
 import { Inject, Optional, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Server, Socket } from 'socket.io';
+import { createHash } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { ChatService } from './chat.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { EmotesService } from '../emotes/emotes.service';
 import { ModerationService } from './moderation/moderation.service';
+import { AgentEntity } from '../agents/agent.entity';
 
 /** Maximum messages a user may send in the rate-limit window. */
 const RATE_LIMIT_MAX_MESSAGES = 5;
@@ -46,6 +51,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectRepository(AgentEntity)
+    private readonly agentRepo: Repository<AgentEntity>,
     @Optional() @Inject(forwardRef(() => SubscriptionsService))
     private readonly subscriptionsService: SubscriptionsService,
     @Optional() @Inject(forwardRef(() => EmotesService))
@@ -58,7 +65,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Connection lifecycle
   // ---------------------------------------------------------------------------
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const token =
       (client.handshake.auth as Record<string, string>)?.token ??
       (client.handshake.query?.token as string | undefined);
@@ -68,6 +75,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    // Agent API key auth
+    if (token.startsWith('lc_')) {
+      try {
+        const sha256 = createHash('sha256').update(token).digest('hex');
+        const agent = await this.agentRepo.findOne({ where: { apiKeySha256: sha256 } });
+        if (!agent || !agent.apiKeyHash) {
+          client.disconnect();
+          return;
+        }
+        const valid = await bcrypt.compare(token, agent.apiKeyHash);
+        if (!valid) {
+          client.disconnect();
+          return;
+        }
+        client.data.userId = agent.id;
+        client.data.username = agent.name;
+        client.data.role = 'agent';
+        client.data.agentId = agent.id;
+        client.data.isAgent = true;
+        console.log(`Agent connected: ${client.id} (agent: ${agent.slug})`);
+        return;
+      } catch {
+        client.disconnect();
+        return;
+      }
+    }
+
+    // JWT auth
     try {
       const payload = this.jwtService.verify<{
         sub: string;

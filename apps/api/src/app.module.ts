@@ -19,6 +19,8 @@ import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import { ModerationModule } from './modules/chat/moderation/moderation.module';
 import { StripeModule } from './modules/stripe/stripe.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { CryptoModule } from './modules/crypto/crypto.module';
 
 @Module({
   imports: [
@@ -31,7 +33,7 @@ import { StripeModule } from './modules/stripe/stripe.module';
         host: config.get('DATABASE_HOST', 'localhost'),
         port: config.get<number>('DATABASE_PORT', 5432),
         username: config.get('DATABASE_USER', 'liveclaw'),
-        password: config.get('DATABASE_PASSWORD', 'liveclaw_secret'),
+        password: config.getOrThrow('DATABASE_PASSWORD'),
         database: config.get('DATABASE_NAME', 'liveclaw'),
         autoLoadEntities: true,
         synchronize: false,
@@ -58,6 +60,8 @@ import { StripeModule } from './modules/stripe/stripe.module';
     CommonModule,
     ModerationModule,
     StripeModule,
+    AdminModule,
+    CryptoModule,
   ],
 })
 export class AppModule {}

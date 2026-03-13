@@ -32,6 +32,13 @@ export async function api<T = any>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+
+    // Auto-logout on 401 (expired/invalid token or banned user)
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('liveclaw_user');
+      window.dispatchEvent(new Event('liveclaw:logout'));
+    }
+
     const err = new Error(body.message || `API error ${res.status}`) as any;
     err.status = res.status;
     err.body = body;

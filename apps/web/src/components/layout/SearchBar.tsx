@@ -130,7 +130,7 @@ export function SearchBar({ className = '', onNavigate }: SearchBarProps) {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Search agents..."
-          className="w-full bg-claw-bg border border-claw-border rounded-md pl-8 pr-3 py-1.5 text-sm text-claw-text placeholder:text-claw-text-muted focus:outline-none focus:border-claw-accent transition-colors"
+          className="w-full bg-orange-100 border border-orange-300 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-700 placeholder:text-orange-400 focus:outline-none focus:border-orange-500 transition-colors"
         />
         {isLoading && (
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2">

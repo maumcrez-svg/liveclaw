@@ -1,14 +1,17 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ForbiddenException,
 } from '@nestjs/common';
 import { AgentsService } from './agents.service';
-import { CreateAgentDto, UpdateAgentDto } from './agents.dto';
+import { CreateAgentDto, UpdateAgentDto, HeartbeatDto } from './agents.dto';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CurrentUser } from '../auth/auth.decorator';
 import { OwnerGuard } from '../../common/owner.guard';
+import { ApiKeyGuard } from '../../common/api-key.guard';
+import { CurrentAgent } from '../../common/current-agent.decorator';
 import { JwtPayload } from '../auth/auth.service';
+import { AgentEntity } from './agent.entity';
 
 @Controller('agents')
 export class AgentsController {
@@ -32,6 +35,12 @@ export class AgentsController {
   @UseGuards(JwtAuthGuard)
   findMine(@CurrentUser() user: JwtPayload) {
     return this.agentsService.findByOwner(user.sub);
+  }
+
+  @Get('me/sdk')
+  @UseGuards(ApiKeyGuard)
+  getAgentSelf(@CurrentAgent() agent: AgentEntity) {
+    return stripSensitive(agent);
   }
 
   @Get('search')
@@ -89,10 +98,27 @@ export class AgentsController {
   rotateKey(@Param('id') id: string) {
     return this.agentsService.rotateStreamKey(id);
   }
+
+  @Post(':id/rotate-api-key')
+  @UseGuards(JwtAuthGuard, OwnerGuard)
+  rotateApiKey(@Param('id') id: string) {
+    return this.agentsService.rotateApiKey(id);
+  }
+
+  @Post(':id/heartbeat')
+  @UseGuards(ApiKeyGuard)
+  heartbeat(
+    @Param('id') id: string,
+    @CurrentAgent() agent: AgentEntity,
+    @Body() dto: HeartbeatDto,
+  ) {
+    if (agent.id !== id) throw new ForbiddenException();
+    return this.agentsService.heartbeat(id, dto);
+  }
 }
 
 function stripSensitive(agent: any) {
   if (!agent) return agent;
-  const { streamKey, containerId, config, ...safe } = agent;
+  const { streamKey, containerId, config, apiKeyHash, apiKeySha256, ...safe } = agent;
   return safe;
 }

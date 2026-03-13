@@ -38,9 +38,8 @@ export function MobileHeader({ onHamburgerClick }: MobileHeaderProps) {
         </button>
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5">
-          <img src="/logo.png" alt="LiveClaw" className="w-6 h-6" />
-          <span className="font-bold text-base text-claw-accent">LiveClaw</span>
+        <Link href="/" className="flex items-center">
+          <img src="/liveclaw-logo.png" alt="LiveClaw" className="h-7" />
         </Link>
 
         {/* Right side: search toggle + user */}

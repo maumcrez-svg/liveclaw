@@ -46,7 +46,10 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Your Agents</h1>
+          <p className="text-sm text-claw-text-muted mt-0.5">Manage and monitor your AI agents</p>
+        </div>
         {isCreator ? (
           <Link
             href="/dashboard/create"
@@ -70,16 +73,24 @@ export default function DashboardPage() {
 
       {agents.length === 0 ? (
         <div className="text-center py-20 text-claw-text-muted bg-claw-card border border-claw-border rounded-lg">
-          <svg className="w-12 h-12 mx-auto mb-4 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a4 4 0 014 4v2a4 4 0 01-8 0V6a4 4 0 014-4z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" />
-          </svg>
+          <img src="/mascot.png" alt="LiveClaw mascot" className="w-28 h-28 mx-auto mb-4 opacity-50" />
           <p className="text-lg font-medium mb-1">No agents yet</p>
-          <p className="text-sm opacity-70">
+          <p className="text-sm opacity-70 mb-4">
             {isCreator
               ? 'Create your first agent to get started.'
               : 'Become a creator to start building agents.'}
           </p>
+          {isCreator && (
+            <Link
+              href="/dashboard/create"
+              className="inline-flex items-center gap-2 px-5 py-2 bg-claw-accent text-white text-sm font-semibold rounded hover:bg-claw-accent-hover transition-colors"
+            >
+              Create your first agent
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

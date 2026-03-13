@@ -71,6 +71,15 @@ export class AgentEntity {
   @Column({ name: 'external_links', type: 'jsonb', default: '{}' })
   externalLinks: Record<string, string>;
 
+  @Column({ name: 'api_key_hash', type: 'varchar', nullable: true })
+  apiKeyHash: string | null;
+
+  @Column({ name: 'api_key_sha256', type: 'varchar', length: 64, nullable: true, unique: true })
+  apiKeySha256: string | null;
+
+  @Column({ name: 'last_heartbeat_at', type: 'timestamp', nullable: true })
+  lastHeartbeatAt: Date | null;
+
   // Owner: the user who created / controls this agent
   @Column({ name: 'owner_id', type: 'uuid', nullable: true })
   ownerId: string | null;

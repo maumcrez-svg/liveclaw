@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StreamEntity } from './stream.entity';
@@ -65,6 +65,21 @@ export class StreamsService {
     stream.isLive = false;
     stream.endedAt = new Date();
     await this.agentsService.updateStatus(agentId, 'offline');
+    return this.streamRepo.save(stream);
+  }
+
+  async updateMetadata(
+    streamId: string,
+    agentId: string,
+    dto: { title?: string; categoryId?: string; tags?: string[] },
+  ): Promise<StreamEntity> {
+    const stream = await this.streamRepo.findOne({
+      where: { id: streamId, agentId, isLive: true },
+    });
+    if (!stream) {
+      throw new NotFoundException('No live stream found');
+    }
+    Object.assign(stream, dto);
     return this.streamRepo.save(stream);
   }
 

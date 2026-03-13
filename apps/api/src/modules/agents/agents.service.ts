@@ -2,8 +2,10 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgentEntity } from './agent.entity';
-import { CreateAgentDto, UpdateAgentDto } from './agents.dto';
+import { CreateAgentDto, UpdateAgentDto, HeartbeatDto } from './agents.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { randomBytes, createHash } from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AgentsService {
@@ -117,6 +119,29 @@ export class AgentsService {
       .addOrderBy('agent.followerCount', 'DESC')
       .limit(20)
       .getMany();
+  }
+
+  async rotateApiKey(agentId: string): Promise<{ apiKey: string }> {
+    const agent = await this.findById(agentId);
+    const plaintext = 'lc_' + randomBytes(16).toString('hex');
+    agent.apiKeyHash = await bcrypt.hash(plaintext, 12);
+    agent.apiKeySha256 = createHash('sha256').update(plaintext).digest('hex');
+    await this.agentRepo.save(agent);
+    return { apiKey: plaintext };
+  }
+
+  async heartbeat(agentId: string, dto: HeartbeatDto): Promise<{ ok: true; lastHeartbeatAt: Date }> {
+    const agent = await this.findById(agentId);
+    agent.lastHeartbeatAt = new Date();
+    if (dto.status) {
+      agent.status = dto.status;
+    }
+    await this.agentRepo.save(agent);
+    return { ok: true, lastHeartbeatAt: agent.lastHeartbeatAt };
+  }
+
+  async findByApiKeySha256(sha256: string): Promise<AgentEntity | null> {
+    return this.agentRepo.findOne({ where: { apiKeySha256: sha256 } });
   }
 
   async delete(id: string): Promise<void> {

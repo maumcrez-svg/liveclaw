@@ -63,15 +63,15 @@ export function FollowButton({ agentId, followerCount: initialCount }: FollowBut
       disabled={loading}
       className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${
         following
-          ? 'bg-claw-card border border-claw-border text-claw-text hover:bg-red-900/20 hover:text-red-400 hover:border-red-800/50'
-          : 'bg-claw-card border border-claw-border text-claw-text hover:border-claw-accent hover:text-claw-accent'
+          ? 'bg-orange-500/20 border border-orange-500/30 text-orange-300 hover:bg-red-900/20 hover:text-red-400 hover:border-red-800/50'
+          : 'bg-orange-500 border border-orange-600 text-white hover:bg-orange-600 shadow-sm shadow-orange-900/30'
       } disabled:opacity-50`}
     >
       <svg className="w-4 h-4" viewBox="0 0 24 24" fill={following ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
       {following ? 'Following' : 'Follow'}
-      <span className="text-claw-text-muted text-xs font-normal">{count}</span>
+      <span className="text-white/70 text-xs font-normal">{count}</span>
     </button>
   );
 }

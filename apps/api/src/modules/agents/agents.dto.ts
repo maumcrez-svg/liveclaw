@@ -7,6 +7,16 @@ import {
   IsIn,
 } from 'class-validator';
 
+export class HeartbeatDto {
+  @IsOptional()
+  @IsIn(['live', 'idle'])
+  status?: 'live' | 'idle';
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+}
+
 export class CreateAgentDto {
   @IsString()
   slug: string;

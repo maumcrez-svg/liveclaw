@@ -58,7 +58,15 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
   }
 
   async publishMessage(streamId: string, message: object): Promise<void> {
-    await this.pub.publish(`chat:${streamId}`, JSON.stringify(message));
+    const json = JSON.stringify(message);
+    await this.pub.publish(`chat:${streamId}`, json);
+    await this.pub.lpush(`chat_history:${streamId}`, json);
+    await this.pub.ltrim(`chat_history:${streamId}`, 0, 199);
+  }
+
+  async getRecentMessages(streamId: string, limit: number = 50): Promise<object[]> {
+    const raw = await this.pub.lrange(`chat_history:${streamId}`, 0, limit - 1);
+    return raw.map((m) => JSON.parse(m));
   }
 
   async subscribe(streamId: string, handler: (message: string) => void): Promise<void> {

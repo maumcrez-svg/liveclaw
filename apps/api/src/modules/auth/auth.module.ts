@@ -29,6 +29,6 @@ import { RolesGuard } from './roles.guard';
   // Export JwtModule so that JwtAuthGuard can be used as a provider in other
   // modules without re-importing JwtModule, and export the guards themselves
   // so feature modules can inject them directly.
-  exports: [AuthService, JwtModule, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtModule, JwtAuthGuard, RolesGuard, UsersModule],
 })
 export class AuthModule {}

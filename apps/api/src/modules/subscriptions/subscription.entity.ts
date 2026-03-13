@@ -42,16 +42,16 @@ export class SubscriptionEntity {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column({ name: 'stripe_customer_id', nullable: true })
+  @Column({ name: 'stripe_customer_id', type: 'varchar', nullable: true })
   stripeCustomerId: string | null;
 
-  @Column({ name: 'stripe_subscription_id', unique: true, nullable: true })
+  @Column({ name: 'stripe_subscription_id', type: 'varchar', unique: true, nullable: true })
   stripeSubscriptionId: string | null;
 
-  @Column({ name: 'stripe_price_id', nullable: true })
+  @Column({ name: 'stripe_price_id', type: 'varchar', nullable: true })
   stripePriceId: string | null;
 
-  @Column({ name: 'stripe_session_id', nullable: true })
+  @Column({ name: 'stripe_session_id', type: 'varchar', nullable: true })
   stripeSessionId: string | null;
 
   @Column({ name: 'billing_status', default: 'active' })

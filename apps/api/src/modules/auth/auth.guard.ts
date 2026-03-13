@@ -8,12 +8,14 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { JwtPayload } from './auth.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly usersService: UsersService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -27,13 +29,16 @@ export class JwtAuthGuard implements CanActivate {
     let payload: JwtPayload;
     try {
       payload = this.jwtService.verify<JwtPayload>(token, {
-        secret: this.configService.get<string>(
-          'JWT_SECRET',
-          'liveclaw_jwt_secret_change_in_production',
-        ),
+        secret: this.configService.get<string>('JWT_SECRET'),
       });
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    // Check if user is banned (catches users banned after JWT was issued)
+    const user = await this.usersService.findById(payload.sub);
+    if (user.isBanned) {
+      throw new UnauthorizedException('Your account has been suspended');
     }
 
     // Attach decoded payload as request.user so downstream handlers can read it

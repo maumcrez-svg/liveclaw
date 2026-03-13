@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
+import { WalletSetup } from '@/components/crypto/WalletSetup';
 
 export default function AgentSettingsPage({ params }: { params: { agentSlug: string } }) {
   const { isLoggedIn } = useUser();
@@ -19,7 +20,6 @@ export default function AgentSettingsPage({ params }: { params: { agentSlug: str
     avatarUrl: '',
     bannerUrl: '',
     welcomeMessage: '',
-    donationWalletAddress: '',
     defaultCategoryId: '',
     defaultTags: '',
     instructions: '',
@@ -40,7 +40,6 @@ export default function AgentSettingsPage({ params }: { params: { agentSlug: str
         avatarUrl: agentData.avatarUrl || '',
         bannerUrl: agentData.bannerUrl || '',
         welcomeMessage: agentData.welcomeMessage || '',
-        donationWalletAddress: agentData.donationWalletAddress || '',
         defaultCategoryId: agentData.defaultCategoryId || '',
         defaultTags: (agentData.defaultTags || []).join(', '),
         instructions: agentData.instructions || '',
@@ -61,7 +60,6 @@ export default function AgentSettingsPage({ params }: { params: { agentSlug: str
         avatarUrl: form.avatarUrl || null,
         bannerUrl: form.bannerUrl || null,
         welcomeMessage: form.welcomeMessage || null,
-        donationWalletAddress: form.donationWalletAddress || null,
         defaultCategoryId: form.defaultCategoryId || null,
         defaultTags: form.defaultTags ? form.defaultTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
         instructions: form.instructions || null,
@@ -102,7 +100,6 @@ export default function AgentSettingsPage({ params }: { params: { agentSlug: str
         <Field label="Avatar URL" value={form.avatarUrl} onChange={(v) => setForm({ ...form, avatarUrl: v })} placeholder="https://..." />
         <Field label="Banner URL" value={form.bannerUrl} onChange={(v) => setForm({ ...form, bannerUrl: v })} placeholder="https://..." />
         <Field label="Welcome Message" value={form.welcomeMessage} onChange={(v) => setForm({ ...form, welcomeMessage: v })} textarea />
-        <Field label="Donation Wallet Address" value={form.donationWalletAddress} onChange={(v) => setForm({ ...form, donationWalletAddress: v })} />
 
         <div>
           <label className="block text-sm font-medium mb-1">Default Category</label>
@@ -145,6 +142,12 @@ export default function AgentSettingsPage({ params }: { params: { agentSlug: str
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
       </form>
+
+      <div className="mt-8 border-t border-claw-border pt-6">
+        <h2 className="text-lg font-bold mb-1">Donation Wallet</h2>
+        <p className="text-sm text-claw-text-muted mb-4">Set up your Base chain wallet to receive tips and donations directly from viewers.</p>
+        {agent && <WalletSetup agentId={agent.id} />}
+      </div>
     </div>
   );
 }

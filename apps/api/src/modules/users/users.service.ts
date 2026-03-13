@@ -46,4 +46,12 @@ export class UsersService {
     user.role = role;
     return this.userRepo.save(user);
   }
+
+  async save(user: UserEntity): Promise<UserEntity> {
+    return this.userRepo.save(user);
+  }
+
+  async findByStripeConnectAccountId(accountId: string): Promise<UserEntity | null> {
+    return this.userRepo.findOne({ where: { stripeConnectAccountId: accountId } });
+  }
 }

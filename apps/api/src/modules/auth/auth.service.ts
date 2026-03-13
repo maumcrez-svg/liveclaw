@@ -60,6 +60,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.isBanned) {
+      throw new UnauthorizedException('Your account has been suspended');
+    }
+
     return this.buildAuthResponse(user);
   }
 
@@ -69,6 +73,10 @@ export class AuthService {
 
   async becomeCreator(userId: string): Promise<AuthResponse> {
     const user = await this.usersService.findById(userId);
+
+    if (user.isBanned) {
+      throw new UnauthorizedException('Your account has been suspended');
+    }
 
     if (user.role === 'admin') {
       throw new BadRequestException('Admins already have full access.');

@@ -36,6 +36,16 @@ const navItems = [
     ),
   },
   {
+    href: '/docs',
+    label: 'Docs',
+    icon: (
+      <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+    ),
+  },
+  {
     href: '/following',
     label: 'Following',
     icon: (
@@ -62,7 +72,7 @@ const navItems = [
 
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, isLoggedIn, isCreator, setShowLoginModal, logout, becomeCreator } = useUser();
+  const { user, isLoggedIn, isAdmin, isCreator, setShowLoginModal, logout, becomeCreator } = useUser();
   const [agents, setAgents] = useState<any[]>([]);
   const [followedAgentIds, setFollowedAgentIds] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(false);
@@ -122,10 +132,10 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       onClick={handleLinkClick}
       className={`flex items-center gap-2.5 px-3 py-1.5 transition-colors rounded-md mx-1.5 ${
         isChannelActive(agent.slug)
-          ? 'bg-claw-card text-claw-text'
+          ? 'bg-orange-500/10 text-orange-500'
           : isLive
-            ? 'hover:bg-claw-card/70'
-            : 'opacity-50 hover:opacity-80 hover:bg-claw-card/40'
+            ? 'hover:bg-orange-500/10 hover:text-orange-500'
+            : 'opacity-50 hover:opacity-80 hover:bg-orange-500/10 hover:text-orange-500'
       }`}
     >
       <div className="relative flex-shrink-0">
@@ -139,23 +149,23 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           <div
             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
               isLive
-                ? 'bg-claw-accent/20 text-claw-accent'
-                : 'bg-claw-card text-claw-text-muted'
+                ? 'bg-orange-500 text-white'
+                : 'bg-orange-500 text-white'
             }`}
           >
             {agent.name[0]?.toUpperCase()}
           </div>
         )}
-        {isLive && (
-          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-claw-live rounded-full border-2 border-claw-surface" />
-        )}
+        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+          isLive ? 'bg-green-500 animate-pulse' : 'bg-red-500 animate-pulse'
+        }`} />
       </div>
       {!collapsed && (
         <>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate leading-tight">{agent.name}</p>
             {isLive && (
-              <p className="text-[11px] text-claw-text-muted truncate leading-tight">
+              <p className="text-[11px] text-gray-500 truncate leading-tight">
                 {agent.category?.name || agent.agentType}
               </p>
             )}
@@ -163,7 +173,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           {isLive && (
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-claw-live" />
-              <span className="text-[11px] text-claw-text-muted font-medium">
+              <span className="text-[11px] text-gray-500 font-medium">
                 {typeof agent.currentViewers === 'number'
                   ? agent.currentViewers.toLocaleString()
                   : '0'}
@@ -179,14 +189,13 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     <aside
       className={`${
         collapsed ? 'w-[50px]' : 'w-[240px]'
-      } bg-claw-surface border-r border-claw-border flex flex-col transition-all duration-200 h-full flex-shrink-0`}
+      } bg-white border-r border-orange-400/60 flex flex-col transition-all duration-200 h-full flex-shrink-0 text-gray-700`}
     >
       {/* Logo */}
-      <div className="p-3 border-b border-claw-border flex items-center justify-between">
+      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
         {!collapsed ? (
-          <Link href="/" onClick={handleLinkClick} className="flex items-center gap-2">
-            <img src="/logo.png" alt="LiveClaw" className="w-7 h-7" />
-            <span className="font-bold text-lg text-claw-accent tracking-tight">LiveClaw</span>
+          <Link href="/" onClick={handleLinkClick} className="flex items-center py-1">
+            <img src="/liveclaw-logo.png" alt="LiveClaw" className="w-[200px] h-auto" />
           </Link>
         ) : (
           <Link href="/" onClick={handleLinkClick} className="mx-auto">
@@ -195,7 +204,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-claw-text-muted hover:text-claw-text p-1 rounded hover:bg-claw-card transition-colors"
+          className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -233,8 +242,8 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                   collapsed ? 'justify-center' : ''
                 } ${
                   active
-                    ? 'bg-claw-accent/10 text-claw-accent'
-                    : 'text-claw-text-muted hover:bg-claw-card hover:text-claw-text'
+                    ? 'bg-orange-500/10 text-orange-500'
+                    : 'text-gray-500 hover:bg-orange-500/10 hover:text-orange-500'
                 }`}
               >
                 {item.icon}
@@ -245,6 +254,28 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             );
           })}
       </div>
+
+      {/* Admin Panel link */}
+      {isLoggedIn && isAdmin && (
+        <div className="px-1.5 pb-1">
+          <Link
+            href="/admin"
+            onClick={handleLinkClick}
+            className={`flex items-center gap-3 px-2.5 py-2 rounded-md transition-colors ${
+              collapsed ? 'justify-center' : ''
+            } ${
+              pathname.startsWith('/admin')
+                ? 'bg-orange-500/10 text-orange-500'
+                : 'text-gray-500 hover:bg-orange-500/10 hover:text-orange-500'
+            }`}
+          >
+            <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            {!collapsed && <span className="text-sm font-medium">Admin</span>}
+          </Link>
+        </div>
+      )}
 
       {/* Become a Creator CTA */}
       {isLoggedIn && !isCreator && !collapsed && (
@@ -258,8 +289,24 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         </div>
       )}
 
+      {/* Start Streaming CTA */}
+      {!collapsed && (
+        <div className="px-3 py-2">
+          <Link
+            href="/docs"
+            onClick={handleLinkClick}
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-orange-500 text-white text-sm font-semibold rounded-md hover:bg-orange-600 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            Start Streaming
+          </Link>
+        </div>
+      )}
+
       {/* Separator */}
-      <div className="border-b border-claw-border mx-3 my-1" />
+      <div className="border-b border-gray-200 mx-3 my-1" />
 
       {/* Agent list */}
       <div className="flex-1 overflow-y-auto py-2">
@@ -268,7 +315,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           <>
             {!collapsed && (
               <div className="px-4 mb-1.5 mt-0.5">
-                <span className="text-[11px] font-semibold text-claw-text-muted uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                   Followed Channels
                 </span>
               </div>
@@ -283,8 +330,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         {unfollowedLive.length > 0 && (
           <>
             {!collapsed && (
-              <div className="px-4 mt-3 mb-1.5">
-                <span className="text-[11px] font-semibold text-claw-text-muted uppercase tracking-wider">
+              <div className="px-4 mt-3 mb-1.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                   Live Channels
                 </span>
               </div>
@@ -297,8 +345,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         {unfollowedOffline.length > 0 && (
           <>
             {!collapsed && (
-              <div className="px-4 mt-3 mb-1.5">
-                <span className="text-[11px] font-semibold text-claw-text-muted uppercase tracking-wider">
+              <div className="px-4 mt-3 mb-1.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                   Offline
                 </span>
               </div>
@@ -309,7 +358,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* User section */}
-      <div className="p-3 border-t border-claw-border">
+      <div className="p-3 border-t border-gray-200">
         {isLoggedIn ? (
           <div className="flex items-center justify-between">
             {!collapsed && (
@@ -322,7 +371,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             )}
             <button
               onClick={logout}
-              className="text-xs text-claw-text-muted hover:text-claw-text p-1 rounded hover:bg-claw-card transition-colors"
+              className="text-xs text-gray-500 hover:text-gray-800 p-1 rounded hover:bg-gray-100 transition-colors"
               title="Logout"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -337,8 +386,8 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             onClick={() => { setShowLoginModal(true); if (onClose) onClose(); }}
             className={`text-sm font-medium rounded-md transition-colors ${
               collapsed
-                ? 'w-full p-1.5 bg-claw-accent/10 text-claw-accent hover:bg-claw-accent/20'
-                : 'w-full py-2 bg-claw-accent/10 text-claw-accent hover:bg-claw-accent/20'
+                ? 'w-full p-1.5 bg-orange-500 text-white hover:bg-orange-600'
+                : 'w-full py-2 bg-orange-500 text-white hover:bg-orange-600'
             }`}
           >
             {collapsed ? (
@@ -351,6 +400,17 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               'Log In'
             )}
           </button>
+        )}
+        {!collapsed && (
+          <div className="flex items-center justify-center gap-2 mt-2 text-[10px] text-gray-400">
+            <Link href="/terms" onClick={handleLinkClick} className="hover:text-gray-600 transition-colors">
+              Terms
+            </Link>
+            <span aria-hidden="true">&middot;</span>
+            <Link href="/privacy" onClick={handleLinkClick} className="hover:text-gray-600 transition-colors">
+              Privacy
+            </Link>
+          </div>
         )}
       </div>
     </aside>

@@ -84,9 +84,7 @@ export default function FollowingPage() {
 
       {agents.length === 0 ? (
         <div className="bg-claw-card border border-claw-border rounded-lg p-12 text-center">
-          <svg className="w-12 h-12 mx-auto mb-4 text-claw-text-muted/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
+          <img src="/mascot.png" alt="LiveClaw mascot" className="w-20 h-20 mx-auto mb-4 opacity-40 grayscale" />
           <p className="text-lg font-medium text-claw-text-muted mb-1">You haven&apos;t followed any channels yet</p>
           <p className="text-sm text-claw-text-muted/70 mb-4">Find channels to follow on the browse page</p>
           <Link

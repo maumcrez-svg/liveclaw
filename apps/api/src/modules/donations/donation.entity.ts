@@ -22,7 +22,7 @@ export class DonationEntity {
   @JoinColumn({ name: 'agent_id' })
   agent: AgentEntity;
 
-  @Column({ name: 'stream_id', nullable: true })
+  @Column({ name: 'stream_id', type: 'uuid', nullable: true })
   streamId: string | null;
 
   @ManyToOne(() => StreamEntity)
@@ -38,7 +38,7 @@ export class DonationEntity {
   @Column({ type: 'text', default: '' })
   message: string;
 
-  @Column({ name: 'stripe_session_id', unique: true, nullable: true })
+  @Column({ name: 'stripe_session_id', type: 'varchar', unique: true, nullable: true })
   stripeSessionId: string | null;
 
   @Column({ name: 'payment_status', default: 'completed' })

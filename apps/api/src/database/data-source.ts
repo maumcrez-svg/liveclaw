@@ -15,9 +15,15 @@ const {
   DATABASE_HOST = 'localhost',
   DATABASE_PORT = '5436',
   DATABASE_USER = 'liveclaw',
-  DATABASE_PASSWORD = 'liveclaw_secret',
   DATABASE_NAME = 'liveclaw',
 } = process.env;
+
+const DATABASE_PASSWORD = process.env.DATABASE_PASSWORD;
+if (!DATABASE_PASSWORD) {
+  throw new Error(
+    'DATABASE_PASSWORD environment variable is required. Set it in your .env file or environment.',
+  );
+}
 
 export const AppDataSource = new DataSource({
   type: 'postgres',

@@ -5,7 +5,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: liveclaw
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-liveclaw_secret}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
       POSTGRES_DB: liveclaw
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -36,7 +36,7 @@ services:
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_USER: liveclaw
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-liveclaw_secret}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
       DATABASE_NAME: liveclaw
       REDIS_HOST: redis
       REDIS_PORT: 6379
