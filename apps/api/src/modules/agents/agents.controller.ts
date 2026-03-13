@@ -120,5 +120,9 @@ export class AgentsController {
 function stripSensitive(agent: any) {
   if (!agent) return agent;
   const { streamKey, containerId, config, apiKeyHash, apiKeySha256, ...safe } = agent;
+  // Expose streamKey as hlsPath when the agent is live (it's visible in HLS URLs anyway)
+  if (agent.status === 'live' && streamKey) {
+    safe.hlsPath = streamKey;
+  }
   return safe;
 }

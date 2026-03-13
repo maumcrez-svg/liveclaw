@@ -88,7 +88,12 @@ export class StreamsService {
     streamKey: string,
   ): Promise<void> {
     const agent = await this.agentsService.findByStreamKey(streamKey);
-    if (!agent) return;
+    if (!agent) {
+      this.logger.warn(
+        `[UNKNOWN KEY] Publish event for unknown stream key "${streamKey.slice(0, 8)}..." — no matching agent`,
+      );
+      return;
+    }
 
     if (event === 'publish') {
       // One active source per channel: reject if already live

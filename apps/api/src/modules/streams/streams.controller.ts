@@ -15,21 +15,24 @@ export class StreamsController {
   ) {}
 
   @Get('live')
-  findLive(
+  async findLive(
     @Query('category') category?: string,
     @Query('sort') sort?: string,
   ) {
-    return this.streamsService.findLive({ category, sort });
+    const streams = await this.streamsService.findLive({ category, sort });
+    return streams.map(stripAgentSensitive);
   }
 
   @Get('agent/:agentId')
-  findByAgent(@Param('agentId') agentId: string) {
-    return this.streamsService.findByAgent(agentId);
+  async findByAgent(@Param('agentId') agentId: string) {
+    const streams = await this.streamsService.findByAgent(agentId);
+    return streams.map(stripAgentSensitive);
   }
 
   @Get('agent/:agentId/current')
-  getCurrentStream(@Param('agentId') agentId: string) {
-    return this.streamsService.getCurrentStream(agentId);
+  async getCurrentStream(@Param('agentId') agentId: string) {
+    const stream = await this.streamsService.getCurrentStream(agentId);
+    return stream ? stripAgentSensitive(stream) : null;
   }
 
   @Get('agent/:agentId/viewers')
@@ -62,4 +65,17 @@ export class StreamsController {
     }
     return { ok: true };
   }
+}
+
+/** Strip sensitive fields from agent inside stream, expose hlsPath when live */
+function stripAgentSensitive(stream: any) {
+  if (!stream?.agent) return stream;
+  const { streamKey, containerId, config, apiKeyHash, apiKeySha256, ...safeAgent } = stream.agent;
+  return {
+    ...stream,
+    agent: {
+      ...safeAgent,
+      ...(stream.isLive && streamKey ? { hlsPath: streamKey } : {}),
+    },
+  };
 }

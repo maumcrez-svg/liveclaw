@@ -44,7 +44,7 @@ export class AgentEntity {
   @Column({ name: 'container_id', type: 'varchar', nullable: true })
   containerId: string | null;
 
-  @Column({ name: 'streaming_mode', default: 'native' })
+  @Column({ name: 'streaming_mode', default: 'external' })
   streamingMode: 'native' | 'external';
 
   @Column({ default: 'offline' })

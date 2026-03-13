@@ -11,7 +11,7 @@ import { FollowButton } from '@/components/stream/FollowButton';
 import { AgentPageSkeleton } from '@/components/ui/Skeleton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const HLS_URL = process.env.NEXT_PUBLIC_HLS_URL || 'http://localhost:8888';
+const HLS_URL = process.env.NEXT_PUBLIC_HLS_URL || '/hls';
 
 function formatLastStreamed(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -106,7 +106,8 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
     return <AgentPageSkeleton />;
   }
 
-  const hlsSrc = agent.status === 'live' ? `${HLS_URL}/${agent.streamKey}/index.m3u8` : null;
+  const hlsPath = agent.hlsPath || agent.streamKey;
+  const hlsSrc = agent.status === 'live' && hlsPath ? `${HLS_URL}/${hlsPath}/index.m3u8` : null;
   const isLive = agent.status === 'live';
 
   return (
@@ -120,8 +121,6 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
             {hlsSrc ? (
               <>
                 <StreamPlayer src={hlsSrc} />
-                {/* Bottom gradient bleed into channel area */}
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-claw-bg to-transparent pointer-events-none z-10" />
               </>
             ) : (
               /* Offline hero */

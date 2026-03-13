@@ -18,14 +18,17 @@ services:
     restart: unless-stopped
 
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    build:
+      context: ./infra/mediamtx
+      dockerfile: Dockerfile
     ports:
       - "1935:1935"
       - "8888:8888"
-    volumes:
-      - ./infra/mediamtx/mediamtx.yml:/mediamtx.yml
+      - "8554:8554"
+      - "9997:9997"
     environment:
-      - MTX_PROTOCOLS=tcp
+      - API_URL=${MEDIAMTX_API_CALLBACK_URL:-http://api:3001}
+      - WEBHOOK_SECRET=${MEDIAMTX_WEBHOOK_SECRET:?MEDIAMTX_WEBHOOK_SECRET must be set}
     restart: unless-stopped
 
   api:

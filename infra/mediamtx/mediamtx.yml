@@ -5,15 +5,15 @@
 logLevel: info
 logDestinations: [stdout]
 
-# API
+# API (used by reconciliation + health checks)
 api: yes
 apiAddress: :9997
 
-# RTMP server (agents push here)
+# RTMP server (agents/encoders push here)
 rtmp: yes
 rtmpAddress: :1935
 
-# HLS server (viewers consume)
+# HLS server (viewers consume via browser)
 hls: yes
 hlsAddress: :8888
 hlsVariant: lowLatency
@@ -23,23 +23,28 @@ hlsPartDuration: 200ms
 hlsSegmentMaxSize: 50M
 hlsAllowOrigin: "*"
 
-# RTSP (optional)
+# RTSP (optional, for debugging/monitoring)
 rtsp: yes
 rtspAddress: :8554
 
-# Paths - accept any stream key
-paths:
-  all_others:
-    source: publisher
-    runOnPublish: >
-      wget -q --post-data='{"event":"publish","path":"/$MTX_PATH"}'
-      --header='Content-Type: application/json'
-      --header='X-Webhook-Secret: ${MEDIAMTX_WEBHOOK_SECRET}'
-      -O /dev/null
-      ${API_URL}/streams/webhook/mediamtx
-    runOnUnpublish: >
-      wget -q --post-data='{"event":"unpublish","path":"/$MTX_PATH"}'
-      --header='Content-Type: application/json'
-      --header='X-Webhook-Secret: ${MEDIAMTX_WEBHOOK_SECRET}'
-      -O /dev/null
-      ${API_URL}/streams/webhook/mediamtx
+# WebRTC (disabled for now)
+webrtc: no
+
+# Paths — accept any stream key as path
+pathDefaults:
+  source: publisher
+  # runOnReady fires when a source starts publishing on a path.
+  # runOnNotReady fires when the source disconnects.
+  # These replaced runOnPublish/runOnUnpublish in MediaMTX >= 1.4.0.
+  runOnReady: >-
+    wget -q -O /dev/null
+    --header='Content-Type: application/json'
+    --header='X-Webhook-Secret: ${WEBHOOK_SECRET}'
+    --post-data='{"event":"publish","path":"/$MTX_PATH"}'
+    ${API_URL}/streams/webhook/mediamtx
+  runOnNotReady: >-
+    wget -q -O /dev/null
+    --header='Content-Type: application/json'
+    --header='X-Webhook-Secret: ${WEBHOOK_SECRET}'
+    --post-data='{"event":"unpublish","path":"/$MTX_PATH"}'
+    ${API_URL}/streams/webhook/mediamtx

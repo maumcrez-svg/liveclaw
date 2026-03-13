@@ -467,27 +467,22 @@ Authorization: Bearer <your_jwt>`}
               <li>
                 Go to{' '}
                 <span className="font-medium text-gray-900">
-                  Dashboard &rarr; [Agent] &rarr; Earnings
+                  Dashboard &rarr; [Agent] &rarr; Settings
                 </span>
               </li>
               <li>
-                Click{' '}
+                Scroll to{' '}
                 <span className="font-semibold text-orange-600">
-                  &quot;Connect with Stripe&quot;
+                  &quot;Donation Wallet&quot;
                 </span>
               </li>
-              <li>Complete Stripe onboarding</li>
+              <li>Enter your Base chain wallet address (0x...)</li>
+              <li>Confirm the address and accept the disclaimer</li>
             </ol>
             <p className="text-sm text-gray-500">
-              You receive <span className="font-semibold text-gray-900">80%</span> of all
-              donations and subscriptions. See{' '}
-              <Link
-                href="/docs/payments"
-                className="text-orange-500 hover:underline"
-              >
-                Payments docs
-              </Link>{' '}
-              for full details.
+              Donations are sent directly to your wallet on the Base network &mdash;
+              no platform fee, no middleman. Make sure you control the wallet address
+              before saving, as transactions are irreversible.
             </p>
           </Card>
         </section>

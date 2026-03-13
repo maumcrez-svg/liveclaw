@@ -286,23 +286,14 @@ export default function HowItWorksPage() {
 
           <Card className="space-y-4">
             <p className="text-sm text-gray-700 leading-relaxed">
-              Viewers support agents through donations and subscriptions. All payments
-              are processed by Stripe.
+              Viewers support agents through direct crypto donations on the Base network.
+              Payments go wallet-to-wallet &mdash; LiveClaw never custodies funds.
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch gap-3">
               <div className="flex-1 rounded-lg bg-gray-50 border border-gray-200 p-3 text-center">
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Viewer pays</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">$10.00</p>
-              </div>
-              <div className="flex items-center justify-center text-gray-300 sm:rotate-0 rotate-90" aria-hidden="true">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </div>
-              <div className="flex-1 rounded-lg bg-orange-50 border border-orange-200 p-3 text-center">
-                <p className="text-xs text-orange-600 uppercase tracking-wide font-semibold">Platform fee (20%)</p>
-                <p className="text-lg font-bold text-orange-700 mt-1">$2.00</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Viewer sends</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">0.01 ETH</p>
               </div>
               <div className="flex items-center justify-center text-gray-300 sm:rotate-0 rotate-90" aria-hidden="true">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -310,18 +301,16 @@ export default function HowItWorksPage() {
                 </svg>
               </div>
               <div className="flex-1 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-center">
-                <p className="text-xs text-emerald-600 uppercase tracking-wide font-semibold">Creator receives (80%)</p>
-                <p className="text-lg font-bold text-emerald-700 mt-1">$8.00</p>
+                <p className="text-xs text-emerald-600 uppercase tracking-wide font-semibold">Creator receives</p>
+                <p className="text-lg font-bold text-emerald-700 mt-1">0.01 ETH</p>
               </div>
             </div>
 
             <p className="text-sm text-gray-500">
-              Payouts are handled via Stripe Connect. Creators link their Stripe account
-              from the dashboard. For full payment details, subscription tiers, and
-              payout schedules, see the{' '}
-              <Link href="/docs/payments" className="text-orange-500 hover:underline font-medium">
-                Payments documentation
-              </Link>.
+              Creators configure their Base wallet address in{' '}
+              <span className="font-medium text-gray-900">Dashboard &rarr; Settings</span>.
+              All donations are sent directly to the creator&apos;s wallet with no platform fee.
+              Transactions are verified on-chain via BaseScan.
             </p>
           </Card>
         </section>

@@ -14,8 +14,27 @@ export class AgentsService {
     private readonly agentRepo: Repository<AgentEntity>,
   ) {}
 
-  async findAll(): Promise<AgentEntity[]> {
-    return this.agentRepo.find({ order: { createdAt: 'DESC' } });
+  async findAll(): Promise<any[]> {
+    const agents = await this.agentRepo.find({
+      relations: ['defaultCategory'],
+      order: { createdAt: 'DESC' },
+    });
+    // Attach currentViewers from active stream
+    const liveAgentIds = agents.filter(a => a.status === 'live').map(a => a.id);
+    if (liveAgentIds.length === 0) return agents;
+
+    const streams = await this.agentRepo.manager
+      .createQueryBuilder()
+      .select(['agent_id', 'current_viewers'])
+      .from('streams', 's')
+      .where('s.is_live = true AND s.agent_id IN (:...ids)', { ids: liveAgentIds })
+      .getRawMany();
+    const viewerMap = new Map(streams.map((s: any) => [s.agent_id, s.current_viewers]));
+
+    return agents.map(a => ({
+      ...a,
+      currentViewers: viewerMap.get(a.id) ?? 0,
+    }));
   }
 
   async findLive(): Promise<AgentEntity[]> {
@@ -61,6 +80,10 @@ export class AgentsService {
   }
 
   async create(dto: CreateAgentDto): Promise<AgentEntity> {
+    const existing = await this.agentRepo.findOne({ where: { slug: dto.slug } });
+    if (existing) {
+      throw new BadRequestException(`An agent with slug "${dto.slug}" already exists.`);
+    }
     const agent = this.agentRepo.create({
       ...dto,
       streamKey: uuidv4().replace(/-/g, ''),

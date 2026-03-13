@@ -28,16 +28,17 @@ services:
       retries: 5
 
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    build:
+      context: ./infra/mediamtx
+      dockerfile: Dockerfile
     ports:
       - "8555:8554"   # RTSP
       - "1935:1935"   # RTMP
       - "8888:8888"   # HLS
       - "9997:9997"   # API
-    volumes:
-      - ./infra/mediamtx/mediamtx.yml:/mediamtx.yml
     environment:
-      - MTX_PROTOCOLS=tcp
+      - API_URL=${MEDIAMTX_API_CALLBACK_URL:-http://api:3001}
+      - WEBHOOK_SECRET=${MEDIAMTX_WEBHOOK_SECRET:?MEDIAMTX_WEBHOOK_SECRET must be set}
 
 volumes:
   pgdata:

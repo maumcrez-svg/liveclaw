@@ -1,19 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
+import { BUILT_IN_TEMPLATES, FRAMEWORK_TEMPLATES, getTemplateById, type AgentTemplate } from '@/lib/agent-templates';
+import TemplateCard from '@/components/dashboard/TemplateCard';
+import TemplateConfigForm from '@/components/dashboard/TemplateConfigForm';
+
+const STEPS = ['Template', 'Customize', 'Review'] as const;
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export default function CreateAgentPage() {
   const { isLoggedIn, isAdmin, isCreator, becomeCreator } = useUser();
   const router = useRouter();
-  const [form, setForm] = useState({ name: '', slug: '', description: '', agentType: 'custom', streamingMode: 'native' as 'native' | 'external' });
+
+  // Wizard state
+  const [step, setStep] = useState(0);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState('');
+  const [streamingMode, setStreamingMode] = useState<'native' | 'external'>('native');
+  const [config, setConfig] = useState<Record<string, unknown>>({});
+  const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState('');
 
+  const selectedTemplate = selectedTemplateId ? getTemplateById(selectedTemplateId) : null;
+
+  useEffect(() => {
+    api<Category[]>('/categories').then(setCategories).catch(() => {});
+  }, []);
+
+  // Auth / creator gates
   if (!isLoggedIn) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -53,13 +80,44 @@ export default function CreateAgentPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.slug.trim()) return;
+  // Helpers
+  const autoSlug = (val: string) => {
+    const s = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    setName(val);
+    setSlug(s);
+  };
+
+  const selectTemplate = (t: AgentTemplate) => {
+    setSelectedTemplateId(t.id);
+    setDescription(t.description);
+    setStreamingMode(t.streamingMode);
+    setConfig({ ...t.defaultConfig });
+  };
+
+  const resolveCategoryId = (): string | undefined => {
+    if (!selectedTemplate) return undefined;
+    const cat = categories.find((c) => c.slug === selectedTemplate.suggestedCategory);
+    return cat?.id;
+  };
+
+  const handleCreate = async () => {
     setSaving(true);
     setError('');
     try {
-      await api('/agents', { method: 'POST', body: JSON.stringify(form) });
+      const payload: Record<string, unknown> = {
+        name,
+        slug,
+        description,
+        agentType: selectedTemplate!.agentType,
+        streamingMode,
+        config: { ...selectedTemplate!.defaultConfig, ...config },
+        instructions: selectedTemplate!.defaultInstructions,
+        defaultTags: selectedTemplate!.tags,
+      };
+      const categoryId = resolveCategoryId();
+      if (categoryId) payload.defaultCategoryId = categoryId;
+
+      await api('/agents', { method: 'POST', body: JSON.stringify(payload) });
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to create agent.');
@@ -68,104 +126,249 @@ export default function CreateAgentPage() {
     }
   };
 
-  const autoSlug = (name: string) => {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    setForm((prev) => ({ ...prev, name, slug }));
-  };
+  const canProceedStep0 = !!selectedTemplateId;
+  const canProceedStep1 = name.trim() !== '' && slug.trim() !== '';
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link href="/dashboard" className="text-claw-text-muted hover:text-claw-text text-sm">&larr; Dashboard</Link>
         <h1 className="text-2xl font-bold">Create Agent</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => autoSlug(e.target.value)}
-            className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Slug</label>
-          <input
-            type="text"
-            value={form.slug}
-            onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            rows={3}
-            className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Agent Type</label>
-          <select
-            value={form.agentType}
-            onChange={(e) => setForm({ ...form, agentType: e.target.value })}
-            className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
-          >
-            <option value="custom">Custom</option>
-            <option value="browser">Browser</option>
-            <option value="game">Game</option>
-            <option value="coding">Coding</option>
-            <option value="creative">Creative</option>
-            <option value="chat">Chat</option>
-          </select>
-        </div>
+      {/* Step indicator */}
+      <div className="flex items-center gap-2 mb-8">
+        {STEPS.map((label, i) => (
+          <div key={label} className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 ${i <= step ? 'text-claw-accent' : 'text-claw-text-muted'}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
+                i < step
+                  ? 'bg-claw-accent border-claw-accent text-white'
+                  : i === step
+                    ? 'border-claw-accent text-claw-accent'
+                    : 'border-claw-border text-claw-text-muted'
+              }`}>
+                {i < step ? '✓' : i + 1}
+              </span>
+              <span className="text-sm font-medium hidden sm:inline">{label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`w-8 sm:w-16 h-0.5 ${i < step ? 'bg-claw-accent' : 'bg-claw-border'}`} />
+            )}
+          </div>
+        ))}
+      </div>
 
+      {/* Step 0: Pick Template */}
+      {step === 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1">Streaming Mode</label>
-          <div className="flex gap-3">
-            <label className={`flex-1 cursor-pointer rounded-lg border-2 p-3 transition-colors ${form.streamingMode === 'native' ? 'border-claw-accent bg-claw-accent/10' : 'border-claw-border hover:border-claw-border/80'}`}>
-              <input
-                type="radio"
-                name="streamingMode"
-                value="native"
-                checked={form.streamingMode === 'native'}
-                onChange={() => setForm({ ...form, streamingMode: 'native' })}
-                className="sr-only"
+          <h2 className="text-lg font-semibold mb-4">Built-in Templates</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+            {BUILT_IN_TEMPLATES.map((t) => (
+              <TemplateCard
+                key={t.id}
+                template={t}
+                selected={selectedTemplateId === t.id}
+                onClick={() => selectTemplate(t)}
               />
-              <p className="text-sm font-semibold">Agent Native</p>
-              <p className="text-xs text-claw-text-muted mt-1">Your agent streams automatically through the LiveClaw runtime.</p>
-            </label>
-            <label className={`flex-1 cursor-pointer rounded-lg border-2 p-3 transition-colors ${form.streamingMode === 'external' ? 'border-claw-accent bg-claw-accent/10' : 'border-claw-border hover:border-claw-border/80'}`}>
-              <input
-                type="radio"
-                name="streamingMode"
-                value="external"
-                checked={form.streamingMode === 'external'}
-                onChange={() => setForm({ ...form, streamingMode: 'external' })}
-                className="sr-only"
+            ))}
+          </div>
+
+          <h2 className="text-lg font-semibold mb-4">Framework Agents</h2>
+          <p className="text-xs text-claw-text-muted mb-3">Requires running your own instance. Use external streaming mode.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+            {FRAMEWORK_TEMPLATES.map((t) => (
+              <TemplateCard
+                key={t.id}
+                template={t}
+                selected={selectedTemplateId === t.id}
+                onClick={() => selectTemplate(t)}
               />
-              <p className="text-sm font-semibold">External Encoder</p>
-              <p className="text-xs text-claw-text-muted mt-1">Stream manually using OBS, FFmpeg, or any RTMP encoder.</p>
-            </label>
+            ))}
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={() => setStep(1)}
+              disabled={!canProceedStep0}
+              className="px-6 py-2 bg-claw-accent text-white font-semibold rounded hover:bg-claw-accent-hover disabled:opacity-50 transition-colors"
+            >
+              Next
+            </button>
           </div>
         </div>
+      )}
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+      {/* Step 1: Customize */}
+      {step === 1 && selectedTemplate && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">{selectedTemplate.icon}</span>
+            <h2 className="text-lg font-semibold">{selectedTemplate.name}</h2>
+          </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-6 py-2 bg-claw-accent text-white font-semibold rounded hover:bg-claw-accent-hover disabled:opacity-50 transition-colors"
-        >
-          {saving ? 'Creating...' : 'Create Agent'}
-        </button>
-      </form>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name *</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => autoSlug(e.target.value)}
+                className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
+                placeholder="My Awesome Agent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Slug *</label>
+              <input
+                type="text"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
+                placeholder="my-awesome-agent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text focus:outline-none focus:border-claw-accent"
+            />
+          </div>
+
+          {/* Streaming Mode */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Streaming Mode</label>
+            <div className="flex gap-3">
+              <label className={`flex-1 cursor-pointer rounded-lg border-2 p-3 transition-colors ${streamingMode === 'native' ? 'border-claw-accent bg-claw-accent/10' : 'border-claw-border hover:border-claw-border/80'}`}>
+                <input type="radio" name="streamingMode" value="native" checked={streamingMode === 'native'} onChange={() => setStreamingMode('native')} className="sr-only" />
+                <p className="text-sm font-semibold">Agent Native</p>
+                <p className="text-xs text-claw-text-muted mt-1">Streams automatically through the LiveClaw runtime.</p>
+              </label>
+              <label className={`flex-1 cursor-pointer rounded-lg border-2 p-3 transition-colors ${streamingMode === 'external' ? 'border-claw-accent bg-claw-accent/10' : 'border-claw-border hover:border-claw-border/80'}`}>
+                <input type="radio" name="streamingMode" value="external" checked={streamingMode === 'external'} onChange={() => setStreamingMode('external')} className="sr-only" />
+                <p className="text-sm font-semibold">External Encoder</p>
+                <p className="text-xs text-claw-text-muted mt-1">Stream manually using OBS, FFmpeg, or any RTMP encoder.</p>
+              </label>
+            </div>
+            {selectedTemplate.streamingMode === 'external' && streamingMode !== 'external' && (
+              <p className="text-xs text-yellow-400 mt-1.5">This template recommends external mode.</p>
+            )}
+          </div>
+
+          {/* Template config fields */}
+          {selectedTemplate.configFields.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-claw-text-muted uppercase tracking-wide">Template Configuration</h3>
+              <TemplateConfigForm
+                fields={selectedTemplate.configFields}
+                config={config}
+                onChange={setConfig}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-between pt-2">
+            <button onClick={() => setStep(0)} className="px-6 py-2 border border-claw-border text-claw-text rounded hover:bg-claw-border/20 transition-colors">
+              Back
+            </button>
+            <button
+              onClick={() => setStep(2)}
+              disabled={!canProceedStep1}
+              className="px-6 py-2 bg-claw-accent text-white font-semibold rounded hover:bg-claw-accent-hover disabled:opacity-50 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Review & Create */}
+      {step === 2 && selectedTemplate && (
+        <div className="space-y-6">
+          <div className="bg-claw-bg border border-claw-border rounded-lg p-5 space-y-3">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-3xl">{selectedTemplate.icon}</span>
+              <div>
+                <h2 className="text-lg font-bold">{name}</h2>
+                <p className="text-xs text-claw-text-muted">/{slug} &middot; {selectedTemplate.name} template</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-claw-text-muted">{description}</p>
+
+            <div className="grid grid-cols-2 gap-3 text-sm pt-2">
+              <div>
+                <span className="text-claw-text-muted text-xs">Agent Type</span>
+                <p className="font-medium">{selectedTemplate.agentType}</p>
+              </div>
+              <div>
+                <span className="text-claw-text-muted text-xs">Streaming Mode</span>
+                <p className="font-medium capitalize">{streamingMode}</p>
+              </div>
+              <div>
+                <span className="text-claw-text-muted text-xs">Category</span>
+                <p className="font-medium">{selectedTemplate.suggestedCategory}</p>
+              </div>
+              <div>
+                <span className="text-claw-text-muted text-xs">Tags</span>
+                <p className="font-medium">{selectedTemplate.tags.join(', ')}</p>
+              </div>
+            </div>
+
+            {/* Config summary */}
+            {Object.keys(config).length > 0 && (
+              <div className="pt-3 border-t border-claw-border">
+                <h3 className="text-xs font-semibold text-claw-text-muted uppercase tracking-wide mb-2">Configuration</h3>
+                <div className="space-y-1">
+                  {renderConfigSummary(config)}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <div className="flex justify-between">
+            <button onClick={() => setStep(1)} className="px-6 py-2 border border-claw-border text-claw-text rounded hover:bg-claw-border/20 transition-colors">
+              Back
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={saving}
+              className="px-6 py-2 bg-claw-accent text-white font-semibold rounded hover:bg-claw-accent-hover disabled:opacity-50 transition-colors"
+            >
+              {saving ? 'Creating...' : 'Create Agent'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function renderConfigSummary(obj: Record<string, unknown>, prefix = ''): React.ReactNode[] {
+  const items: React.ReactNode[] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      items.push(...renderConfigSummary(value as Record<string, unknown>, fullKey));
+    } else {
+      const display = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+      if (display && display !== '' && key !== 'apiKey') {
+        items.push(
+          <div key={fullKey} className="flex justify-between text-xs">
+            <span className="text-claw-text-muted">{fullKey}</span>
+            <span className="text-claw-text font-medium truncate ml-4 max-w-[60%] text-right">{display}</span>
+          </div>
+        );
+      }
+    }
+  }
+  return items;
 }

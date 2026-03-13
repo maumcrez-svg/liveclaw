@@ -47,6 +47,19 @@ export class CreateAgentDto {
   @IsIn(['native', 'external'])
   @IsOptional()
   streamingMode?: 'native' | 'external';
+
+  @IsString()
+  @IsOptional()
+  instructions?: string;
+
+  @IsUUID()
+  @IsOptional()
+  defaultCategoryId?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  defaultTags?: string[];
 }
 
 export class UpdateAgentDto {
