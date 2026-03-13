@@ -39,7 +39,8 @@ export async function api<T = any>(
       window.dispatchEvent(new Event('liveclaw:logout'));
     }
 
-    const err = new Error(body.message || `API error ${res.status}`) as any;
+    const rawMsg = Array.isArray(body.message) ? body.message.join('. ') : body.message;
+    const err = new Error(rawMsg || `API error ${res.status}`) as any;
     err.status = res.status;
     err.body = body;
     throw err;

@@ -22,7 +22,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      message = typeof res === 'string' ? res : (res as any).message || message;
+      const raw = typeof res === 'string' ? res : (res as any).message || message;
+      message = Array.isArray(raw) ? raw.join('. ') : raw;
     } else if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
     }
