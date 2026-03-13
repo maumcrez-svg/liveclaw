@@ -56,7 +56,7 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
     if (!user) return;
     setLoading(true);
     try {
-      await fetch(`${API_URL}/subscriptions/${user.id}/${agentId}`, { method: 'DELETE' });
+      await api(`/subscriptions/${user.id}/${agentId}`, { method: 'DELETE' });
       setCurrentTier(null);
       setShowModal(false);
       toast('Unsubscribed');

@@ -31,3 +31,15 @@ rtspAddress: :8554
 paths:
   all_others:
     source: publisher
+    runOnPublish: >
+      wget -q --post-data='{"event":"publish","path":"/$MTX_PATH"}'
+      --header='Content-Type: application/json'
+      --header='X-Webhook-Secret: ${MEDIAMTX_WEBHOOK_SECRET}'
+      -O /dev/null
+      ${API_URL}/streams/webhook/mediamtx
+    runOnUnpublish: >
+      wget -q --post-data='{"event":"unpublish","path":"/$MTX_PATH"}'
+      --header='Content-Type: application/json'
+      --header='X-Webhook-Secret: ${MEDIAMTX_WEBHOOK_SECRET}'
+      -O /dev/null
+      ${API_URL}/streams/webhook/mediamtx

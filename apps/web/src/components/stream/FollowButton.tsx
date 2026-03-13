@@ -26,17 +26,21 @@ export function FollowButton({ agentId, followerCount: initialCount }: FollowBut
   }, [user, agentId]);
 
   const toggle = useCallback(async () => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !user) {
       setShowLoginModal(true);
       return;
     }
     setLoading(true);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${user.token}`,
+    };
     try {
       if (following) {
         await fetch(`${API_URL}/follows`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user!.id, agentId }),
+          headers,
+          body: JSON.stringify({ userId: user.id, agentId }),
         });
         setFollowing(false);
         setCount((c) => Math.max(0, c - 1));
@@ -44,8 +48,8 @@ export function FollowButton({ agentId, followerCount: initialCount }: FollowBut
       } else {
         await fetch(`${API_URL}/follows`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user!.id, agentId }),
+          headers,
+          body: JSON.stringify({ userId: user.id, agentId }),
         });
         setFollowing(true);
         setCount((c) => c + 1);
