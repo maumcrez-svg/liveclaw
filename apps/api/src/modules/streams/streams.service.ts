@@ -117,7 +117,7 @@ export class StreamsService {
         return;
       }
 
-      await this.startStream(agent.id);
+      await this.startStream(agent.id, agent.name);
     } else {
       await this.endStream(agent.id);
     }
