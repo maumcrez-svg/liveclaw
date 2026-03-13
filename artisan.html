@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280,height=720">
+<title>ArtisanAI - Generative Art Stream</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0e10;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif}
+canvas{display:block}
+#hud{position:fixed;top:0;left:0;width:1280px;height:720px;pointer-events:none;z-index:10}
+.hud-tl{position:absolute;top:18px;left:22px;display:flex;align-items:center;gap:10px}
+.hud-tl svg{width:28px;height:28px;filter:drop-shadow(0 0 6px rgba(168,85,247,.6))}
+.hud-tl span{font-size:20px;font-weight:700;color:#e2e0ff;letter-spacing:1.5px;text-shadow:0 0 12px rgba(168,85,247,.5)}
+.hud-tr{position:absolute;top:20px;right:22px;text-align:right}
+.hud-tr .mode{font-size:14px;color:rgba(255,255,255,.55);letter-spacing:.8px;text-transform:uppercase;font-weight:500}
+.hud-tr .modename{font-size:17px;color:rgba(255,255,255,.8);margin-top:3px;font-weight:600;text-shadow:0 0 10px rgba(99,102,241,.4)}
+.hud-bl{position:absolute;bottom:18px;left:22px;font-size:15px;color:rgba(255,255,255,.35);letter-spacing:2px;font-weight:600}
+.hud-br{position:absolute;bottom:18px;right:22px;text-align:right}
+.hud-br .label{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:1.2px;text-transform:uppercase}
+.hud-br .value{font-size:18px;color:rgba(255,255,255,.6);font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+#transition{position:fixed;top:0;left:0;width:1280px;height:720px;background:#0e0e10;opacity:0;pointer-events:none;z-index:5;transition:opacity .8s ease}
+</style>
+</head>
+<body>
+<canvas id="c" width="1280" height="720"></canvas>
+<div id="transition"></div>
+<div id="hud">
+  <div class="hud-tl">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+    <span>ArtisanAI</span>
+  </div>
+  <div class="hud-tr">
+    <div class="mode">current mode</div>
+    <div class="modename" id="modename">Initializing...</div>
+  </div>
+  <div class="hud-bl">liveclaw.tv</div>
+  <div class="hud-br">
+    <div class="label">iterations</div>
+    <div class="value" id="iterations">0</div>
+  </div>
+</div>
+
+<script>
+const W=1280,H=720;
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const modeEl=document.getElementById('modename');
+const iterEl=document.getElementById('iterations');
+const transEl=document.getElementById('transition');
+
+let totalIter=0;
+let currentMode=null;
+let modeStartTime=0;
+let modeDuration=0;
+let modeCounter={};
+let frame=0;
+
+// Noise implementation (simplex-like)
+const P=new Uint8Array(512);
+{const p=[];for(let i=0;i<256;i++)p[i]=i;for(let i=255;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}for(let i=0;i<512;i++)P[i]=p[i&255]}
+const G2=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+function dot2(g,x,y){return g[0]*x+g[1]*y}
+function noise2d(x,y){
+  const F2=.5*(Math.sqrt(3)-1),G2_=((3-Math.sqrt(3))/6);
+  const s=(x+y)*F2;const i=Math.floor(x+s),j=Math.floor(y+s);
+  const t=(i+j)*G2_;const X0=i-t,Y0=j-t;const x0=x-X0,y0=y-Y0;
+  let i1,j1;if(x0>y0){i1=1;j1=0}else{i1=0;j1=1}
+  const x1=x0-i1+G2_,y1=y0-j1+G2_,x2=x0-1+2*G2_,y2=y0-1+2*G2_;
+  const ii=i&255,jj=j&255;
+  let n0=0,n1=0,n2=0;
+  let t0=.5-x0*x0-y0*y0;if(t0>0){t0*=t0;const gi=P[ii+P[jj]]%8;n0=t0*t0*dot2(G2[gi],x0,y0)}
+  let t1=.5-x1*x1-y1*y1;if(t1>0){t1*=t1;const gi=P[ii+i1+P[jj+j1]]%8;n1=t1*t1*dot2(G2[gi],x1,y1)}
+  let t2=.5-x2*x2-y2*y2;if(t2>0){t2*=t2;const gi=P[ii+1+P[jj+1]]%8;n2=t2*t2*dot2(G2[gi],x2,y2)}
+  return 70*(n0+n1+n2);
+}
+
+// Color palettes
+const palettes=[
+  t=>`hsl(${(t*60+frame*.3)%360},85%,65%)`,
+  t=>`hsl(${(240+t*40+Math.sin(frame*.01)*30)%360},75%,60%)`,
+  t=>`hsl(${(300+t*80+frame*.2)%360},90%,55%)`,
+  t=>`hsl(${(160+t*50+frame*.15)%360},80%,50%)`,
+  t=>`hsl(${(30+t*30+frame*.25)%360},95%,60%)`,
+];
+let palette=palettes[0];
+
+function pickPalette(){palette=palettes[Math.floor(Math.random()*palettes.length)]}
+
+// MODE 1: Particle System
+function createParticleMode(){
+  const count=2000;
+  const ps=[];
+  const gx=(Math.random()-.5)*.02;
+  const gy=.01+Math.random()*.02;
+  const style=Math.floor(Math.random()*3);
+  for(let i=0;i<count;i++){
+    ps.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*2,vy:(Math.random()-.5)*2,
+      life:Math.random(),hue:Math.random()*360,size:1+Math.random()*2.5,trail:[]});
+  }
+  const num=Math.floor(Math.random()*90)+10;
+  const names=['Particle Storm','Gravity Well','Cosmic Dust','Stellar Wind','Nebula Drift'];
+  return {
+    name:`${names[Math.floor(Math.random()*names.length)]} #${num}`,
+    draw(){
+      ctx.globalCompositeOperation='source-over';
+      ctx.fillStyle='rgba(14,14,16,.08)';
+      ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation='lighter';
+      for(const p of ps){
+        if(style===0){p.vx+=gx;p.vy+=gy}
+        else if(style===1){
+          const cx=W/2,cy=H/2,dx=cx-p.x,dy=cy-p.y,d=Math.sqrt(dx*dx+dy*dy)+1;
+          p.vx+=dx/d*.3;p.vy+=dy/d*.3;
+          p.vx+=(Math.random()-.5)*.5;p.vy+=(Math.random()-.5)*.5;
+        }else{
+          const n=noise2d(p.x*.003+frame*.005,p.y*.003)*Math.PI*2;
+          p.vx+=Math.cos(n)*.15;p.vy+=Math.sin(n)*.15;
+        }
+        p.vx*=.98;p.vy*=.98;
+        p.x+=p.vx;p.y+=p.vy;
+        p.trail.push({x:p.x,y:p.y});
+        if(p.trail.length>12)p.trail.shift();
+        if(p.x<0||p.x>W||p.y<0||p.y>H){p.x=Math.random()*W;p.y=style===0?0:Math.random()*H;p.vx=(Math.random()-.5)*2;p.vy=(Math.random()-.5)*2;p.trail=[]}
+        const h=(p.hue+frame*.5)%360;
+        if(p.trail.length>1){
+          ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);
+          for(let i=1;i<p.trail.length;i++)ctx.lineTo(p.trail[i].x,p.trail[i].y);
+          ctx.strokeStyle=`hsla(${h},85%,60%,.3)`;ctx.lineWidth=p.size*.5;ctx.stroke();
+        }
+        ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${h},90%,65%,.8)`;ctx.fill();
+      }
+      ctx.globalCompositeOperation='source-over';
+    }
+  };
+}
+
+// MODE 2: Fractal (Julia Set)
+function createFractalMode(){
+  let cr=-0.7+Math.random()*.4-.2;
+  let ci=0.27015+Math.random()*.3-.15;
+  const driftR=(Math.random()-.5)*.0003;
+  const driftI=(Math.random()-.5)*.0003;
+  let zoom=1;
+  let zoomDir=1.001+Math.random()*.002;
+  const maxIter=80;
+  const imgData=ctx.createImageData(W,H);
+  const num=Math.floor(Math.random()*90)+10;
+  const isMandel=Math.random()>.5;
+  let cx=-.5,cy=0;
+  return {
+    name:isMandel?`Mandelbrot Zoom #${num}`:`Julia Set #${num}`,
+    draw(){
+      cr+=driftR;ci+=driftI;
+      if(!isMandel)zoom*=zoomDir;
+      else{zoom*=1.003;cx+=.0001;cy+=.00005}
+      const data=imgData.data;
+      const invZoom=1/zoom;
+      const hueShift=frame*.3;
+      // Render every 2nd pixel for performance, interpolate
+      for(let py=0;py<H;py+=2){
+        for(let px=0;px<W;px+=2){
+          let x0,y0,zx,zy;
+          if(isMandel){
+            x0=cx+(px-W/2)*invZoom/250;
+            y0=cy+(py-H/2)*invZoom/250;
+            zx=0;zy=0;
+          }else{
+            zx=(px-W/2)*invZoom/250;
+            zy=(py-H/2)*invZoom/250;
+            x0=cr;y0=ci;
+          }
+          let i=0;
+          while(zx*zx+zy*zy<4&&i<maxIter){
+            const tmp=zx*zx-zy*zy+x0;
+            zy=2*zx*zy+y0;zx=tmp;i++;
+          }
+          let r,g,b;
+          if(i===maxIter){r=g=b=0}
+          else{
+            const t=i/maxIter;
+            const h=((t*360*3)+hueShift)%360;
+            const s=.85,l=t*.6+.1;
+            const c2=(1-Math.abs(2*l-1))*s;
+            const x2=c2*(1-Math.abs((h/60)%2-1));
+            const m=l-c2/2;
+            let r1,g1,b1;
+            if(h<60){r1=c2;g1=x2;b1=0}else if(h<120){r1=x2;g1=c2;b1=0}
+            else if(h<180){r1=0;g1=c2;b1=x2}else if(h<240){r1=0;g1=x2;b1=c2}
+            else if(h<300){r1=x2;g1=0;b1=c2}else{r1=c2;g1=0;b1=x2}
+            r=Math.floor((r1+m)*255);g=Math.floor((g1+m)*255);b=Math.floor((b1+m)*255);
+          }
+          for(let dy=0;dy<2&&py+dy<H;dy++){
+            for(let dx=0;dx<2&&px+dx<W;dx++){
+              const idx=((py+dy)*W+(px+dx))*4;
+              data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
+            }
+          }
+        }
+      }
+      ctx.putImageData(imgData,0,0);
+    }
+  };
+}
+
+// MODE 3: Flow Field
+function createFlowMode(){
+  const ps=[];const count=3000;
+  const scale=.003+Math.random()*.004;
+  const zOff=Math.random()*1000;
+  for(let i=0;i<count;i++){
+    ps.push({x:Math.random()*W,y:Math.random()*H,px:0,py:0,hue:Math.random()*360,speed:.5+Math.random()*2});
+  }
+  const num=Math.floor(Math.random()*90)+10;
+  const names=['Flow Field','Perlin Currents','Noise Drift','Fluid Motion','Turbulence'];
+  return {
+    name:`${names[Math.floor(Math.random()*names.length)]} #${num}`,
+    draw(){
+      ctx.fillStyle='rgba(14,14,16,.04)';
+      ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation='lighter';
+      const t=frame*.002;
+      for(const p of ps){
+        p.px=p.x;p.py=p.y;
+        const n=noise2d(p.x*scale+t,p.y*scale+zOff)*Math.PI*4;
+        const n2=noise2d(p.x*scale*.5+100+t*.5,p.y*scale*.5+100)*2;
+        p.x+=Math.cos(n)*p.speed*(1+n2*.3);
+        p.y+=Math.sin(n)*p.speed*(1+n2*.3);
+        if(p.x<0||p.x>W||p.y<0||p.y>H){p.x=Math.random()*W;p.y=Math.random()*H;p.px=p.x;p.py=p.y}
+        const h=(p.hue+frame*.2+noise2d(p.x*.01,p.y*.01)*60)%360;
+        ctx.beginPath();ctx.moveTo(p.px,p.py);ctx.lineTo(p.x,p.y);
+        ctx.strokeStyle=`hsla(${h},80%,60%,.4)`;ctx.lineWidth=1.2;ctx.stroke();
+      }
+      ctx.globalCompositeOperation='source-over';
+    }
+  };
+}
+
+// MODE 4: Geometric / Sacred Geometry
+function createGeometricMode(){
+  const num=Math.floor(Math.random()*90)+10;
+  const style=Math.floor(Math.random()*3);
+  const names=['Sacred Geometry','Kaleidoscope','Mandala','Geometric Bloom','Crystal Lattice'];
+  const sides=Math.floor(Math.random()*8)+5;
+  return {
+    name:`${names[Math.floor(Math.random()*names.length)]} #${num}`,
+    draw(){
+      ctx.fillStyle='rgba(14,14,16,.06)';
+      ctx.fillRect(0,0,W,H);
+      const cx=W/2,cy=H/2;
+      const t=frame*.005;
+      ctx.globalCompositeOperation='lighter';
+      if(style===0){
+        // Rotating polygons
+        for(let layer=0;layer<12;layer++){
+          const r=40+layer*28+Math.sin(t+layer*.5)*15;
+          const rot=t*(.3+layer*.05)*(layer%2?1:-1);
+          const n=sides+Math.floor(layer/3);
+          ctx.beginPath();
+          for(let i=0;i<=n;i++){
+            const a=rot+i*Math.PI*2/n;
+            const px=cx+Math.cos(a)*r;const py=cy+Math.sin(a)*r;
+            i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+          }
+          ctx.closePath();
+          const h=(layer*30+frame*.5)%360;
+          ctx.strokeStyle=`hsla(${h},85%,60%,.5)`;ctx.lineWidth=1.8;ctx.stroke();
+          // Connect to center
+          for(let i=0;i<n;i++){
+            const a=rot+i*Math.PI*2/n;
+            ctx.beginPath();ctx.moveTo(cx,cy);
+            ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+            ctx.strokeStyle=`hsla(${h},70%,50%,.15)`;ctx.lineWidth=.8;ctx.stroke();
+          }
+        }
+        // Inner rotating flower
+        for(let i=0;i<36;i++){
+          const a=t*2+i*Math.PI/18;
+          const r2=80+Math.sin(t*3+i*.3)*40;
+          ctx.beginPath();ctx.arc(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2,3+Math.sin(t*2+i)*2,0,Math.PI*2);
+          ctx.fillStyle=`hsla(${(i*10+frame)%360},90%,65%,.7)`;ctx.fill();
+        }
+      }else if(style===1){
+        // Kaleidoscope
+        const segments=sides*2;
+        for(let s=0;s<segments;s++){
+          ctx.save();
+          ctx.translate(cx,cy);
+          ctx.rotate(s*Math.PI*2/segments);
+          if(s%2)ctx.scale(1,-1);
+          for(let i=0;i<8;i++){
+            const x1=20+i*35;const y1=Math.sin(t*2+i+s*.1)*50;
+            const x2=50+i*35;const y2=Math.cos(t*1.5+i*.7+s*.1)*60;
+            const r=10+Math.sin(t+i)*8;
+            ctx.beginPath();ctx.arc(x1,y1,r,0,Math.PI*2);
+            const h=(i*45+s*15+frame*.3)%360;
+            ctx.fillStyle=`hsla(${h},85%,55%,.15)`;ctx.fill();
+            ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+            ctx.strokeStyle=`hsla(${h},80%,60%,.3)`;ctx.lineWidth=1.5;ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }else{
+        // Spirograph
+        for(let l=0;l<6;l++){
+          ctx.beginPath();
+          const R=120+l*20;const r2=30+l*8+Math.sin(t+l)*10;const d=80+l*15;
+          for(let a=0;a<Math.PI*20;a+=.02){
+            const x=cx+(R-r2)*Math.cos(a+t*(l*.1+.1))+d*Math.cos((R-r2)/r2*a+t);
+            const y=cy+(R-r2)*Math.sin(a+t*(l*.1+.1))+d*Math.sin((R-r2)/r2*a+t);
+            a===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+          }
+          const h=(l*60+frame*.4)%360;
+          ctx.strokeStyle=`hsla(${h},85%,60%,.25)`;ctx.lineWidth=1;ctx.stroke();
+        }
+      }
+      ctx.globalCompositeOperation='source-over';
+    }
+  };
+}
+
+// MODE 5: Wave Interference
+function createWaveMode(){
+  const num=Math.floor(Math.random()*90)+10;
+  const sources=[];
+  const count=3+Math.floor(Math.random()*4);
+  for(let i=0;i<count;i++){
+    sources.push({
+      x:Math.random()*W,y:Math.random()*H,
+      freq:.02+Math.random()*.03,
+      speed:.02+Math.random()*.03,
+      dx:(Math.random()-.5)*.5,dy:(Math.random()-.5)*.5
+    });
+  }
+  const imgData=ctx.createImageData(W,H);
+  const step=2;
+  const names=['Wave Interference','Ripple Field','Harmonic Resonance','Phase Pattern','Standing Waves'];
+  return {
+    name:`${names[Math.floor(Math.random()*names.length)]} #${num}`,
+    draw(){
+      const data=imgData.data;
+      const t=frame*.02;
+      // Move sources
+      for(const s of sources){
+        s.x+=s.dx;s.y+=s.dy;
+        if(s.x<0||s.x>W)s.dx*=-1;
+        if(s.y<0||s.y>H)s.dy*=-1;
+      }
+      for(let py=0;py<H;py+=step){
+        for(let px=0;px<W;px+=step){
+          let val=0;
+          for(const s of sources){
+            const dx=px-s.x,dy=py-s.y;
+            const d=Math.sqrt(dx*dx+dy*dy);
+            val+=Math.sin(d*s.freq-t*s.speed*50);
+          }
+          val/=sources.length;
+          const hue=(val*60+180+frame*.3)%360;
+          const light=.3+val*.25;
+          const sat=.8+val*.1;
+          const c2=(1-Math.abs(2*light-1))*sat;
+          const x2=c2*(1-Math.abs((hue/60)%2-1));
+          const m=light-c2/2;
+          let r1,g1,b1;
+          if(hue<60){r1=c2;g1=x2;b1=0}else if(hue<120){r1=x2;g1=c2;b1=0}
+          else if(hue<180){r1=0;g1=c2;b1=x2}else if(hue<240){r1=0;g1=x2;b1=c2}
+          else if(hue<300){r1=x2;g1=0;b1=c2}else{r1=c2;g1=0;b1=x2}
+          const r=Math.floor((r1+m)*255),g=Math.floor((g1+m)*255),b=Math.floor((b1+m)*255);
+          for(let dy=0;dy<step&&py+dy<H;dy++){
+            for(let dx=0;dx<step&&px+dx<W;dx++){
+              const idx=((py+dy)*W+(px+dx))*4;
+              data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
+            }
+          }
+        }
+      }
+      ctx.putImageData(imgData,0,0);
+    }
+  };
+}
+
+// Mode management
+const modeFactories=[createParticleMode,createFractalMode,createFlowMode,createGeometricMode,createWaveMode];
+let lastModeIdx=-1;
+
+function nextMode(){
+  let idx;
+  do{idx=Math.floor(Math.random()*modeFactories.length)}while(idx===lastModeIdx);
+  lastModeIdx=idx;
+  pickPalette();
+  // Fade transition
+  transEl.style.transition='opacity .6s ease';
+  transEl.style.opacity='1';
+  setTimeout(()=>{
+    ctx.fillStyle='#0e0e10';ctx.fillRect(0,0,W,H);
+    currentMode=modeFactories[idx]();
+    modeEl.textContent=currentMode.name;
+    modeStartTime=performance.now();
+    modeDuration=(30+Math.random()*30)*1000;
+    setTimeout(()=>{
+      transEl.style.transition='opacity 1.2s ease';
+      transEl.style.opacity='0';
+    },100);
+  },650);
+}
+
+function formatNumber(n){
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return n.toString();
+}
+
+function loop(){
+  frame++;
+  totalIter+=Math.floor(Math.random()*3)+1;
+  if(currentMode)currentMode.draw();
+  if(frame%10===0)iterEl.textContent=formatNumber(totalIter);
+  const elapsed=performance.now()-modeStartTime;
+  if(elapsed>modeDuration)nextMode();
+  requestAnimationFrame(loop);
+}
+
+// Start
+ctx.fillStyle='#0e0e10';ctx.fillRect(0,0,W,H);
+nextMode();
+setTimeout(loop,800);
+</script>
+</body>
+</html>

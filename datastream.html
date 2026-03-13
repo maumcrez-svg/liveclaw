@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280,height=720">
+<title>DataStream - Real-Time Analytics</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0e10;color:#e5e5e5;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;width:1280px;height:720px;overflow:hidden}
+#header{height:48px;background:#18181b;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #2a2a2e}
+#header h1{font-size:18px;font-weight:600;color:#fff}
+#header h1 span{color:#00D4FF}
+#header .status{display:flex;align-items:center;gap:8px;font-size:13px;color:#9ca3af}
+#header .status .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e}
+#grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:10px;padding:10px;height:634px}
+.panel{background:#18181b;border-radius:8px;border:1px solid #2a2a2e;overflow:hidden;display:flex;flex-direction:column}
+.panel-header{padding:8px 12px;font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #2a2a2e;display:flex;justify-content:space-between;align-items:center}
+.panel-header .live{color:#00D4FF;font-size:10px;font-weight:400}
+.panel-body{flex:1;position:relative;padding:8px}
+canvas{display:block}
+.p-line{grid-column:1/3;grid-row:1/2}
+.p-cards{grid-column:3/4;grid-row:1/2}
+.p-bar{grid-column:1/2;grid-row:2/3}
+.p-donut{grid-column:2/3;grid-row:2/3}
+.p-map{grid-column:3/4;grid-row:2/3}
+.p-log{grid-column:1/4;grid-row:3/3}
+.cards-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:6px;height:100%}
+.card{background:#1e1e22;border-radius:6px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:6px}
+.card .val{font-size:22px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.card .lbl{font-size:10px;color:#6b7280;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.card .delta{font-size:10px;margin-top:1px}
+.delta.up{color:#22c55e}
+.delta.down{color:#ef4444}
+#logBody{font-family:'Cascadia Code','Fira Code','Courier New',monospace;font-size:11px;line-height:1.6;padding:4px 8px;overflow:hidden;height:100%}
+.log-line{white-space:nowrap}
+.log-line .ts{color:#6b7280}
+.log-line .lvl-INFO{color:#22c55e}
+.log-line .lvl-WARN{color:#eab308}
+.log-line .lvl-ERROR{color:#ef4444}
+.log-line .lvl-DEBUG{color:#8b5cf6}
+.log-line .msg{color:#d1d5db}
+#footer{height:28px;background:#18181b;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-top:1px solid #2a2a2e;font-size:11px;color:#6b7280}
+#footer span.accent{color:#00D4FF}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1><span>DataStream</span> - Real-Time Analytics</h1>
+  <div class="status"><div class="dot"></div><span id="clock">2026-03-13 04:15:22 UTC</span></div>
+</div>
+<div id="grid">
+  <div class="panel p-line">
+    <div class="panel-header">System Performance <span class="live">LIVE</span></div>
+    <div class="panel-body"><canvas id="lineChart"></canvas></div>
+  </div>
+  <div class="panel p-cards">
+    <div class="panel-header">Key Metrics <span class="live">LIVE</span></div>
+    <div class="panel-body">
+      <div class="cards-grid">
+        <div class="card"><span class="val" id="mUsers">14,523</span><span class="lbl">Active Users</span><span class="delta up" id="dUsers">+2.4%</span></div>
+        <div class="card"><span class="val" id="mRps">2,847</span><span class="lbl">Requests/sec</span><span class="delta up" id="dRps">+5.1%</span></div>
+        <div class="card"><span class="val" id="mLatency">42ms</span><span class="lbl">Avg Latency</span><span class="delta down" id="dLatency">-1.2ms</span></div>
+        <div class="card"><span class="val" id="mUptime">99.97%</span><span class="lbl">Uptime</span><span class="delta up" id="dUptime">Healthy</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel p-bar">
+    <div class="panel-header">Top API Endpoints <span class="live">5s refresh</span></div>
+    <div class="panel-body"><canvas id="barChart"></canvas></div>
+  </div>
+  <div class="panel p-donut">
+    <div class="panel-header">Traffic by Region <span class="live">LIVE</span></div>
+    <div class="panel-body"><canvas id="donutChart"></canvas></div>
+  </div>
+  <div class="panel p-map">
+    <div class="panel-header">Global Requests <span class="live">LIVE</span></div>
+    <div class="panel-body"><canvas id="mapChart"></canvas></div>
+  </div>
+  <div class="panel p-log">
+    <div class="panel-header">System Log <span class="live">streaming</span></div>
+    <div class="panel-body" id="logBody"></div>
+  </div>
+</div>
+<div id="footer">
+  <span><span class="accent">liveclaw.tv</span> | DataStream Analytics Engine v2.1</span>
+  <span>Powered by LiveClaw AI Runtime</span>
+</div>
+<script>
+// --- Utility ---
+const $ = id => document.getElementById(id);
+const now = () => {const d=new Date();return d.toISOString().replace('T',' ').slice(0,19)+' UTC'};
+const rand = (a,b) => a+Math.random()*(b-a);
+const fmt = n => n.toLocaleString('en-US');
+const lerp = (a,b,t) => a+(b-a)*t;
+
+// --- Clock ---
+setInterval(()=>{$('clock').textContent=now()},1000);
+
+// --- Resize canvases ---
+function fitCanvas(id){
+  const c=document.getElementById(id);
+  const p=c.parentElement;
+  c.width=p.clientWidth-16;
+  c.height=p.clientHeight-16;
+  return c;
+}
+
+// ===== LINE CHART =====
+const lineC=fitCanvas('lineChart');
+const lineCtx=lineC.getContext('2d');
+const HIST=200;
+const series=[
+  {name:'CPU Usage',color:'#00D4FF',data:[]},
+  {name:'Memory',color:'#a855f7',data:[]},
+  {name:'Network I/O',color:'#22c55e',data:[]}
+];
+let lt=0;
+series.forEach(s=>{for(let i=0;i<HIST;i++)s.data.push(0)});
+
+function updateLine(t){
+  const dt=t*0.001;
+  series[0].data.push(50+20*Math.sin(dt*0.7)+10*Math.sin(dt*1.9)+rand(-3,3));
+  series[1].data.push(62+8*Math.sin(dt*0.4)+5*Math.cos(dt*1.3)+rand(-2,2));
+  series[2].data.push(30+25*Math.sin(dt*1.1)+15*Math.cos(dt*0.5)+rand(-4,4));
+  series.forEach(s=>{if(s.data.length>HIST)s.data.shift()});
+}
+
+function drawLine(){
+  const w=lineC.width,h=lineC.height;
+  const ctx=lineCtx;
+  ctx.clearRect(0,0,w,h);
+  // grid
+  ctx.strokeStyle='#2a2a2e';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=h*i/4;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+  }
+  // y labels
+  ctx.fillStyle='#6b7280';ctx.font='10px sans-serif';ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    ctx.fillText((100-i*25)+'%',28,h*i/4+4);
+  }
+  const left=34;
+  // series
+  series.forEach(s=>{
+    ctx.beginPath();ctx.strokeStyle=s.color;ctx.lineWidth=1.5;
+    const step=(w-left)/(HIST-1);
+    for(let i=0;i<s.data.length;i++){
+      const x=left+i*step;
+      const y=h-(s.data[i]/100)*h;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // glow fill
+    ctx.lineTo(left+(s.data.length-1)*step,h);ctx.lineTo(left,h);ctx.closePath();
+    const g=ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,s.color+'22');g.addColorStop(1,s.color+'00');
+    ctx.fillStyle=g;ctx.fill();
+  });
+  // legend
+  let lx=left+4;
+  ctx.font='11px sans-serif';
+  series.forEach(s=>{
+    ctx.fillStyle=s.color;ctx.fillRect(lx,6,10,10);
+    ctx.fillStyle='#9ca3af';ctx.textAlign='left';ctx.fillText(s.name,lx+14,15);
+    lx+=ctx.measureText(s.name).width+28;
+  });
+}
+
+// ===== BAR CHART =====
+const barC=fitCanvas('barChart');
+const barCtx=barC.getContext('2d');
+const endpoints=[
+  {name:'/api/streams',val:4280,color:'#00D4FF'},
+  {name:'/api/auth',val:3150,color:'#a855f7'},
+  {name:'/api/agents',val:2890,color:'#22c55e'},
+  {name:'/api/chat',val:2540,color:'#eab308'},
+  {name:'/api/users',val:1870,color:'#ef4444'},
+  {name:'/api/health',val:960,color:'#f97316'}
+];
+let barTargets=endpoints.map(e=>e.val);
+let barCurrent=endpoints.map(e=>e.val);
+
+function updateBars(){
+  barTargets=endpoints.map(e=>e.val+rand(-400,400));
+  barTargets.forEach((v,i)=>{if(v<200)barTargets[i]=200});
+}
+setInterval(updateBars,5000);
+
+function drawBars(){
+  const w=barC.width,h=barC.height;
+  const ctx=barCtx;
+  ctx.clearRect(0,0,w,h);
+  const n=endpoints.length;
+  const bh=(h-10)/(n)-4;
+  const maxVal=Math.max(...barCurrent)*1.1;
+  const left=90;
+  endpoints.forEach((ep,i)=>{
+    barCurrent[i]=lerp(barCurrent[i],barTargets[i],0.05);
+    const y=6+i*(bh+4);
+    const bw=((barCurrent[i])/maxVal)*(w-left-40);
+    // bar bg
+    ctx.fillStyle='#1e1e22';
+    ctx.beginPath();ctx.roundRect(left,y,w-left-40,bh,4);ctx.fill();
+    // bar
+    ctx.fillStyle=ep.color+'cc';
+    ctx.beginPath();ctx.roundRect(left,y,Math.max(bw,0),bh,4);ctx.fill();
+    // label
+    ctx.fillStyle='#9ca3af';ctx.font='11px sans-serif';ctx.textAlign='right';
+    ctx.fillText(ep.name,left-6,y+bh/2+4);
+    // value
+    ctx.fillStyle='#fff';ctx.textAlign='left';ctx.font='11px sans-serif';
+    ctx.fillText(fmt(Math.round(barCurrent[i]))+'/s',left+bw+6,y+bh/2+4);
+  });
+}
+
+// ===== DONUT CHART =====
+const donutC=fitCanvas('donutChart');
+const donutCtx=donutC.getContext('2d');
+const regions=[
+  {name:'N. America',pct:35,color:'#00D4FF'},
+  {name:'Europe',pct:28,color:'#a855f7'},
+  {name:'Asia',pct:22,color:'#22c55e'},
+  {name:'S. America',pct:8,color:'#eab308'},
+  {name:'Other',pct:7,color:'#ef4444'}
+];
+let donutTargets=regions.map(r=>r.pct);
+let donutCurrent=regions.map(r=>r.pct);
+
+function updateDonut(){
+  donutTargets=regions.map(r=>r.pct+rand(-3,3));
+  const sum=donutTargets.reduce((a,b)=>a+b,0);
+  donutTargets=donutTargets.map(v=>v/sum*100);
+}
+setInterval(updateDonut,4000);
+
+function drawDonut(){
+  const w=donutC.width,h=donutC.height;
+  const ctx=donutCtx;
+  ctx.clearRect(0,0,w,h);
+  const cx=w*0.42,cy=h*0.5;
+  const r=Math.min(cx,cy)-10;
+  const inner=r*0.58;
+  let angle=-Math.PI/2;
+  for(let i=0;i<regions.length;i++){
+    donutCurrent[i]=lerp(donutCurrent[i],donutTargets[i],0.04);
+  }
+  const sum=donutCurrent.reduce((a,b)=>a+b,0);
+  regions.forEach((reg,i)=>{
+    const sweep=(donutCurrent[i]/sum)*Math.PI*2;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,angle,angle+sweep);
+    ctx.arc(cx,cy,inner,angle+sweep,angle,true);
+    ctx.closePath();
+    ctx.fillStyle=reg.color;
+    ctx.fill();
+    angle+=sweep;
+  });
+  // center text
+  ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('100%',cx,cy-6);
+  ctx.fillStyle='#6b7280';ctx.font='10px sans-serif';
+  ctx.fillText('Total',cx,cy+10);
+  // legend
+  const lx=w*0.72;
+  let ly=16;
+  ctx.textAlign='left';ctx.textBaseline='top';
+  regions.forEach((reg,i)=>{
+    ctx.fillStyle=reg.color;ctx.fillRect(lx,ly,8,8);
+    ctx.fillStyle='#d1d5db';ctx.font='11px sans-serif';
+    ctx.fillText(reg.name,lx+14,ly-1);
+    ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
+    ctx.fillText(donutCurrent[i].toFixed(1)+'%',lx+14+ctx.measureText(reg.name+'  ').width+10,ly-1);
+    ly+=22;
+  });
+}
+
+// ===== WORLD MAP =====
+const mapC=fitCanvas('mapChart');
+const mapCtx=mapC.getContext('2d');
+// simplified continent outlines (normalized 0-1)
+const continents=[
+  // N America
+  [[0.10,0.18],[0.12,0.12],[0.18,0.08],[0.24,0.10],[0.26,0.16],[0.28,0.22],[0.24,0.28],[0.20,0.35],[0.16,0.42],[0.14,0.38],[0.10,0.30],[0.08,0.22]],
+  // S America
+  [[0.20,0.50],[0.24,0.46],[0.28,0.48],[0.30,0.55],[0.28,0.65],[0.26,0.75],[0.22,0.82],[0.18,0.78],[0.16,0.68],[0.18,0.58]],
+  // Europe
+  [[0.42,0.10],[0.46,0.08],[0.52,0.10],[0.54,0.14],[0.52,0.20],[0.48,0.24],[0.44,0.26],[0.40,0.22],[0.38,0.16]],
+  // Africa
+  [[0.42,0.32],[0.48,0.30],[0.54,0.34],[0.56,0.42],[0.54,0.55],[0.50,0.65],[0.46,0.68],[0.42,0.62],[0.40,0.50],[0.38,0.40]],
+  // Asia
+  [[0.56,0.08],[0.62,0.06],[0.70,0.08],[0.78,0.12],[0.82,0.18],[0.80,0.26],[0.76,0.32],[0.70,0.36],[0.64,0.38],[0.58,0.34],[0.54,0.28],[0.56,0.20],[0.58,0.14]],
+  // Australia
+  [[0.76,0.58],[0.82,0.56],[0.86,0.60],[0.88,0.66],[0.84,0.72],[0.78,0.70],[0.74,0.64]]
+];
+const pings=[];
+
+function spawnPing(){
+  // pick random continent, random point near it
+  const ci=Math.floor(rand(0,continents.length));
+  const c=continents[ci];
+  const pi=Math.floor(rand(0,c.length));
+  const pt=c[pi];
+  pings.push({x:pt[0]+rand(-0.03,0.03),y:pt[1]+rand(-0.03,0.03),life:1,color:['#00D4FF','#a855f7','#22c55e','#eab308'][Math.floor(rand(0,4))]});
+}
+
+function drawMap(){
+  const w=mapC.width,h=mapC.height;
+  const ctx=mapCtx;
+  ctx.clearRect(0,0,w,h);
+  // draw continents
+  continents.forEach(pts=>{
+    ctx.beginPath();
+    pts.forEach((p,i)=>{
+      const x=p[0]*w,y=p[1]*h;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fillStyle='#1e1e22';ctx.fill();
+    ctx.strokeStyle='#2a2a2e';ctx.lineWidth=1;ctx.stroke();
+  });
+  // pings
+  for(let i=pings.length-1;i>=0;i--){
+    const p=pings[i];
+    p.life-=0.015;
+    if(p.life<=0){pings.splice(i,1);continue}
+    const x=p.x*w,y=p.y*h;
+    const r=(1-p.life)*18;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.strokeStyle=p.color+(Math.floor(p.life*255).toString(16).padStart(2,'0'));
+    ctx.lineWidth=1.5;ctx.stroke();
+    ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);
+    ctx.fillStyle=p.color;ctx.fill();
+  }
+  if(Math.random()<0.3)spawnPing();
+}
+
+// ===== LOG =====
+const logEl=$('logBody');
+const logLevels=['INFO','INFO','INFO','INFO','DEBUG','WARN','ERROR'];
+const logMsgs=[
+  ['Request processed in ','ms','[12,85]'],
+  ['Stream heartbeat from agent-','','[1001,9999]'],
+  ['WebSocket connection established, client ','','[100,999]'],
+  ['Cache hit ratio: ','%','[88,99]'],
+  ['Query executed in ','ms','[2,120]'],
+  ['New viewer joined stream #','','[100,500]'],
+  ['Chat message delivered in ','ms','[5,25]'],
+  ['Agent container health check OK, uptime ','h','[1,720]'],
+  ['Rate limit check passed for IP 10.0.','','[1,255]'],
+  ['HLS segment generated, duration ','s','[2,6]'],
+  ['Thumbnail captured for stream #','','[100,400]'],
+  ['Database pool: ','/ 20 connections active','[4,18]'],
+  ['Redis pub/sub latency: ','ms','[1,8]'],
+  ['Auth token refreshed for user #','','[1000,9999]'],
+  ['MediaMTX ingest bitrate: ',' kbps','[2500,6000]'],
+];
+let logCount=0;
+
+function addLog(){
+  const lvl=logLevels[Math.floor(rand(0,logLevels.length))];
+  const m=logMsgs[Math.floor(rand(0,logMsgs.length))];
+  const range=JSON.parse(m[2]);
+  const val=Math.floor(rand(range[0],range[1]));
+  const ts=now().replace(' UTC','');
+  const line=document.createElement('div');
+  line.className='log-line';
+  line.innerHTML=`<span class="ts">${ts}</span> <span class="lvl-${lvl}">${lvl.padEnd(5)}</span> <span class="msg">${m[0]}${val}${m[1]}</span>`;
+  logEl.appendChild(line);
+  logCount++;
+  if(logCount>12){logEl.removeChild(logEl.firstChild);logCount--}
+}
+// seed initial logs
+for(let i=0;i<8;i++)addLog();
+setInterval(addLog,800+Math.random()*400);
+
+// ===== METRICS CARDS =====
+let mUsers=14523,mRps=2847,mLat=42;
+let tUsers=14523,tRps=2847,tLat=42;
+
+function updateMetrics(){
+  tUsers=Math.max(8000,tUsers+Math.floor(rand(-200,250)));
+  tRps=Math.max(1000,tRps+Math.floor(rand(-150,180)));
+  tLat=Math.max(10,Math.min(120,tLat+rand(-3,3)));
+}
+setInterval(updateMetrics,3000);
+
+function drawMetrics(){
+  mUsers=Math.round(lerp(mUsers,tUsers,0.08));
+  mRps=Math.round(lerp(mRps,tRps,0.08));
+  mLat=lerp(mLat,tLat,0.08);
+  $('mUsers').textContent=fmt(mUsers);
+  $('mRps').textContent=fmt(mRps);
+  $('mLatency').textContent=mLat.toFixed(0)+'ms';
+  const du=((tUsers-14523)/14523*100);
+  $('dUsers').textContent=(du>=0?'+':'')+du.toFixed(1)+'%';
+  $('dUsers').className='delta '+(du>=0?'up':'down');
+  const dr=((tRps-2847)/2847*100);
+  $('dRps').textContent=(dr>=0?'+':'')+dr.toFixed(1)+'%';
+  $('dRps').className='delta '+(dr>=0?'up':'down');
+  const dl=mLat-42;
+  $('dLatency').textContent=(dl>=0?'+':'')+dl.toFixed(1)+'ms';
+  $('dLatency').className='delta '+(dl<=0?'up':'down');
+}
+
+// ===== ANIMATION LOOP =====
+let frame=0;
+function tick(t){
+  frame++;
+  updateLine(t);
+  if(frame%2===0){
+    drawLine();
+    drawBars();
+    drawDonut();
+    drawMap();
+    drawMetrics();
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// Handle resize on load
+window.addEventListener('resize',()=>{
+  fitCanvas('lineChart');fitCanvas('barChart');fitCanvas('donutChart');fitCanvas('mapChart');
+});
+</script>
+</body>
+</html>
