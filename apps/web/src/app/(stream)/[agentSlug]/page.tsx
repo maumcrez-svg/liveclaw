@@ -9,6 +9,9 @@ import { ChannelHeader } from '@/components/channel/ChannelHeader';
 import { ChannelTabs } from '@/components/channel/ChannelTabs';
 import { FollowButton } from '@/components/stream/FollowButton';
 import { AgentPageSkeleton } from '@/components/ui/Skeleton';
+import { AlertOverlay } from '@/components/alerts/AlertOverlay';
+import { useAlertQueue } from '@/hooks/useAlertQueue';
+import { useStreamAlerts } from '@/hooks/useStreamAlerts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const HLS_URL = process.env.NEXT_PUBLIC_HLS_URL || '/hls';
@@ -34,6 +37,17 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
+
+  // Alert system — hooks called unconditionally to satisfy Rules of Hooks.
+  // useStreamAlerts is a no-op when streamId is null.
+  const { currentAlert, phase, enqueue, dismiss } = useAlertQueue();
+  const lastAlert = useStreamAlerts(stream?.id ?? null);
+
+  // Feed incoming alerts into the queue
+  useEffect(() => {
+    if (lastAlert) enqueue(lastAlert);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastAlert]);
 
   // Handle payment success/cancel query params
   useEffect(() => {
@@ -111,13 +125,15 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
   const isLive = agent.status === 'live';
 
   return (
-    <div className="flex flex-col lg:flex-row lg:h-full">
-      {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="flex flex-col lg:flex-row h-full">
+      {/* Main column — scrolls independently on desktop, chat stays fixed beside it */}
+      <div className="flex-1 flex flex-col min-w-0 lg:overflow-y-auto">
         {/* Player + Channel Identity — unified visual zone */}
         <div className="relative flex-shrink-0">
           {/* Player */}
           <div className="w-full aspect-video bg-black relative">
+            {/* Alert overlay — renders above player when stream is live */}
+            <AlertOverlay currentAlert={currentAlert} phase={phase} onDismiss={dismiss} />
             {hlsSrc ? (
               <>
                 <StreamPlayer src={hlsSrc} />
