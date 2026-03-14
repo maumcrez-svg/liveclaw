@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { StreamAlert } from '@/lib/alerts';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const STORAGE_KEY = 'liveclaw_user';
 
@@ -32,14 +34,33 @@ function getAuthToken(): string | null {
   }
 }
 
-export function useChat(streamId: string) {
+export function useChat(streamId: string, agentId?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [viewerCount, setViewerCount] = useState(0);
   const [connected, setConnected] = useState(false);
-  const [slowMode, setSlowMode] = useState(0); // seconds; 0 = disabled
+  const [slowMode, setSlowMode] = useState(0);
   const [rateLimited, setRateLimited] = useState(false);
+  const [lastAlert, setLastAlert] = useState<StreamAlert | null>(null);
   const rateLimitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const historyLoadedRef = useRef(false);
+
+  // Load chat history on mount (before WebSocket connects)
+  useEffect(() => {
+    if (!agentId || historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+
+    fetch(`${API_URL}/chat/${agentId}/messages?limit=50`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((history: ChatMessage[]) => {
+        if (history.length > 0) {
+          // History comes newest-first from Redis LRANGE, reverse for chronological
+          const chronological = [...history].reverse();
+          setMessages(chronological);
+        }
+      })
+      .catch(() => {});
+  }, [agentId]);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -60,7 +81,11 @@ export function useChat(streamId: string) {
     });
 
     socket.on('new_message', (message: ChatMessage) => {
-      setMessages((prev) => [...prev.slice(-200), message]);
+      setMessages((prev) => {
+        // Deduplicate by ID (history + real-time overlap)
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev.slice(-200), message];
+      });
     });
 
     socket.on('viewer_count', (data: { streamId: string; count: number }) => {
@@ -108,6 +133,10 @@ export function useChat(streamId: string) {
       setSlowMode(data.seconds);
     });
 
+    socket.on('stream_alert', (alert: StreamAlert) => {
+      setLastAlert(alert);
+    });
+
     socket.on('rate_limited', () => {
       setRateLimited(true);
       if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
@@ -130,7 +159,6 @@ export function useChat(streamId: string) {
     };
   }, [streamId]);
 
-  // sendMessage no longer needs username/userId — server uses socket.data from JWT
   const sendMessage = useCallback(
     (content: string, agentId?: string) => {
       if (socketRef.current?.connected) {
@@ -140,5 +168,5 @@ export function useChat(streamId: string) {
     [streamId],
   );
 
-  return { messages, viewerCount, sendMessage, connected, slowMode, rateLimited };
+  return { messages, viewerCount, sendMessage, connected, slowMode, rateLimited, lastAlert };
 }

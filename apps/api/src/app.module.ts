@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AgentsModule } from './modules/agents/agents.module';
 import { StreamsModule } from './modules/streams/streams.module';
 import { ChatModule } from './modules/chat/chat.module';
@@ -16,9 +17,9 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { HealthModule } from './modules/health/health.module';
 import { CommonModule } from './common/common.module';
 import { ModerationModule } from './modules/chat/moderation/moderation.module';
-import { StripeModule } from './modules/stripe/stripe.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
+import { PlatformModule } from './modules/platform/platform.module';
 
 @Module({
   imports: [
@@ -53,9 +54,10 @@ import { CryptoModule } from './modules/crypto/crypto.module';
     HealthModule,
     CommonModule,
     ModerationModule,
-    StripeModule,
     AdminModule,
     CryptoModule,
+    PlatformModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

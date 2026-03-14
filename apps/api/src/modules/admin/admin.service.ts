@@ -184,13 +184,11 @@ export class AdminService {
       .select('COALESCE(SUM(d.amount), 0)', 'totalDonations')
       .addSelect('COUNT(*)::int', 'donationCount')
       .where('d.payment_status = :status', { status: 'completed' })
-      .andWhere('d.stripe_session_id IS NOT NULL')
       .getRawOne();
 
     const activeSubs = await this.subRepo
       .createQueryBuilder('s')
       .where('s.is_active = true')
-      .andWhere('s.stripe_subscription_id IS NOT NULL')
       .getMany();
 
     let totalMrr = 0;
@@ -237,8 +235,7 @@ export class AdminService {
       .createQueryBuilder('d')
       .leftJoinAndSelect('d.user', 'user')
       .leftJoinAndSelect('d.agent', 'agent')
-      .where('d.payment_status = :status', { status: 'completed' })
-      .andWhere('d.stripe_session_id IS NOT NULL');
+      .where('d.payment_status = :status', { status: 'completed' });
 
     if (opts.agentId) {
       qb.andWhere('d.agent_id = :agentId', { agentId: opts.agentId });
@@ -280,7 +277,7 @@ export class AdminService {
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.user', 'user')
       .leftJoinAndSelect('s.agent', 'agent')
-      .where('s.stripe_subscription_id IS NOT NULL');
+;
 
     if (opts.agentId) {
       qb.andWhere('s.agent_id = :agentId', { agentId: opts.agentId });

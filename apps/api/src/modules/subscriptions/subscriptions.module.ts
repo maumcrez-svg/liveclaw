@@ -5,15 +5,18 @@ import { SubscriptionsService } from './subscriptions.service';
 import { SubscriptionsController } from './subscriptions.controller';
 import { AgentsModule } from '../agents/agents.module';
 import { AuthModule } from '../auth/auth.module';
-import { StripeModule } from '../stripe/stripe.module';
 import { CommonModule } from '../../common/common.module';
+import { ChatModule } from '../chat/chat.module';
+import { UsersModule } from '../users/users.module';
+import { StreamEntity } from '../streams/stream.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SubscriptionEntity]),
+    TypeOrmModule.forFeature([SubscriptionEntity, StreamEntity]),
     AgentsModule,
     AuthModule,
-    forwardRef(() => StripeModule),
+    forwardRef(() => ChatModule),
+    forwardRef(() => UsersModule),
     CommonModule,
   ],
   controllers: [SubscriptionsController],

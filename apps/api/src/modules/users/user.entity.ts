@@ -31,12 +31,6 @@ export class UserEntity {
   @Column({ name: 'banned_at', type: 'timestamp', nullable: true })
   bannedAt: Date | null;
 
-  @Column({ name: 'stripe_connect_account_id', type: 'varchar', nullable: true })
-  stripeConnectAccountId: string | null;
-
-  @Column({ name: 'stripe_connect_onboarded_at', type: 'timestamp', nullable: true })
-  stripeConnectOnboardedAt: Date | null;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

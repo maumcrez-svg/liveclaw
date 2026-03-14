@@ -38,9 +38,6 @@ export class DonationEntity {
   @Column({ type: 'text', default: '' })
   message: string;
 
-  @Column({ name: 'stripe_session_id', type: 'varchar', unique: true, nullable: true })
-  stripeSessionId: string | null;
-
   @Column({ name: 'payment_status', default: 'completed' })
   paymentStatus: string;
 

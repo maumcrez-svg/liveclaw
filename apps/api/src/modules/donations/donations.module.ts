@@ -7,7 +7,6 @@ import { ChatModule } from '../chat/chat.module';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { AgentsModule } from '../agents/agents.module';
-import { StripeModule } from '../stripe/stripe.module';
 import { CommonModule } from '../../common/common.module';
 
 @Module({
@@ -17,7 +16,6 @@ import { CommonModule } from '../../common/common.module';
     forwardRef(() => UsersModule),
     forwardRef(() => AuthModule),
     forwardRef(() => AgentsModule),
-    forwardRef(() => StripeModule),
     CommonModule,
   ],
   controllers: [DonationsController],

@@ -91,7 +91,4 @@ export class UsersService {
     return this.userRepo.save(user);
   }
 
-  async findByStripeConnectAccountId(accountId: string): Promise<UserEntity | null> {
-    return this.userRepo.findOne({ where: { stripeConnectAccountId: accountId } });
-  }
 }
