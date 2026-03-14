@@ -131,7 +131,7 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
         {/* Player + Channel Identity — unified visual zone */}
         <div className="relative flex-shrink-0">
           {/* Player */}
-          <div className="w-full aspect-video bg-black relative">
+          <div className="w-full aspect-video bg-claw-bg relative">
             {/* Alert overlay — renders above player when stream is live */}
             <AlertOverlay currentAlert={currentAlert} phase={phase} onDismiss={dismiss} />
             {hlsSrc ? (
@@ -208,13 +208,13 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
         </div>
       </div>
 
-      {/* Chat sidebar — fixed height, never taller than parent */}
+      {/* Chat sidebar — constrained to viewport, breathing room at bottom */}
       {stream ? (
-        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-full">
+        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-full max-h-full pb-3">
           <ChatPanel streamId={stream.id} agentId={agent.id} agentName={agent.name} />
         </div>
       ) : (
-        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-full bg-claw-surface">
+        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-full max-h-full pb-3 bg-claw-surface">
           {/* Offline chat header */}
           <div className="px-4 py-3 border-b border-claw-border bg-gradient-to-r from-claw-surface to-claw-card/30">
             <div className="flex items-center gap-2">
