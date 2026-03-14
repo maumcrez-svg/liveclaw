@@ -125,8 +125,8 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
   const isLive = agent.status === 'live';
 
   return (
-    <div className="flex flex-col lg:flex-row h-full">
-      {/* Main column — scrolls independently on desktop, chat stays fixed beside it */}
+    <div className="flex flex-col lg:flex-row lg:h-full lg:overflow-hidden">
+      {/* Main column — scrolls independently on desktop */}
       <div className="flex-1 flex flex-col min-w-0 lg:overflow-y-auto">
         {/* Player + Channel Identity — unified visual zone */}
         <div className="relative flex-shrink-0">
@@ -208,7 +208,7 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
         </div>
       </div>
 
-      {/* Chat sidebar */}
+      {/* Chat sidebar — fixed height, never taller than parent */}
       {stream ? (
         <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-full">
           <ChatPanel streamId={stream.id} agentId={agent.id} agentName={agent.name} />
