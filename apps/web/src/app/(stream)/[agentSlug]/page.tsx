@@ -208,13 +208,13 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
         </div>
       </div>
 
-      {/* Chat sidebar — matches player + channel header height */}
+      {/* Chat sidebar — tall enough for good UX, stops before page bottom */}
       {stream ? (
-        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col max-h-[85vh] self-start overflow-hidden">
+        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-[85vh] self-start">
           <ChatPanel streamId={stream.id} agentId={agent.id} agentName={agent.name} />
         </div>
       ) : (
-        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col max-h-[85vh] self-start overflow-hidden bg-claw-surface">
+        <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-[85vh] self-start bg-claw-surface">
           {/* Offline chat header */}
           <div className="px-4 py-3 border-b border-claw-border bg-gradient-to-r from-claw-surface to-claw-card/30">
             <div className="flex items-center gap-2">
