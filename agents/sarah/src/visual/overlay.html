@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>Sarah · Pokemon Red</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg:        #1a1a2e;
+      --panel:     #16213e;
+      --accent:    #e94560;
+      --accent2:   #0f3460;
+      --text:      #e0e0e0;
+      --dim:       #8888aa;
+      --hp-green:  #4ecca3;
+      --hp-yellow: #e8b739;
+      --hp-red:    #e94560;
+      --border:    #0f3460;
+      --glow:      rgba(233, 69, 96, 0.35);
+    }
+
+    html, body {
+      width: 1280px;
+      height: 720px;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+    }
+
+    /* ─── LAYOUT ─────────────────────────────────────────── */
+
+    .layout {
+      display: grid;
+      width: 1280px;
+      height: 720px;
+      grid-template-columns: 640px 1fr;
+      grid-template-rows: 36px 1fr 32px;
+      grid-template-areas:
+        "header  header"
+        "game    hud"
+        "ticker  ticker";
+    }
+
+    /* ─── HEADER BAR ──────────────────────────────────────── */
+
+    .header {
+      grid-area: header;
+      background: var(--panel);
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      box-shadow: 0 2px 12px var(--glow);
+    }
+
+    .header-left {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 8px var(--accent);
+    }
+
+    .header-left span.dot {
+      color: var(--dim);
+      margin: 0 6px;
+    }
+
+    .header-right {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.03em;
+    }
+
+    .header-right .map-name {
+      color: var(--text);
+    }
+
+    .header-right .badge-count {
+      color: var(--hp-yellow);
+    }
+
+    /* ─── GAME SCREEN ─────────────────────────────────────── */
+
+    .game-area {
+      grid-area: game;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      position: relative;
+    }
+
+    .game-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(78,204,163,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    #gameCanvas {
+      width: 640px;
+      height: 576px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+      background: #0a0a0a;
+    }
+
+    .game-scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.08) 3px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+    }
+
+    .fsm-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(22, 33, 62, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      color: var(--dim);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ─── HUD PANELS ──────────────────────────────────────── */
+
+    .hud {
+      grid-area: hud;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 10px 8px 8px;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ─── PARTY PANEL ─────────────────────────────────────── */
+
+    .party-panel {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .party-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .pokemon-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      column-gap: 8px;
+      row-gap: 2px;
+    }
+
+    .pokemon-name-level {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .pokemon-name {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .pokemon-level {
+      font-size: 10px;
+      color: var(--dim);
+    }
+
+    .pokemon-hp-numbers {
+      grid-column: 2;
+      grid-row: 1;
+      font-size: 10px;
+      color: var(--dim);
+      text-align: right;
+      white-space: nowrap;
+      align-self: center;
+    }
+
+    .hp-bar-wrap {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      height: 5px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .hp-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease, background-color 0.4s ease;
+    }
+
+    .party-empty {
+      color: var(--dim);
+      font-size: 11px;
+      font-style: italic;
+      padding: 4px 0;
+    }
+
+    /* ─── LOCATION PANEL ──────────────────────────────────── */
+
+    .location-panel {
+      flex-shrink: 0;
+    }
+
+    .location-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+
+    .location-icon {
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .location-name {
+      font-size: 12px;
+      color: var(--text);
+      font-weight: bold;
+    }
+
+    .objective-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .objective-label {
+      font-size: 9px;
+      color: var(--accent);
+      font-family: 'Press Start 2P', monospace;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+
+    #objectiveText {
+      font-size: 11px;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+
+    /* ─── COMMENTARY PANEL ────────────────────────────────── */
+
+    .commentary-panel {
+      flex-shrink: 0;
+    }
+
+    #commentaryText {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 2.5em;
+      opacity: 1;
+      transition: opacity 0.15s ease;
+    }
+
+    #commentaryText.fade-out {
+      opacity: 0;
+    }
+
+    #commentaryText.fade-in {
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── TICKER BAR ──────────────────────────────────────── */
+
+    .ticker {
+      grid-area: ticker;
+      background: var(--panel);
+      border-top: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding: 0;
+      position: relative;
+    }
+
+    .ticker-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      color: var(--accent);
+      background: var(--accent);
+      color: var(--bg);
+      padding: 0 10px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .ticker-track {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+    }
+
+    .ticker-inner {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    .ticker-message {
+      font-size: 11px;
+      color: var(--text);
+      padding: 0 48px 0 0;
+      flex-shrink: 0;
+    }
+
+    .ticker-message::before {
+      content: '◆';
+      color: var(--accent);
+      margin-right: 10px;
+      font-size: 9px;
+    }
+
+    .ticker-separator {
+      color: var(--dim);
+      padding: 0 12px;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        SARAH <span class="dot">·</span> Pokemon Red
+      </div>
+      <div class="header-right">
+        <span class="map-name" id="headerMap">PALLET TOWN</span>
+        &nbsp;·&nbsp;
+        Badges: <span class="badge-count" id="headerBadges">0</span>/8
+      </div>
+    </header>
+
+    <!-- GAME SCREEN -->
+    <div class="game-area">
+      <canvas id="gameCanvas" width="640" height="576"></canvas>
+      <div class="game-scanlines"></div>
+      <div class="fsm-badge" id="fsmBadge">EXPLORING</div>
+    </div>
+
+    <!-- HUD -->
+    <aside class="hud">
+
+      <!-- PARTY PANEL -->
+      <div class="panel party-panel">
+        <div class="panel-title">Party</div>
+        <div class="party-list" id="partyList">
+          <div class="party-empty">No Pokemon in party</div>
+        </div>
+      </div>
+
+      <!-- LOCATION PANEL -->
+      <div class="panel location-panel">
+        <div class="panel-title">Location</div>
+        <div class="location-row">
+          <span class="location-icon">&#x25BA;</span>
+          <span class="location-name" id="locationName">Pallet Town</span>
+        </div>
+        <div class="objective-row">
+          <span class="objective-label">AIM</span>
+          <span id="objectiveText">Starting adventure...</span>
+        </div>
+      </div>
+
+      <!-- COMMENTARY PANEL -->
+      <div class="panel commentary-panel">
+        <div class="panel-title">Sarah Says</div>
+        <div id="commentaryText">Initializing...</div>
+      </div>
+
+    </aside>
+
+    <!-- TICKER -->
+    <div class="ticker">
+      <div class="ticker-label">LIVE</div>
+      <div class="ticker-track">
+        <div class="ticker-inner" id="tickerInner">
+          <span class="ticker-message" id="tickerPlaceholder">Waiting for events...</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ─── GAME CANVAS ────────────────────────────────────────────
+    const gameCanvas = document.getElementById('gameCanvas');
+    const ctx = gameCanvas.getContext('2d');
+
+    // Off-screen canvas at native 160x144 for pixel-perfect upscaling
+    const nativeCanvas = document.createElement('canvas');
+    nativeCanvas.width = 160;
+    nativeCanvas.height = 144;
+    const nCtx = nativeCanvas.getContext('2d');
+
+    // ─── TICKER ENGINE ───────────────────────────────────────────
+    const tickerInner = document.getElementById('tickerInner');
+    const tickerMessages = [];
+    let tickerX = 0;
+    let tickerLastTime = null;
+    const TICKER_SPEED = 60; // px/s
+
+    function buildTickerDOM() {
+      tickerInner.innerHTML = '';
+      if (tickerMessages.length === 0) {
+        const el = document.createElement('span');
+        el.className = 'ticker-message';
+        el.id = 'tickerPlaceholder';
+        el.textContent = 'Waiting for events...';
+        tickerInner.appendChild(el);
+        return;
+      }
+      // Duplicate messages to create seamless loop
+      const combined = [...tickerMessages, ...tickerMessages];
+      combined.forEach((msg, i) => {
+        const el = document.createElement('span');
+        el.className = 'ticker-message';
+        el.textContent = msg;
+        tickerInner.appendChild(el);
+        if (i < combined.length - 1) {
+          const sep = document.createElement('span');
+          sep.className = 'ticker-separator';
+          sep.textContent = '|';
+          tickerInner.appendChild(sep);
+        }
+      });
+      tickerX = 0;
+      tickerInner.style.transform = 'translateX(0px)';
+    }
+
+    function animateTicker(ts) {
+      requestAnimationFrame(animateTicker);
+      if (tickerMessages.length === 0) return;
+
+      if (tickerLastTime === null) tickerLastTime = ts;
+      const delta = (ts - tickerLastTime) / 1000;
+      tickerLastTime = ts;
+
+      tickerX -= TICKER_SPEED * delta;
+
+      const halfWidth = tickerInner.scrollWidth / 2;
+      if (Math.abs(tickerX) >= halfWidth) {
+        tickerX += halfWidth;
+      }
+      tickerInner.style.transform = `translateX(${tickerX}px)`;
+    }
+    requestAnimationFrame(animateTicker);
+
+    // ─── HP BAR HELPERS ──────────────────────────────────────────
+    function hpColor(pct) {
+      if (pct > 0.5) return 'var(--hp-green)';
+      if (pct > 0.25) return 'var(--hp-yellow)';
+      return 'var(--hp-red)';
+    }
+
+    function renderParty(party) {
+      const list = document.getElementById('partyList');
+      if (!party || party.length === 0) {
+        list.innerHTML = '<div class="party-empty">No Pokemon in party</div>';
+        return;
+      }
+      list.innerHTML = party.map(p => {
+        const pct = p.maxHp > 0 ? Math.max(0, Math.min(1, p.currentHp / p.maxHp)) : 0;
+        const pctPx = Math.round(pct * 100);
+        const color = hpColor(pct);
+        const name = (p.name || 'UNKNOWN').toUpperCase();
+        const level = p.level || '?';
+        const cur = p.currentHp ?? '?';
+        const max = p.maxHp ?? '?';
+        return `
+          <div class="pokemon-row">
+            <div class="pokemon-name-level">
+              <span class="pokemon-name">${name}</span>
+              <span class="pokemon-level">Lv.${level}</span>
+            </div>
+            <div class="pokemon-hp-numbers">${cur}/${max}</div>
+            <div class="hp-bar-wrap">
+              <div class="hp-bar-fill" style="width:${pctPx}%;background:${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─── WINDOW API ─────────────────────────────────────────────
+
+    /**
+     * Called by Node every tick with raw 160x144 RGBA pixels (base64),
+     * a gameState JSON object, and the FSM state string.
+     */
+    window.__updateGameFrame = function(pixelBase64, gameStateJson, fsmState) {
+      // Draw pixels onto native canvas
+      try {
+        const raw = atob(pixelBase64);
+        const buf = new Uint8ClampedArray(raw.length);
+        for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
+        const imgData = new ImageData(buf, 160, 144);
+        nCtx.putImageData(imgData, 0, 0);
+        // Scale up to 640x576 with pixelated rendering
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(nativeCanvas, 0, 0, 640, 576);
+      } catch (e) {
+        // Pixel data unavailable — keep last frame
+      }
+
+      // Update FSM badge
+      if (fsmState) {
+        const badge = document.getElementById('fsmBadge');
+        badge.textContent = String(fsmState).toUpperCase().replace(/_/g, ' ');
+      }
+
+      // Parse and apply game state
+      let gs = null;
+      if (gameStateJson) {
+        try {
+          gs = typeof gameStateJson === 'string' ? JSON.parse(gameStateJson) : gameStateJson;
+        } catch (e) { /* ignore */ }
+      }
+      if (!gs) return;
+
+      // Header: map name + badges
+      const mapName = (gs.position?.mapName || 'UNKNOWN').toUpperCase();
+      document.getElementById('headerMap').textContent = mapName;
+      document.getElementById('headerBadges').textContent = gs.badgeCount ?? 0;
+
+      // Location panel
+      document.getElementById('locationName').textContent =
+        gs.position?.mapName || 'Unknown';
+
+      // Party
+      if (gs.party?.pokemon && Array.isArray(gs.party.pokemon)) {
+        renderParty(gs.party.pokemon);
+      }
+    };
+
+    /**
+     * Called by Node to update the "SARAH SAYS" commentary panel.
+     */
+    window.__updateCommentary = function(text) {
+      const el = document.getElementById('commentaryText');
+      el.classList.remove('fade-in');
+      el.classList.add('fade-out');
+      setTimeout(() => {
+        el.textContent = text || '';
+        el.classList.remove('fade-out');
+        el.classList.add('fade-in');
+      }, 150);
+    };
+
+    /**
+     * Called by Node to push a new scrolling message into the ticker.
+     * Keeps last 12 messages.
+     */
+    window.__addTickerMessage = function(text) {
+      if (!text) return;
+      tickerMessages.push(String(text));
+      if (tickerMessages.length > 12) tickerMessages.shift();
+      tickerLastTime = null;
+      buildTickerDOM();
+    };
+
+    /**
+     * Called by Node to update the current objective text.
+     */
+    window.__updateObjective = function(text) {
+      document.getElementById('objectiveText').textContent = text || '';
+    };
+
+    /**
+     * Called by Node to play audio from base64 data.
+     * Returns a Promise that resolves when playback ends.
+     */
+    window.__playAudio = function(audioBase64, format) {
+      return new Promise((resolve) => {
+        try {
+          const mime = format === 'mp3' ? 'audio/mpeg'
+                     : format === 'ogg' ? 'audio/ogg'
+                     : format === 'wav' ? 'audio/wav'
+                     : 'audio/mpeg';
+          const audio = new Audio('data:' + mime + ';base64,' + audioBase64);
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          const playPromise = audio.play();
+          if (playPromise) {
+            playPromise.catch(() => resolve());
+          }
+          // Safety timeout: resolve after 30s max
+          setTimeout(resolve, 30000);
+        } catch (e) {
+          resolve();
+        }
+      });
+    };
+
+    // Notify Node that the audio system is ready
+    if (typeof window.__playAudioReady === 'function') {
+      window.__playAudioReady();
+    }
+  </script>
+</body>
+</html>
