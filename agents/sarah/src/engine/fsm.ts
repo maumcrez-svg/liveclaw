@@ -1,15 +1,11 @@
 import { GameState } from '../game/state';
 import { handleExploring } from './states/exploring';
 import { handleBattling } from './states/battling';
-import { handleDialog } from './states/dialog';
-import { handleMenu } from './states/menu';
 import { handleStuck } from './states/stuck';
 
 export enum FSMState {
   EXPLORING = 'EXPLORING',
   BATTLING = 'BATTLING',
-  DIALOG = 'DIALOG',
-  MENU = 'MENU',
   STUCK = 'STUCK',
 }
 
@@ -18,7 +14,8 @@ let stuckCounter = 0;
 let lastX = -1;
 let lastY = -1;
 let lastMapId = -1;
-const STUCK_THRESHOLD = 300; // ticks without movement (~10s at 30tps)
+
+const STUCK_THRESHOLD = 450; // ~15s at 30tps
 
 export function getCurrentState(): FSMState {
   return currentState;
@@ -33,14 +30,10 @@ export function transitionTo(newState: FSMState): void {
 }
 
 export function tickFSM(state: GameState): void {
-  // Auto-detect state transitions
+  // Battle takes priority
   if (currentState !== FSMState.BATTLING && state.battle.active) {
     transitionTo(FSMState.BATTLING);
   } else if (currentState === FSMState.BATTLING && !state.battle.active) {
-    transitionTo(FSMState.EXPLORING);
-  } else if (currentState === FSMState.EXPLORING && state.menu.textboxOpen) {
-    transitionTo(FSMState.DIALOG);
-  } else if (currentState === FSMState.DIALOG && !state.menu.textboxOpen && !state.battle.active) {
     transitionTo(FSMState.EXPLORING);
   }
 
@@ -59,19 +52,13 @@ export function tickFSM(state: GameState): void {
     lastMapId = state.position.mapId;
   }
 
-  // Dispatch to current state handler
+  // Dispatch
   switch (currentState) {
     case FSMState.EXPLORING:
       handleExploring(state);
       break;
     case FSMState.BATTLING:
       handleBattling(state);
-      break;
-    case FSMState.DIALOG:
-      handleDialog(state);
-      break;
-    case FSMState.MENU:
-      handleMenu(state);
       break;
     case FSMState.STUCK:
       handleStuck(state);

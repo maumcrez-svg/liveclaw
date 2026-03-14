@@ -9,13 +9,10 @@ export function handleDialog(state: GameState): void {
 
   dialogTickCount++;
 
-  // Mash A every 4 frames to advance text
-  if (dialogTickCount % 4 === 0) {
+  // Mash A to advance text. NEVER press B during dialog —
+  // B cancels yes/no prompts and restarts naming screens in Pokemon Red,
+  // causing infinite dialog loops.
+  if (dialogTickCount % 3 === 0) {
     sendInput(Button.A, 3);
-  }
-
-  // Occasionally press B to cancel dialogs
-  if (dialogTickCount % 20 === 10) {
-    sendInput(Button.B, 3);
   }
 }

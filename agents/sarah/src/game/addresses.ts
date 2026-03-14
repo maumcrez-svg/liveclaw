@@ -57,7 +57,10 @@ export const BADGES = 0xd356;  // bitmask
 export const MONEY = 0xd347;   // 3 bytes BCD
 
 // Menu / dialog state
-export const TEXTBOX_ID = 0xcc47;
+// 0xD125 = wTextBoxID from pret/pokered. Previously 0xCC47 which is a
+// scratch byte, not the actual dialog-active flag. 0xD125 is nonzero
+// whenever a text box / dialog is being displayed on screen.
+export const TEXTBOX_ID = 0xd125;
 export const MENU_ITEM_ID = 0xcc26;
 export const MOVEMENT_FLAGS = 0xd730; // bit 0 = player is moving
 

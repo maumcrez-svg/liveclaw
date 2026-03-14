@@ -1,16 +1,16 @@
 import { GameState } from '../../game/state';
 import { Button } from '../../emulator/adapter';
-import { sendInput, sendSequence, clearQueue, queueLength } from '../../emulator/input';
+import { sendInput, clearQueue, queueLength } from '../../emulator/input';
 import { transitionTo, FSMState } from '../fsm';
 import { getVisionDecision, canCallVision } from '../../brain/vision';
+import { getNextTarget, getDirectionToward } from '../exploration/waypoints';
 
 const DIRECTIONS = [Button.UP, Button.DOWN, Button.LEFT, Button.RIGHT];
 const DIR_MAP: Record<string, Button> = {
-  up: Button.UP, down: Button.DOWN, left: Button.LEFT, right: Button.RIGHT,
-};
-const BUTTON_MAP: Record<string, Button> = {
-  A: Button.A, B: Button.B, START: Button.START, SELECT: Button.SELECT,
-  UP: Button.UP, DOWN: Button.DOWN, LEFT: Button.LEFT, RIGHT: Button.RIGHT,
+  up: Button.UP,
+  down: Button.DOWN,
+  left: Button.LEFT,
+  right: Button.RIGHT,
 };
 
 let stuckPhase = 0;
@@ -22,70 +22,101 @@ export function handleStuck(state: GameState): void {
 
   phaseTickCount++;
 
-  // Try vision first
+  // Try vision once per stuck cycle to understand the situation
   if (!visionAttempted && canCallVision()) {
     visionAttempted = true;
-    getVisionDecision(state).then((decision) => {
-      if (decision) {
-        console.log(`[Stuck] Vision says: ${decision.action} - ${decision.reasoning}`);
-        switch (decision.action) {
-          case 'move':
-            if (decision.direction) {
-              const btn = DIR_MAP[decision.direction];
-              if (btn) {
-                for (let i = 0; i < (decision.repeat || 5); i++) sendInput(btn, 16);
+    getVisionDecision(state)
+      .then((decision) => {
+        if (decision) {
+          console.log(
+            `[Stuck] Vision: ${decision.action} - ${decision.reasoning}`,
+          );
+          if (decision.action === 'move' && decision.direction) {
+            const btn = DIR_MAP[decision.direction];
+            if (btn) {
+              for (let i = 0; i < (decision.repeat || 10); i++) {
+                sendInput(btn, 16);
               }
             }
-            break;
-          case 'interact':
+          } else if (decision.action === 'interact') {
             sendInput(Button.A, 6);
-            break;
-          case 'sequence':
-          case 'navigate_menu':
-            if (decision.buttons) {
-              const buttons = decision.buttons
-                .map((b) => BUTTON_MAP[b.toUpperCase()])
-                .filter((b): b is Button => b !== undefined);
-              sendSequence(buttons, 8, 6);
-            }
-            break;
+          }
+          // After executing vision, give it time then return to exploring
+          setTimeout(() => {
+            stuckPhase = 0;
+            phaseTickCount = 0;
+            visionAttempted = false;
+            transitionTo(FSMState.EXPLORING);
+          }, 3000);
         }
-        setTimeout(() => {
-          stuckPhase = 0;
-          phaseTickCount = 0;
-          visionAttempted = false;
-          clearQueue();
-          transitionTo(FSMState.EXPLORING);
-        }, 3000);
-      }
-    }).catch(() => {});
+      })
+      .catch(() => {});
   }
 
+  // Mechanical recovery phases
   switch (stuckPhase) {
     case 0:
-      if (phaseTickCount <= 1) console.log('[Stuck] Phase 0: START->A');
-      sendSequence([Button.START, Button.A, Button.A, Button.A], 8, 10);
-      if (phaseTickCount > 30) { stuckPhase = 1; phaseTickCount = 0; }
-      break;
-    case 1:
-      if (phaseTickCount <= 1) console.log('[Stuck] Phase 1: A-spam');
+      // Phase 0: A-spam (most common cause: cutscene/dialog waiting for input)
+      if (phaseTickCount <= 1) console.log('[Stuck] Phase 0: A-spam (dialog/cutscene)');
       sendInput(Button.A, 4);
-      if (phaseTickCount > 30) { stuckPhase = 2; phaseTickCount = 0; }
+      if (phaseTickCount > 90) {
+        stuckPhase = 1;
+        phaseTickCount = 0;
+      }
       break;
-    case 2:
-      if (phaseTickCount <= 1) console.log('[Stuck] Phase 2: Walk DOWN');
+
+    case 1:
+      // Phase 1: Walk DOWN hard (exit buildings/rooms)
+      if (phaseTickCount <= 1) console.log('[Stuck] Phase 1: Walk DOWN (exit building)');
       sendInput(Button.DOWN, 16);
-      if (phaseTickCount > 30) { stuckPhase = 3; phaseTickCount = 0; }
-      break;
-    case 3:
-      if (phaseTickCount <= 1) console.log('[Stuck] Phase 3: B-spam');
-      sendInput(Button.B, 3);
-      if (phaseTickCount > 20) { stuckPhase = 4; phaseTickCount = 0; }
-      break;
-    case 4:
-      if (phaseTickCount <= 1) console.log('[Stuck] Phase 4: Random walk');
-      sendInput(DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)], 16);
       if (phaseTickCount > 40) {
+        stuckPhase = 2;
+        phaseTickCount = 0;
+      }
+      break;
+
+    case 2: {
+      // Phase 2: Use waypoints to walk toward the nearest map exit
+      if (phaseTickCount <= 1) console.log('[Stuck] Phase 2: Waypoint navigation');
+      const target = getNextTarget(
+        state.position.mapId,
+        state.position.x,
+        state.position.y,
+        state.badgeCount,
+        state.party.count,
+      );
+      if (target) {
+        const dir = getDirectionToward(
+          state.position.x,
+          state.position.y,
+          target.x,
+          target.y,
+        );
+        sendInput(dir, 16);
+      } else {
+        // No waypoint available, just walk down
+        sendInput(Button.DOWN, 16);
+      }
+      if (phaseTickCount > 60) {
+        stuckPhase = 3;
+        phaseTickCount = 0;
+      }
+      break;
+    }
+
+    case 3:
+      // Phase 3: Random aggressive movement in all directions
+      if (phaseTickCount <= 1) console.log('[Stuck] Phase 3: Random aggressive walk');
+      sendInput(
+        DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)],
+        16,
+      );
+      // Occasionally press A during random walk
+      if (phaseTickCount % 8 === 0) {
+        sendInput(Button.A, 4);
+      }
+      if (phaseTickCount > 50) {
+        // Full cycle complete, reset and return to exploring
         stuckPhase = 0;
         phaseTickCount = 0;
         visionAttempted = false;
