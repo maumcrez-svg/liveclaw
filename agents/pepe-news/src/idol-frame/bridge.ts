@@ -359,6 +359,12 @@ ${expressionLines}`;
       }
     }
 
+    continuityLines.push(`\nIMPORTANT — VARIETY RULES:`);
+    continuityLines.push(`- NEVER reuse the same reaction phrases from previous episodes. Each episode must feel fresh.`);
+    continuityLines.push(`- Vary your sentence starters — don't always open with "This is—" or "Okay listen".`);
+    continuityLines.push(`- Invent NEW nervous tics, NEW metaphors, NEW ways to panic. ${e.name} is creative in his anxiety.`);
+    continuityLines.push(`- If referencing a past opinion, paraphrase it — don't copy it word-for-word.`);
+
     if (continuity.stories_covered.length > 0) {
       continuityLines.push(`\nRecently covered stories (avoid repeating unless there's a genuine update):`);
       for (const story of continuity.stories_covered.slice(0, 15)) {
@@ -502,21 +508,33 @@ function updateContinuityFromEpisode(
   const updated = { ...continuity };
   updated.episode_count = episode.episodeNumber;
 
-  // Extract opinions from narration (look for strong stances)
+  // Extract REAL opinions — skip generic filler like "this is bad"
+  const GENERIC_FILLERS = /^(this is|okay|oh boy|oh man|oh no|oh my|listen|look|I mean|I can't|I just|well|so|hold on|wait|what|wow|no no|are you)/i;
+  const OPINION_MARKERS = /\b(should|need to|going to|will collapse|won't survive|never|always|clearly|obviously|ridiculous|suspicious|bullish|bearish|scam|brilliant|insane|dangerous|overvalued|undervalued|doomed|promising|dead|bankrupt|monopoly|predatory|revolutionary|game.?changer|disaster|reckless|genius)\b/i;
+
   for (const seg of episode.segments) {
     if (seg.type === 'story' || seg.type === 'headline') {
       const topic = seg.headline || 'unknown';
-      // Look for opinion markers
-      const narr = seg.narration.toLowerCase();
-      if (narr.includes('this is') || narr.includes('clearly') || narr.includes('obviously') ||
-          narr.includes('ridiculous') || narr.includes('suspicious') || narr.includes('love') ||
-          narr.includes('hate') || narr.includes('insane') || narr.includes('brilliant')) {
-        // Extract a rough stance
-        const sentences = seg.narration.split(/[.!?]+/).filter(s => s.trim().length > 10);
-        const opinion = sentences.find(s =>
-          /this is|clearly|obviously|ridiculous|suspicious|insane|brilliant/i.test(s)
+      const sentences = seg.narration.split(/[.!?]+/).filter(s => s.trim().length > 20);
+
+      // Find a sentence with a real opinion, not just a reaction
+      const opinion = sentences.find(s => {
+        const trimmed = s.trim();
+        // Must contain an opinion marker
+        if (!OPINION_MARKERS.test(trimmed)) return false;
+        // Must NOT be just a generic filler
+        if (GENERIC_FILLERS.test(trimmed) && trimmed.length < 50) return false;
+        return true;
+      });
+
+      if (opinion) {
+        // Dedupe — don't save if we already have an opinion on a very similar topic
+        const topicLower = topic.toLowerCase();
+        const isDuplicate = updated.recent_opinions.some(
+          o => o.topic.toLowerCase().includes(topicLower.slice(0, 30)) ||
+               topicLower.includes(o.topic.toLowerCase().slice(0, 30))
         );
-        if (opinion) {
+        if (!isDuplicate) {
           updated.recent_opinions.push({
             topic: topic.slice(0, 80),
             stance: opinion.trim().slice(0, 120),
@@ -535,16 +553,20 @@ function updateContinuityFromEpisode(
     });
   }
 
-  // Look for callbacks/running gags in narration
-  const allNarration = episode.segments.map(s => s.narration).join(' ');
-  if (allNarration.includes('prescription') || allNarration.includes('medication') || allNarration.includes('meds')) {
-    if (!updated.recurring_bits.includes('medication references')) {
-      updated.recurring_bits.push('medication references');
-    }
-  }
-  if (allNarration.includes('coffee') || allNarration.includes('espresso') || allNarration.includes('caffeine')) {
-    if (!updated.recurring_bits.includes('coffee/caffeine references')) {
-      updated.recurring_bits.push('coffee/caffeine references');
+  // Detect recurring bits dynamically from narration
+  const allNarration = episode.segments.map(s => s.narration).join(' ').toLowerCase();
+  const BIT_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
+    { pattern: /prescription|medication|meds/, label: 'medication references' },
+    { pattern: /coffee|espresso|caffeine/, label: 'coffee/caffeine references' },
+    { pattern: /chart|looking at the chart|this chart/, label: 'chart obsession' },
+    { pattern: /why do I do this|what am I doing|I quit/, label: 'existential crisis moments' },
+    { pattern: /breaking news|just came in|hold on/, label: 'startled by breaking news' },
+    { pattern: /deep breath|calm down|okay okay/, label: 'anxiety spirals' },
+    { pattern: /not financial advice|do your own research|DYOR/, label: 'disclaimer panic' },
+  ];
+  for (const { pattern, label } of BIT_PATTERNS) {
+    if (pattern.test(allNarration) && !updated.recurring_bits.includes(label)) {
+      updated.recurring_bits.push(label);
     }
   }
 
