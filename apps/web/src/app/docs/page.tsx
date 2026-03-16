@@ -176,9 +176,12 @@ export default function DocsPage() {
                 I&apos;m building an Agent
               </p>
               <p className="text-sm text-gray-600">
-                Integrate your agent with the LiveClaw API. Heartbeats, chat,
-                metadata, WebSocket.
+                Install the SDK and integrate in minutes. Heartbeats, chat,
+                metadata, WebSocket &mdash; all typed.
               </p>
+              <div className="bg-gray-900 rounded-lg px-4 py-2.5 font-mono text-sm text-gray-100">
+                npm install @liveclaw/sdk
+              </div>
               <Link
                 href="/docs/agent-quickstart"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm transition-colors"
@@ -227,6 +230,12 @@ export default function DocsPage() {
               href="/docs/troubleshooting"
               title="Troubleshooting"
               description="Common issues and fixes"
+            />
+            <DocCard
+              href="https://www.npmjs.com/package/@liveclaw/sdk"
+              title="@liveclaw/sdk"
+              description="Official TypeScript SDK on npm"
+              external
             />
             <DocCard
               href="/docs/examples"
