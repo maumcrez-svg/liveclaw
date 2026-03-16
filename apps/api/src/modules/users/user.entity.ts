@@ -19,7 +19,7 @@ export class UserEntity {
   @Column({ default: 'viewer' })
   role: string;
 
-  @Column({ name: 'wallet_address', type: 'varchar', nullable: true })
+  @Column({ name: 'wallet_address', type: 'varchar', nullable: true, unique: true })
   walletAddress: string | null;
 
   @Column({ name: 'avatar_url', type: 'varchar', nullable: true })

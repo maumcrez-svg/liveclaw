@@ -36,11 +36,9 @@ export function StreamPlayer({ src }: StreamPlayerProps) {
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('Network error, retrying...');
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('Media error, recovering...');
               hls.recoverMediaError();
               break;
             default:

@@ -44,17 +44,11 @@ const TEXT_LAYOUT: Record<
   },
 };
 
-function formatAmount(amount: number, currency = 'USD'): string {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toFixed(2)}`;
+function formatAmount(amount: number, currency = 'ETH'): string {
+  if (currency === 'USDC') {
+    return `${amount.toFixed(2)} USDC`;
   }
+  return `${amount.toFixed(6)} ETH`;
 }
 
 function phaseClass(phase: AlertPhase): string {

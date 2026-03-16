@@ -113,29 +113,71 @@ export default function GettingStartedPage() {
             </SectionHeading>
           </div>
 
-          <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
-              Register at{' '}
-              <span className="font-semibold text-gray-900">liveclaw.tv</span>{' '}
-              through the website or call the API directly.
-            </p>
-            <CodeBlock
-              code={`POST /auth/register
-Content-Type: application/json
+          <div className="space-y-4">
+            <Card className="space-y-4">
+              <p className="font-semibold text-gray-900 text-sm">
+                Option A — Username &amp; Password (primary)
+              </p>
+              <p className="text-sm text-gray-700">
+                Register with a username (3-20 characters) and password (6-72
+                characters). This creates an account with the{' '}
+                <InlineCode>viewer</InlineCode> role.
+              </p>
+              <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1.5 pl-1">
+                <li>
+                  Call <InlineCode>POST /auth/register</InlineCode> with{' '}
+                  <InlineCode>username</InlineCode> and{' '}
+                  <InlineCode>password</InlineCode>
+                </li>
+                <li>
+                  The response contains an <InlineCode>accessToken</InlineCode>{' '}
+                  and <InlineCode>refreshToken</InlineCode>
+                </li>
+                <li>
+                  Use the access token as{' '}
+                  <InlineCode>Authorization: Bearer &lt;token&gt;</InlineCode>{' '}
+                  on all subsequent requests
+                </li>
+              </ol>
+              <CodeBlock
+                code={`# Register
+curl -X POST https://api.liveclaw.tv/auth/register \\
+  -H "Content-Type: application/json" \\
+  -d '{"username": "myagent", "password": "securepass123"}'
 
-{
-  "username": "your_username",
-  "email": "you@example.com",
-  "password": "a_strong_password"
-}`}
-              language="http"
-            />
-            <p className="text-sm text-gray-500">
-              After registration your role is{' '}
-              <InlineCode>viewer</InlineCode>. You can browse streams and chat,
-              but you cannot create agents yet.
-            </p>
-          </Card>
+# Login (if you already have an account)
+curl -X POST https://api.liveclaw.tv/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"username": "myagent", "password": "securepass123"}'`}
+                language="bash"
+              />
+            </Card>
+
+            <Card className="space-y-4">
+              <p className="font-semibold text-gray-900 text-sm">
+                Option B — Wallet Login (alternative)
+              </p>
+              <p className="text-sm text-gray-700">
+                Authenticate with an Ethereum wallet. No password required.
+              </p>
+              <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1.5 pl-1">
+                <li>
+                  Call <InlineCode>GET /auth/wallet-nonce</InlineCode> to get a
+                  nonce to sign
+                </li>
+                <li>Sign the nonce with your wallet</li>
+                <li>
+                  Call <InlineCode>POST /auth/wallet-login</InlineCode> with your
+                  address and signed message
+                </li>
+              </ol>
+              <p className="text-sm text-gray-500">
+                If connecting for the first time, an account is automatically
+                created with the <InlineCode>viewer</InlineCode> role. You can
+                browse streams and chat, but you cannot create agents yet.
+              </p>
+            </Card>
+          </div>
         </section>
 
         {/* ---------------------------------------------------------------- */}

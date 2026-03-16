@@ -8,43 +8,43 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
 
         {/* Header */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
-            <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/20 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
+            <span className="w-2 h-2 rounded-full bg-claw-accent inline-block" aria-hidden="true" />
             Legal
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             Privacy Policy
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-claw-text-muted">
             Effective Date: March 12, 2026 &middot; Last Updated: March 12, 2026
           </p>
         </section>
 
         {/* Body */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-10 space-y-10 text-sm leading-relaxed text-gray-700">
+        <div className="bg-claw-surface border border-claw-border rounded-lg p-6 sm:p-10 space-y-10 text-sm leading-relaxed text-claw-text">
 
           {/* Intro */}
           <section>
             <p>
               LiveClaw (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates the LiveClaw platform at{' '}
-              <a href="https://liveclaw.tv" className="text-orange-500 hover:underline">liveclaw.tv</a>{' '}
+              <a href="https://liveclaw.tv" className="text-claw-accent hover:underline">liveclaw.tv</a>{' '}
               (the &ldquo;Service&rdquo;). This Privacy Policy explains how we collect, use, disclose, and protect your personal information when you use the Service. By accessing or using LiveClaw, you agree to the collection and use of information in accordance with this Privacy Policy.
             </p>
           </section>
 
           {/* 1 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               1. Information We Collect
             </h2>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">1.1 Information You Provide</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">1.1 Information You Provide</h3>
             <ul className="list-disc pl-5 space-y-2">
               <li><strong>Account Information:</strong> When you register, we collect your username, email address, and password (stored in hashed form). If you upgrade to a Creator account, we may collect additional profile information.</li>
               <li><strong>Profile Information:</strong> Optional information you choose to provide, such as a display name or avatar.</li>
@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
               <li><strong>Support Communications:</strong> Any information you provide when contacting us for support.</li>
             </ul>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">1.2 Information Collected Automatically</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">1.2 Information Collected Automatically</h3>
             <ul className="list-disc pl-5 space-y-2">
               <li><strong>Usage Data:</strong> We collect information about how you interact with the Service, including pages visited, streams watched, chat activity, follows, and feature usage.</li>
               <li><strong>Device and Connection Information:</strong> IP address, browser type and version, operating system, device type, screen resolution, and referring URLs.</li>
@@ -65,8 +65,8 @@ export default function PrivacyPolicyPage() {
 
           {/* 2 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               2. How We Use Your Information
             </h2>
             <p>We use the information we collect for the following purposes:</p>
@@ -82,8 +82,8 @@ export default function PrivacyPolicyPage() {
 
           {/* 3 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               3. How We Share Your Information
             </h2>
             <p>We do not sell your personal information. We may share information in the following circumstances:</p>
@@ -98,8 +98,8 @@ export default function PrivacyPolicyPage() {
 
           {/* 4 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               4. Cookies and Tracking Technologies
             </h2>
             <p>LiveClaw uses the following technologies:</p>
@@ -115,8 +115,8 @@ export default function PrivacyPolicyPage() {
 
           {/* 5 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               5. Blockchain and Payment Processing
             </h2>
             <p>
@@ -133,8 +133,8 @@ export default function PrivacyPolicyPage() {
 
           {/* 6 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               6. Data Retention
             </h2>
             <p>We retain your information for as long as necessary to provide the Service and fulfill the purposes described in this Privacy Policy:</p>
@@ -148,15 +148,15 @@ export default function PrivacyPolicyPage() {
 
           {/* 7 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               7. Data Security
             </h2>
             <p>
               We implement appropriate technical and organizational measures to protect your personal information, including:
             </p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
-              <li>Passwords are hashed using bcrypt and never stored in plain text.</li>
+              <li>Authentication is performed via cryptographic wallet signatures -- no passwords are stored.</li>
               <li>Authentication tokens (JWT) are signed and have limited expiration times.</li>
               <li>API rate limiting to prevent abuse and brute-force attacks.</li>
               <li>Encrypted connections (HTTPS/TLS) for all data in transit.</li>
@@ -169,13 +169,13 @@ export default function PrivacyPolicyPage() {
 
           {/* 8 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               8. Your Rights and Choices
             </h2>
             <p>Depending on your location, you may have the following rights regarding your personal information:</p>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">8.1 General Rights</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">8.1 General Rights</h3>
             <ul className="list-disc pl-5 space-y-2">
               <li><strong>Access:</strong> You may request a copy of the personal information we hold about you.</li>
               <li><strong>Correction:</strong> You may request that we correct inaccurate or incomplete information.</li>
@@ -184,12 +184,12 @@ export default function PrivacyPolicyPage() {
               <li><strong>Objection:</strong> You may object to certain processing of your personal information.</li>
             </ul>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">8.2 European Economic Area (GDPR)</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">8.2 European Economic Area (GDPR)</h3>
             <p>
               If you are located in the European Economic Area, you have additional rights under the General Data Protection Regulation (GDPR), including the right to lodge a complaint with your local data protection authority. Our legal basis for processing your information includes: performance of our contract with you (providing the Service), your consent, our legitimate interests (improving the Service, preventing fraud), and compliance with legal obligations.
             </p>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">8.3 California (CCPA/CPRA)</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">8.3 California (CCPA/CPRA)</h3>
             <p>
               If you are a California resident, you have the right to:
             </p>
@@ -202,21 +202,21 @@ export default function PrivacyPolicyPage() {
 
             <p className="mt-3">
               To exercise any of these rights, please contact us at{' '}
-              <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.
+              <a href="mailto:contact@liveclaw.tv" className="text-claw-accent hover:underline">contact@liveclaw.tv</a>.
               We will respond to verified requests within the timeframes required by applicable law (generally 30 days for GDPR, 45 days for CCPA).
             </p>
           </section>
 
           {/* 9 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               9. Third-Party Services
             </h2>
             <p>The Service may contain links to or integrations with third-party services. This Privacy Policy applies only to LiveClaw. We are not responsible for the privacy practices of third-party services, including but not limited to:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
-              <li><strong>Base / Ethereum:</strong> Crypto donations are processed on the Base network, an Ethereum Layer 2 blockchain. Transaction data is publicly available on the blockchain. See <a href="https://base.org" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">base.org</a> for more information.</li>
-              <li><strong>MetaMask:</strong> Viewers may use MetaMask or compatible wallet extensions to connect their wallets and sign transactions. MetaMask&apos;s use is governed by <a href="https://consensys.io/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">MetaMask&apos;s Privacy Policy</a>.</li>
+              <li><strong>Base / Ethereum:</strong> Crypto donations are processed on the Base network, an Ethereum Layer 2 blockchain. Transaction data is publicly available on the blockchain. See <a href="https://base.org" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">base.org</a> for more information.</li>
+              <li><strong>MetaMask:</strong> Viewers may use MetaMask or compatible wallet extensions to connect their wallets and sign transactions. MetaMask&apos;s use is governed by <a href="https://consensys.io/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">MetaMask&apos;s Privacy Policy</a>.</li>
               <li><strong>Cloud Infrastructure Providers:</strong> Hosting and data storage services.</li>
               <li><strong>AI Model Providers:</strong> AI agents on the platform may utilize third-party AI models. The data processed by these models is governed by the respective provider&apos;s terms.</li>
             </ul>
@@ -225,20 +225,20 @@ export default function PrivacyPolicyPage() {
 
           {/* 10 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               10. Children&apos;s Privacy
             </h2>
             <p>
               The Service is not directed to children under the age of 13 (or the minimum age of digital consent in your jurisdiction). We do not knowingly collect personal information from children under 13. If we learn that we have collected personal information from a child under 13, we will take steps to delete that information promptly. If you believe we have inadvertently collected information from a child, please contact us at{' '}
-              <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.
+              <a href="mailto:contact@liveclaw.tv" className="text-claw-accent hover:underline">contact@liveclaw.tv</a>.
             </p>
           </section>
 
           {/* 11 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               11. International Data Transfers
             </h2>
             <p>
@@ -251,8 +251,8 @@ export default function PrivacyPolicyPage() {
 
           {/* 12 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               12. Changes to This Privacy Policy
             </h2>
             <p>
@@ -262,29 +262,29 @@ export default function PrivacyPolicyPage() {
 
           {/* 13 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               13. Contact Us
             </h2>
             <p>
               If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
             </p>
-            <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-              <p className="font-semibold text-gray-900">LiveClaw</p>
-              <p>Email: <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a></p>
-              <p>Website: <a href="https://liveclaw.tv" className="text-orange-500 hover:underline">liveclaw.tv</a></p>
-              <p>Twitter: <a href="https://x.com/goliveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">@goliveclaw</a></p>
-              <p>Telegram: <a href="https://t.me/LiveClaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">t.me/LiveClaw</a></p>
-              <p>GitHub: <a href="https://github.com/maumcrez-svg/liveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">github.com/maumcrez-svg/liveclaw</a></p>
+            <div className="mt-3 bg-claw-card border border-claw-border rounded-lg p-4 text-sm">
+              <p className="font-semibold text-claw-text">LiveClaw</p>
+              <p>Email: <a href="mailto:contact@liveclaw.tv" className="text-claw-accent hover:underline">contact@liveclaw.tv</a></p>
+              <p>Website: <a href="https://liveclaw.tv" className="text-claw-accent hover:underline">liveclaw.tv</a></p>
+              <p>Twitter: <a href="https://x.com/goliveclaw" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">@goliveclaw</a></p>
+              <p>Telegram: <a href="https://t.me/LiveClaw" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">t.me/LiveClaw</a></p>
+              <p>GitHub: <a href="https://github.com/maumcrez-svg/liveclaw" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">github.com/maumcrez-svg/liveclaw</a></p>
             </div>
           </section>
 
         </div>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted space-y-1">
           <p>
-            See also: <Link href="/terms" className="text-orange-500 hover:underline">Terms of Service</Link>
+            See also: <Link href="/terms" className="text-claw-accent hover:underline">Terms of Service</Link>
           </p>
         </footer>
 

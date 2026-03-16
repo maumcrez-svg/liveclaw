@@ -42,8 +42,8 @@ export default function AdminDashboard() {
     { label: 'Banned Users', value: stats.users.banned, sub: 'Currently suspended', warn: stats.users.banned > 0 },
     { label: 'Total Agents', value: stats.agents.total, sub: `${stats.agents.live} live, ${stats.agents.offline} offline` },
     { label: 'Live Now', value: stats.streams.currentlyLive, sub: `${stats.streams.totalHistoric} total historic streams`, live: stats.streams.currentlyLive > 0 },
-    { label: 'Total Revenue', value: `$${stats.revenue.totalDonations.toFixed(2)}`, sub: `${stats.revenue.donationCount} donations` },
-    { label: 'MRR', value: `$${stats.revenue.totalMrr.toFixed(2)}`, sub: `${stats.revenue.activeSubscriptions} active subscriptions` },
+    { label: 'Total Revenue', value: `${stats.revenue.totalDonations.toFixed(6)} ETH`, sub: `${stats.revenue.donationCount} donations` },
+    { label: 'MRR', value: `${stats.revenue.totalMrr.toFixed(6)} ETH`, sub: `${stats.revenue.activeSubscriptions} active subscriptions` },
   ];
 
   return (

@@ -40,9 +40,9 @@ interface PageMeta {
 }
 
 const TIER_LABELS: Record<string, string> = {
-  tier_1: 'Tier 1 ($4.99)',
-  tier_2: 'Tier 2 ($9.99)',
-  tier_3: 'Tier 3 ($24.99)',
+  tier_1: 'Tier 1 (0.002 ETH)',
+  tier_2: 'Tier 2 (0.005 ETH)',
+  tier_3: 'Tier 3 (0.01 ETH)',
 };
 
 export default function AdminRevenuePage() {
@@ -117,21 +117,21 @@ export default function AdminRevenuePage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-claw-card border border-claw-border rounded-lg p-4">
             <p className="text-xs text-claw-text-muted uppercase tracking-wider mb-1">Total Donations</p>
-            <p className="text-2xl font-bold">${stats.totalDonations.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{stats.totalDonations.toFixed(6)} ETH</p>
             <p className="text-xs text-claw-text-muted">{stats.donationCount} donations</p>
           </div>
           <div className="bg-claw-card border border-claw-border rounded-lg p-4">
             <p className="text-xs text-claw-text-muted uppercase tracking-wider mb-1">MRR</p>
-            <p className="text-2xl font-bold">${stats.totalMrr.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{stats.totalMrr.toFixed(6)} ETH</p>
             <p className="text-xs text-claw-text-muted">{stats.activeSubscriptions} active subs</p>
           </div>
           <div className="bg-claw-card border border-claw-border rounded-lg p-4">
             <p className="text-xs text-claw-text-muted uppercase tracking-wider mb-1">Avg Donation</p>
-            <p className="text-2xl font-bold">${stats.donationCount > 0 ? (stats.totalDonations / stats.donationCount).toFixed(2) : '0.00'}</p>
+            <p className="text-2xl font-bold">{stats.donationCount > 0 ? (stats.totalDonations / stats.donationCount).toFixed(6) : '0.000000'} ETH</p>
           </div>
           <div className="bg-claw-card border border-claw-border rounded-lg p-4">
             <p className="text-xs text-claw-text-muted uppercase tracking-wider mb-1">ARR (est.)</p>
-            <p className="text-2xl font-bold">${(stats.totalMrr * 12).toFixed(2)}</p>
+            <p className="text-2xl font-bold">{(stats.totalMrr * 12).toFixed(6)} ETH</p>
           </div>
         </div>
       )}
@@ -190,8 +190,7 @@ export default function AdminRevenuePage() {
                           <span className="text-claw-accent">{d.agent?.name || 'Unknown'}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-sm font-bold text-green-400">${d.amountUsd ? Number(d.amountUsd).toFixed(2) : '—'}</span>
-                          <span className="text-xs text-claw-text-muted ml-1">{d.token}</span>
+                          <span className="text-sm font-bold text-green-400">{d.amount ? Number(d.amount).toFixed(6) : '—'} ETH</span>
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${

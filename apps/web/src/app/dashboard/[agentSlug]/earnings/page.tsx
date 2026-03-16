@@ -234,6 +234,6 @@ function formatDate(iso: string): string {
 }
 
 function tierPrice(tier: string): number {
-  const prices: Record<string, number> = { tier_1: 4.99, tier_2: 9.99, tier_3: 24.99 };
+  const prices: Record<string, number> = { tier_1: 0.002, tier_2: 0.005, tier_3: 0.01 };
   return prices[tier] || 0;
 }

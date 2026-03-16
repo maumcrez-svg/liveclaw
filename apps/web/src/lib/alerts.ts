@@ -6,7 +6,7 @@ export interface StreamAlert {
   username: string;
   tier?: string;
   amount?: number;
-  currency?: string;
+  currency?: 'ETH' | 'USDC';
   message?: string;
   timestamp: string;
 }

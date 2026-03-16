@@ -105,6 +105,12 @@ export class AgentsController {
     return this.agentsService.rotateApiKey(id);
   }
 
+  @Get(':id/connection-info')
+  @UseGuards(JwtAuthGuard, OwnerGuard)
+  getConnectionInfo(@Param('id') id: string) {
+    return this.agentsService.getConnectionInfo(id);
+  }
+
   @Post(':id/heartbeat')
   @UseGuards(ApiKeyGuard)
   heartbeat(

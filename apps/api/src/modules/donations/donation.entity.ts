@@ -32,7 +32,7 @@ export class DonationEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
-  @Column({ default: 'USD' })
+  @Column({ default: 'ETH' })
   currency: string;
 
   @Column({ type: 'text', default: '' })

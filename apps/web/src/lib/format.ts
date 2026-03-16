@@ -9,9 +9,19 @@ export function formatCount(n: number): string {
   return String(n);
 }
 
-/** Format currency with $ prefix and 2 decimal places */
-export function formatCurrency(n: number): string {
-  return '$' + n.toFixed(2);
+/** Format an ETH amount with 6 decimal places */
+export function formatEth(n: number): string {
+  return `${n.toFixed(6)} ETH`;
+}
+
+/** Format a USDC amount with 2 decimal places */
+export function formatUsdc(n: number): string {
+  return `${n.toFixed(2)} USDC`;
+}
+
+/** Format currency — defaults to ETH, also supports USDC */
+export function formatCurrency(n: number, token: 'ETH' | 'USDC' = 'ETH'): string {
+  return token === 'USDC' ? formatUsdc(n) : formatEth(n);
 }
 
 /** Format an ISO date as relative "last streamed" time */

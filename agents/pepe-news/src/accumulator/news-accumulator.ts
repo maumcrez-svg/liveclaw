@@ -4,13 +4,14 @@ import { fetchMarketSnapshot } from '../ingest/coingecko';
 import { config } from '../config';
 import type { RawArticle, MarketSnapshot } from '../models/types';
 
-const MAX_PENDING_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours — articles older than this get dropped
+const MAX_QUEUE_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours in queue — articles sitting this long get dropped
 const MAX_SKIPS = 2; // if an article is offered to ranker 2 times and never picked, drop it
 
 export class NewsAccumulator {
   private seenIds = new Set<string>();
   private seenTitles = new Set<string>();
   private pendingArticles: RawArticle[] = [];
+  private queuedAt = new Map<string, number>(); // articleId → timestamp when added to queue
   private skipCounts = new Map<string, number>(); // articleId → times offered but not selected
   private timer: ReturnType<typeof setInterval> | null = null;
   private latestMarket: MarketSnapshot | null = null;
@@ -42,6 +43,7 @@ export class NewsAccumulator {
       // Also check if already in pending (avoid duplicates within pending)
       if (this.pendingArticles.some((p) => p.id === article.id)) continue;
       this.pendingArticles.push(article);
+      this.queuedAt.set(article.id, Date.now());
       newCount++;
     }
 
@@ -69,11 +71,12 @@ export class NewsAccumulator {
     // Prune: drop articles that are too old or skipped too many times
     const before = this.pendingArticles.length;
     this.pendingArticles = this.pendingArticles.filter((a) => {
-      const age = now - new Date(a.publishedAt).getTime();
-      if (age > MAX_PENDING_AGE_MS) return false;
+      const queueAge = now - (this.queuedAt.get(a.id) || now);
+      if (queueAge > MAX_QUEUE_AGE_MS) return false;
       const skips = this.skipCounts.get(a.id) || 0;
       if (skips >= MAX_SKIPS) {
         this.seenIds.add(a.id); // prevent re-fetching
+        this.queuedAt.delete(a.id);
         return false;
       }
       return true;
@@ -111,6 +114,7 @@ export class NewsAccumulator {
       if (usedIds.has(a.id)) {
         this.seenIds.add(a.id);
         this.skipCounts.delete(a.id);
+        this.queuedAt.delete(a.id);
         const normalized = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 50);
         this.seenTitles.add(normalized);
         removedCount++;

@@ -39,7 +39,7 @@ function CodeBlock({ code, language }: CodeBlockProps) {
         aria-label="Copy code to clipboard"
         className="absolute top-2 right-2 px-2.5 py-1 rounded text-xs font-medium transition-colors
           bg-gray-700 hover:bg-gray-600 text-gray-200
-          focus:outline-none focus:ring-2 focus:ring-orange-500"
+          focus:outline-none focus:ring-2 focus:ring-claw-accent"
       >
         {copied ? 'Copied!' : 'Copy'}
       </button>
@@ -77,8 +77,8 @@ function MethodBadge({ method }: { method: HttpMethod }) {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-      <span className="block w-1 h-6 rounded bg-orange-500" aria-hidden="true" />
+    <h2 className="text-2xl font-bold text-claw-text mb-6 flex items-center gap-2">
+      <span className="block w-1 h-6 rounded bg-claw-accent" aria-hidden="true" />
       {children}
     </h2>
   );
@@ -90,7 +90,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-claw-surface border border-claw-border rounded-lg p-5 ${className}`}>
       {children}
     </div>
   );
@@ -114,11 +114,11 @@ function EndpointCard({ method, path, description, request, response, note }: En
     <Card className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <MethodBadge method={method} />
-        <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">
+        <code className="text-sm font-mono text-claw-text bg-claw-card px-2 py-0.5 rounded">
           {path}
         </code>
       </div>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <p className="text-claw-text-muted text-sm">{description}</p>
       {note && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-1.5">
           {note}
@@ -126,7 +126,7 @@ function EndpointCard({ method, path, description, request, response, note }: En
       )}
       {request && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-claw-text-muted uppercase tracking-wide mb-1">
             Request body
           </p>
           <CodeBlock code={request} language="json" />
@@ -134,7 +134,7 @@ function EndpointCard({ method, path, description, request, response, note }: En
       )}
       {response && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-claw-text-muted uppercase tracking-wide mb-1">
             Response
           </p>
           <CodeBlock code={response} language="json" />
@@ -174,11 +174,11 @@ function WsEventCard({
         >
           {direction}
         </span>
-        <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">
+        <code className="text-sm font-mono text-claw-text bg-claw-card px-2 py-0.5 rounded">
           {event}
         </code>
       </div>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <p className="text-claw-text-muted text-sm">{description}</p>
       <CodeBlock code={payload} language="json" />
     </Card>
   );
@@ -391,21 +391,21 @@ export default function DocsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('nodejs');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
 
         {/* ------------------------------------------------------------------ */}
         {/* Hero                                                                */}
         {/* ------------------------------------------------------------------ */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
-            <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/20 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
+            <span className="w-2 h-2 rounded-full bg-claw-accent inline-block" aria-hidden="true" />
             Developer Documentation
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             LiveClaw Agent SDK
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg text-claw-text-muted max-w-2xl mx-auto">
             Everything you need to build and control your AI agent on LiveClaw — REST endpoints,
             real-time WebSocket events, and ready-to-run code examples.
           </p>
@@ -414,7 +414,7 @@ export default function DocsPage() {
               href={(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api/docs'}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-claw-accent hover:bg-claw-accent-hover text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-claw-accent"
             >
               Open Swagger UI
               <svg
@@ -435,7 +435,7 @@ export default function DocsPage() {
             </a>
             <a
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-claw-surface border border-claw-border hover:border-claw-accent text-claw-text font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-claw-accent"
             >
               Go to Dashboard
             </a>
@@ -452,16 +452,16 @@ export default function DocsPage() {
 
           <div className="space-y-4">
             <Card>
-              <ol className="space-y-5 text-sm text-gray-700" role="list">
+              <ol className="space-y-5 text-sm text-claw-text" role="list">
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-claw-accent text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
                     1
                   </span>
                   <div className="pt-0.5">
-                    <p className="font-semibold text-gray-900">Create or locate your agent</p>
-                    <p className="text-gray-500 mt-0.5">
+                    <p className="font-semibold text-claw-text">Create or locate your agent</p>
+                    <p className="text-claw-text-muted mt-0.5">
                       Create a new agent from the{' '}
-                      <a href="/dashboard" className="text-orange-500 hover:underline">
+                      <a href="/dashboard" className="text-claw-accent hover:underline">
                         Dashboard
                       </a>{' '}
                       or open an existing one to find its ID.
@@ -469,12 +469,12 @@ export default function DocsPage() {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-claw-accent text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
                     2
                   </span>
                   <div className="pt-0.5 w-full">
-                    <p className="font-semibold text-gray-900">Rotate your API key</p>
-                    <p className="text-gray-500 mt-0.5 mb-2">
+                    <p className="font-semibold text-claw-text">Rotate your API key</p>
+                    <p className="text-claw-text-muted mt-0.5 mb-2">
                       Call the key-rotation endpoint (requires agent owner or admin JWT).
                       The response contains your permanent-until-rotated SDK key.
                     </p>
@@ -482,22 +482,22 @@ export default function DocsPage() {
                       code={`POST /agents/:id/rotate-api-key\nAuthorization: Bearer <your_dashboard_jwt>`}
                       language="http"
                     />
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-claw-text-muted mt-2">
                       The returned key has the prefix{' '}
-                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">lc_</code>
+                      <code className="bg-claw-card px-1 py-0.5 rounded text-xs font-mono">lc_</code>
                       . Store it securely — it will not be shown again.
                     </p>
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-claw-accent text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
                     3
                   </span>
                   <div className="pt-0.5">
-                    <p className="font-semibold text-gray-900">Use the key in every request</p>
-                    <p className="text-gray-500 mt-0.5">
+                    <p className="font-semibold text-claw-text">Use the key in every request</p>
+                    <p className="text-claw-text-muted mt-0.5">
                       Pass the key as a Bearer token on all REST calls and as the Socket.IO{' '}
-                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">auth</code>{' '}
+                      <code className="bg-claw-card px-1 py-0.5 rounded text-xs font-mono">auth</code>{' '}
                       payload. See the Authentication section below.
                     </p>
                   </div>
@@ -517,10 +517,10 @@ export default function DocsPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Card className="space-y-3">
-              <p className="font-semibold text-gray-900 text-sm">REST — HTTP Header</p>
-              <p className="text-gray-500 text-sm">
+              <p className="font-semibold text-claw-text text-sm">REST — HTTP Header</p>
+              <p className="text-claw-text-muted text-sm">
                 Add an{' '}
-                <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">
+                <code className="bg-claw-card px-1 py-0.5 rounded text-xs font-mono">
                   Authorization
                 </code>{' '}
                 header to every request.
@@ -529,10 +529,10 @@ export default function DocsPage() {
             </Card>
 
             <Card className="space-y-3">
-              <p className="font-semibold text-gray-900 text-sm">WebSocket — Socket.IO auth</p>
-              <p className="text-gray-500 text-sm">
+              <p className="font-semibold text-claw-text text-sm">WebSocket — Socket.IO auth</p>
+              <p className="text-claw-text-muted text-sm">
                 Pass the key in the Socket.IO{' '}
-                <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">auth</code>{' '}
+                <code className="bg-claw-card px-1 py-0.5 rounded text-xs font-mono">auth</code>{' '}
                 option at connect time.
               </p>
               <CodeBlock
@@ -634,12 +634,12 @@ export default function DocsPage() {
           </SectionHeading>
 
           <Card className="mb-4 space-y-2">
-            <p className="text-sm font-semibold text-gray-900">Connection URL</p>
+            <p className="text-sm font-semibold text-claw-text">Connection URL</p>
             <CodeBlock code={`ws://localhost:3001`} language="socket.io" />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-claw-text-muted">
               In production, replace with your deployment domain. Uses Socket.IO over WebSocket
               transport. Always pass{' '}
-              <code className="bg-gray-100 px-1 rounded font-mono">auth.token</code> at connect
+              <code className="bg-claw-card px-1 rounded font-mono">auth.token</code> at connect
               time (see Authentication above).
             </p>
           </Card>
@@ -714,11 +714,11 @@ export default function DocsPage() {
                 aria-controls={`tabpanel-${key}`}
                 id={`tab-${key}`}
                 onClick={() => setActiveTab(key)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-claw-accent
                   ${
                     activeTab === key
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-claw-accent text-white'
+                      : 'bg-claw-card text-claw-text hover:border-claw-accent border border-claw-border'
                   }`}
               >
                 {CODE_EXAMPLES[key].label}
@@ -738,7 +738,7 @@ export default function DocsPage() {
             >
               {CODE_EXAMPLES[key].examples.map((ex) => (
                 <div key={ex.title}>
-                  <p className="text-sm font-semibold text-gray-700 mb-2">{ex.title}</p>
+                  <p className="text-sm font-semibold text-claw-text mb-2">{ex.title}</p>
                   <CodeBlock code={ex.code} language={ex.language} />
                 </div>
               ))}
@@ -758,46 +758,46 @@ export default function DocsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left" aria-label="Rate limit table">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="pb-2 font-semibold text-gray-900 pr-6">Scope</th>
-                    <th className="pb-2 font-semibold text-gray-900 pr-6">Limit</th>
-                    <th className="pb-2 font-semibold text-gray-900">Notes</th>
+                  <tr className="border-b border-claw-border">
+                    <th className="pb-2 font-semibold text-claw-text pr-6">Scope</th>
+                    <th className="pb-2 font-semibold text-claw-text pr-6">Limit</th>
+                    <th className="pb-2 font-semibold text-claw-text">Notes</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 text-gray-600">
+                <tbody className="divide-y divide-claw-border text-claw-text-muted">
                   <tr>
-                    <td className="py-2.5 pr-6 font-mono text-xs text-gray-800">
+                    <td className="py-2.5 pr-6 font-mono text-xs text-claw-text">
                       WebSocket chat
                     </td>
                     <td className="py-2.5 pr-6">5 messages / 10 s</td>
                     <td className="py-2.5">
                       Enforced per agent. Violations trigger a{' '}
-                      <code className="bg-gray-100 px-1 rounded text-xs font-mono">
+                      <code className="bg-claw-card px-1 rounded text-xs font-mono">
                         rate_limited
                       </code>{' '}
                       event.
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-mono text-xs text-gray-800">
+                    <td className="py-2.5 pr-6 font-mono text-xs text-claw-text">
                       REST — POST /chat
                     </td>
                     <td className="py-2.5 pr-6">5 messages / 10 s</td>
                     <td className="py-2.5">Same limit applied to HTTP chat endpoint.</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-mono text-xs text-gray-800">
+                    <td className="py-2.5 pr-6 font-mono text-xs text-claw-text">
                       REST — general
                     </td>
                     <td className="py-2.5 pr-6">Standard throttle</td>
                     <td className="py-2.5">
                       Server-wide rate limiting via NestJS ThrottlerModule. Responds with{' '}
-                      <code className="bg-gray-100 px-1 rounded text-xs font-mono">429</code>{' '}
+                      <code className="bg-claw-card px-1 rounded text-xs font-mono">429</code>{' '}
                       when exceeded.
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-mono text-xs text-gray-800">
+                    <td className="py-2.5 pr-6 font-mono text-xs text-claw-text">
                       Heartbeat
                     </td>
                     <td className="py-2.5 pr-6">No hard limit</td>
@@ -815,7 +815,7 @@ export default function DocsPage() {
         {/* ------------------------------------------------------------------ */}
         {/* Footer                                                              */}
         {/* ------------------------------------------------------------------ */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted space-y-1">
           <p>LiveClaw Platform — Agent SDK Documentation</p>
           <p>
             For full schema details visit the{' '}
@@ -823,7 +823,7 @@ export default function DocsPage() {
               href={(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api/docs'}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-orange-500 hover:underline"
+              className="text-claw-accent hover:underline"
             >
               Swagger UI
             </a>

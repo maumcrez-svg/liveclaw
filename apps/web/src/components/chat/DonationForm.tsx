@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
 
-const PRESET_AMOUNTS = [1, 5, 10, 25, 50, 100];
+const PRESET_AMOUNTS = [0.001, 0.005, 0.01, 0.025, 0.05, 0.1];
 
 interface DonationFormProps {
   agentId: string;
@@ -91,18 +91,6 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [addressCopied, setAddressCopied] = useState(false);
-  const [ethPrice, setEthPrice] = useState<number | null>(null);
-
-  // Fetch ETH price
-  useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${API_URL}/crypto/eth-price`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.available && data.price) setEthPrice(data.price);
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,7 +249,7 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
         {formState === 'ready' && (
           <form onSubmit={handleInitiate} noValidate>
             {/* Preset amounts */}
-            <p className="text-xs font-medium text-claw-text-muted uppercase tracking-wide mb-2">Amount (USD reference)</p>
+            <p className="text-xs font-medium text-claw-text-muted uppercase tracking-wide mb-2">Amount (ETH)</p>
             <div className="flex flex-wrap gap-2 mb-3">
               {PRESET_AMOUNTS.map((preset) => (
                 <button
@@ -274,31 +262,25 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
                       : 'border-claw-border hover:border-blue-500/60 text-claw-text-muted'
                   }`}
                 >
-                  ${preset}
+                  {preset} ETH
                 </button>
               ))}
             </div>
 
             {/* Custom amount */}
-            <div className="relative mb-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-claw-text-muted text-sm select-none">$</span>
+            <div className="relative mb-4">
               <input
                 type="number"
-                step="0.01"
-                min="0.01"
+                step="0.001"
+                min="0.001"
                 value={amount}
                 onChange={(e) => { setAmount(e.target.value); setError(''); }}
-                placeholder="Custom amount"
-                className="w-full bg-claw-bg border border-claw-border rounded-lg pl-7 pr-3 py-2 text-sm text-claw-text placeholder:text-claw-text-muted focus:outline-none focus:border-blue-500 transition-colors"
-                aria-label="Donation amount in USD"
+                placeholder="Custom amount (ETH)"
+                className="w-full bg-claw-bg border border-claw-border rounded-lg px-3 pr-14 py-2 text-sm text-claw-text placeholder:text-claw-text-muted focus:outline-none focus:border-blue-500 transition-colors"
+                aria-label="Donation amount in ETH"
               />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-claw-text-muted text-sm select-none">ETH</span>
             </div>
-            {ethPrice && amount && parseFloat(amount) > 0 && (
-              <p className="text-xs text-claw-text-muted mb-4">
-                ≈ {(parseFloat(amount) / ethPrice).toFixed(6)} ETH
-              </p>
-            )}
-            {!(ethPrice && amount && parseFloat(amount) > 0) && <div className="mb-4" />}
 
             {/* Message */}
             <textarea
@@ -382,7 +364,7 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
                 disabled={submitting || !amount}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                {submitting ? 'Saving…' : `Continue with $${amount || '0'}`}
+                {submitting ? 'Saving…' : `Continue with ${amount || '0'} ETH`}
               </button>
             </div>
           </form>
@@ -394,7 +376,7 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
             <div className="bg-blue-500/8 border border-blue-500/20 rounded-lg p-4 mb-4">
               <p className="text-sm text-claw-text font-medium mb-1">Send your payment now</p>
               <p className="text-xs text-claw-text-muted mb-3">
-                Transfer <strong className="text-claw-text">${amount}</strong> worth of ETH to this address on the{' '}
+                Transfer <strong className="text-claw-text">{amount} ETH</strong> to this address on the{' '}
                 <strong className="text-blue-400">Base</strong> network:
               </p>
               <div className="flex items-center justify-between gap-2 bg-claw-bg rounded-lg px-3 py-2 border border-claw-border">

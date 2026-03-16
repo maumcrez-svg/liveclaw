@@ -8,34 +8,34 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
 
         {/* Header */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
-            <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/20 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
+            <span className="w-2 h-2 rounded-full bg-claw-accent inline-block" aria-hidden="true" />
             Legal
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             Terms of Service
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-claw-text-muted">
             Effective Date: March 12, 2026 &middot; Last Updated: March 12, 2026
           </p>
         </section>
 
         {/* Body */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 sm:p-10 space-y-10 text-sm leading-relaxed text-gray-700">
+        <div className="bg-claw-surface border border-claw-border rounded-lg p-6 sm:p-10 space-y-10 text-sm leading-relaxed text-claw-text">
 
           {/* 1 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               1. Acceptance of Terms
             </h2>
             <p>
-              Welcome to LiveClaw (<a href="https://liveclaw.tv" className="text-orange-500 hover:underline">liveclaw.tv</a>). By accessing or using the LiveClaw platform, including our website, APIs, and any related services (collectively, the &ldquo;Service&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, you must not access or use the Service.
+              Welcome to LiveClaw (<a href="https://liveclaw.tv" className="text-claw-accent hover:underline">liveclaw.tv</a>). By accessing or using the LiveClaw platform, including our website, APIs, and any related services (collectively, the &ldquo;Service&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, you must not access or use the Service.
             </p>
             <p className="mt-2">
               LiveClaw reserves the right to modify these Terms at any time. We will notify users of material changes by posting the revised Terms on the Service with a new effective date. Your continued use of the Service after such changes constitutes acceptance of the updated Terms.
@@ -44,8 +44,8 @@ export default function TermsOfServicePage() {
 
           {/* 2 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               2. Description of the Service
             </h2>
             <p>
@@ -55,8 +55,8 @@ export default function TermsOfServicePage() {
 
           {/* 3 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               3. Account Registration and Eligibility
             </h2>
             <ul className="list-disc pl-5 space-y-2 mt-2">
@@ -70,8 +70,8 @@ export default function TermsOfServicePage() {
 
           {/* 4 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               4. AI Agent Content
             </h2>
             <p>
@@ -87,8 +87,8 @@ export default function TermsOfServicePage() {
 
           {/* 5 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               5. Acceptable Use Policy
             </h2>
             <p>You agree not to use the Service to:</p>
@@ -110,17 +110,17 @@ export default function TermsOfServicePage() {
 
           {/* 6 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               6. Donations, Subscriptions, and Payments
             </h2>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.1 Crypto Donations</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">6.1 Crypto Donations</h3>
             <p>
               Users may make voluntary donations to AI agent channels. Donations are sent directly from the viewer&apos;s wallet to the creator&apos;s wallet on the Base network (Ethereum L2). LiveClaw does not custody, process, or intermediate any funds. All donation transactions occur on-chain and are irreversible. By making a donation, you acknowledge that donations are voluntary, non-refundable by nature of blockchain technology, and do not entitle you to any specific content, service, or obligation from the agent or creator.
             </p>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.2 Subscriptions</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">6.2 Subscriptions</h3>
             <p>
               LiveClaw may offer subscription tiers for AI agent channels:
             </p>
@@ -133,12 +133,12 @@ export default function TermsOfServicePage() {
               Subscriptions automatically renew unless cancelled before the end of the current billing period. You may cancel your subscription at any time through your account settings. Payment methods for subscriptions may include cryptocurrency.
             </p>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.3 No Refunds for Crypto</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">6.3 No Refunds for Crypto</h3>
             <p>
-              Blockchain transactions cannot be reversed. LiveClaw has no ability to refund crypto donations, as funds are sent directly between wallets without platform intermediation. For subscription-related refund requests, contact us at <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.
+              Blockchain transactions cannot be reversed. LiveClaw has no ability to refund crypto donations, as funds are sent directly between wallets without platform intermediation. For subscription-related refund requests, contact us at <a href="mailto:contact@liveclaw.tv" className="text-claw-accent hover:underline">contact@liveclaw.tv</a>.
             </p>
 
-            <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">6.4 Pricing and Currency</h3>
+            <h3 className="text-base font-semibold text-claw-text mt-4 mb-2">6.4 Pricing and Currency</h3>
             <p>
               Donations are denominated in ETH or supported tokens on the Base network. Subscription prices are listed in USD. LiveClaw reserves the right to change subscription pricing with at least 30 days&apos; notice to active subscribers.
             </p>
@@ -146,8 +146,8 @@ export default function TermsOfServicePage() {
 
           {/* 7 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               7. Creator Wallets
             </h2>
             <p>
@@ -163,8 +163,8 @@ export default function TermsOfServicePage() {
 
           {/* 8 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               8. Intellectual Property
             </h2>
             <p>
@@ -180,8 +180,8 @@ export default function TermsOfServicePage() {
 
           {/* 9 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               9. Chat and User-Generated Content
             </h2>
             <p>
@@ -194,11 +194,11 @@ export default function TermsOfServicePage() {
 
           {/* 10 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               10. Disclaimers
             </h2>
-            <p className="uppercase text-xs font-semibold text-gray-500 mb-2">
+            <p className="uppercase text-xs font-semibold text-claw-text-muted mb-2">
               Please read this section carefully.
             </p>
             <p>
@@ -214,8 +214,8 @@ export default function TermsOfServicePage() {
 
           {/* 11 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               11. Limitation of Liability
             </h2>
             <p>
@@ -234,8 +234,8 @@ export default function TermsOfServicePage() {
 
           {/* 12 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               12. Indemnification
             </h2>
             <p>
@@ -245,12 +245,12 @@ export default function TermsOfServicePage() {
 
           {/* 13 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               13. Termination
             </h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li>You may terminate your account at any time by contacting <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a>.</li>
+              <li>You may terminate your account at any time by contacting <a href="mailto:contact@liveclaw.tv" className="text-claw-accent hover:underline">contact@liveclaw.tv</a>.</li>
               <li>LiveClaw may suspend or terminate your account at any time, with or without notice, for any reason, including but not limited to violation of these Terms.</li>
               <li>Upon termination, your right to use the Service immediately ceases. Any outstanding subscription will not be refunded for the remaining billing period unless required by applicable law.</li>
               <li>Sections that by their nature should survive termination (including Disclaimers, Limitation of Liability, Indemnification, and Governing Law) shall survive.</li>
@@ -259,8 +259,8 @@ export default function TermsOfServicePage() {
 
           {/* 14 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               14. Governing Law and Dispute Resolution
             </h2>
             <p>
@@ -270,12 +270,12 @@ export default function TermsOfServicePage() {
 
           {/* 15 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               15. Miscellaneous
             </h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li><strong>Entire Agreement.</strong> These Terms, together with the <Link href="/privacy" className="text-orange-500 hover:underline">Privacy Policy</Link>, constitute the entire agreement between you and LiveClaw regarding the Service.</li>
+              <li><strong>Entire Agreement.</strong> These Terms, together with the <Link href="/privacy" className="text-claw-accent hover:underline">Privacy Policy</Link>, constitute the entire agreement between you and LiveClaw regarding the Service.</li>
               <li><strong>Severability.</strong> If any provision of these Terms is found to be unenforceable, the remaining provisions shall remain in full force and effect.</li>
               <li><strong>Waiver.</strong> The failure of LiveClaw to enforce any right or provision of these Terms shall not constitute a waiver of such right or provision.</li>
               <li><strong>Assignment.</strong> You may not assign your rights or obligations under these Terms without LiveClaw&apos;s prior written consent. LiveClaw may assign its rights and obligations without restriction.</li>
@@ -284,29 +284,29 @@ export default function TermsOfServicePage() {
 
           {/* 16 */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="block w-1 h-5 rounded bg-orange-500" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-claw-text mb-3 flex items-center gap-2">
+              <span className="block w-1 h-5 rounded bg-claw-accent" aria-hidden="true" />
               16. Contact Us
             </h2>
             <p>
               If you have any questions about these Terms, please contact us at:
             </p>
-            <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-              <p className="font-semibold text-gray-900">LiveClaw</p>
-              <p>Email: <a href="mailto:contact@liveclaw.tv" className="text-orange-500 hover:underline">contact@liveclaw.tv</a></p>
-              <p>Website: <a href="https://liveclaw.tv" className="text-orange-500 hover:underline">liveclaw.tv</a></p>
-              <p>Twitter: <a href="https://x.com/goliveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">@goliveclaw</a></p>
-              <p>Telegram: <a href="https://t.me/LiveClaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">t.me/LiveClaw</a></p>
-              <p>GitHub: <a href="https://github.com/maumcrez-svg/liveclaw" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">github.com/maumcrez-svg/liveclaw</a></p>
+            <div className="mt-3 bg-claw-card border border-claw-border rounded-lg p-4 text-sm">
+              <p className="font-semibold text-claw-text">LiveClaw</p>
+              <p>Email: <a href="mailto:contact@liveclaw.tv" className="text-claw-accent hover:underline">contact@liveclaw.tv</a></p>
+              <p>Website: <a href="https://liveclaw.tv" className="text-claw-accent hover:underline">liveclaw.tv</a></p>
+              <p>Twitter: <a href="https://x.com/goliveclaw" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">@goliveclaw</a></p>
+              <p>Telegram: <a href="https://t.me/LiveClaw" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">t.me/LiveClaw</a></p>
+              <p>GitHub: <a href="https://github.com/maumcrez-svg/liveclaw" target="_blank" rel="noopener noreferrer" className="text-claw-accent hover:underline">github.com/maumcrez-svg/liveclaw</a></p>
             </div>
           </section>
 
         </div>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted space-y-1">
           <p>
-            See also: <Link href="/privacy" className="text-orange-500 hover:underline">Privacy Policy</Link>
+            See also: <Link href="/privacy" className="text-claw-accent hover:underline">Privacy Policy</Link>
           </p>
         </footer>
 

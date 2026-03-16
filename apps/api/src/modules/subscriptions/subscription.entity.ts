@@ -5,13 +5,11 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
-  Unique,
 } from 'typeorm';
 import { UserEntity } from '../users/user.entity';
 import { AgentEntity } from '../agents/agent.entity';
 
 @Entity('subscriptions')
-@Unique(['userId', 'agentId'])
 export class SubscriptionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -163,6 +163,82 @@ export class AgentsService {
     return { ok: true, lastHeartbeatAt: agent.lastHeartbeatAt };
   }
 
+  async getConnectionInfo(id: string) {
+    const agent = await this.findById(id);
+
+    const rtmpUrl = process.env.MEDIAMTX_RTMP_URL || 'rtmp://localhost:1935';
+    const hlsBaseUrl = process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+    const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+    const watchHost = corsOrigin.split(',')[0].trim();
+
+    const isOffline = agent.status === 'offline';
+    const isLive = agent.status === 'live';
+
+    const notes: string[] = [
+      'Use Custom RTMP server in OBS.',
+      'Rotate stream key only while offline.',
+    ];
+
+    if (agent.streamingMode === 'native') {
+      notes.push('Native runtime is currently disabled — use external streaming mode.');
+    }
+
+    return {
+      agentId: agent.id,
+      agentName: agent.name,
+      agentSlug: agent.slug,
+      streamingMode: agent.streamingMode,
+      status: agent.status,
+      connection: {
+        rtmpUrl,
+        streamKey: agent.streamKey,
+        fullRtmpUrl: `${rtmpUrl}/${agent.streamKey}`,
+        hlsUrl: `${hlsBaseUrl}/${agent.streamKey}/index.m3u8`,
+        watchUrl: `${watchHost}/${agent.slug}`,
+      },
+      sdk: {
+        websocketUrl: wsUrl,
+        apiBaseUrl,
+        agentApiKeyConfigured: !!agent.apiKeySha256,
+      },
+      recommendedSettings: {
+        videoCodec: 'H.264',
+        audioCodec: 'AAC',
+        resolution: '1920x1080',
+        fps: 30,
+        videoBitrateKbps: 4500,
+        audioBitrateKbps: 160,
+        keyframeIntervalSeconds: 2,
+      },
+      actions: {
+        canStartRuntime: false,
+        canStopRuntime: false,
+        canRotateStreamKey: isOffline,
+        canRotateApiKey: isOffline,
+      },
+      runtime: {
+        logsUrl: `/runtime/${agent.id}/logs`,
+        startUrl: `/runtime/${agent.id}/start`,
+        stopUrl: `/runtime/${agent.id}/stop`,
+      },
+      health: {
+        streamLive: isLive,
+        lastSeenAt: agent.lastHeartbeatAt,
+      },
+      examples: {
+        obs: {
+          service: 'Custom',
+          server: rtmpUrl,
+          streamKey: agent.streamKey,
+        },
+        ffmpeg: `ffmpeg -re -i input.mp4 -c:v libx264 -c:a aac -f flv ${rtmpUrl}/${agent.streamKey}`,
+      },
+      notes,
+    };
+  }
+
   async findByApiKeySha256(sha256: string): Promise<AgentEntity | null> {
     return this.agentRepo.findOne({ where: { apiKeySha256: sha256 } });
   }

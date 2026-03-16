@@ -190,7 +190,7 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
             {donationStats.recent.slice(0, 10).map((d: any) => (
               <div key={d.id} className="bg-claw-card border border-claw-border rounded p-3 flex items-center gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-600/20 flex items-center justify-center text-yellow-400 text-sm font-bold">
-                  $
+                  E
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">

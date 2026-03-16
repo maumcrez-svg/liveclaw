@@ -120,6 +120,19 @@ export class SubscriptionsService {
   /** Expire subscriptions every 6 hours */
   @Interval(6 * 60 * 60 * 1000)
   async expireSubscriptions(): Promise<void> {
+    // Find expiring subscriptions BEFORE updating, so we know which agents to decrement
+    const expiring = await this.subRepo
+      .createQueryBuilder('s')
+      .select('s.agent_id', 'agentId')
+      .addSelect('COUNT(*)', 'count')
+      .where('s.is_active = true')
+      .andWhere('s.expires_at < NOW()')
+      .groupBy('s.agent_id')
+      .getRawMany<{ agentId: string; count: string }>();
+
+    if (expiring.length === 0) return;
+
+    // Bulk-expire
     const result = await this.subRepo
       .createQueryBuilder()
       .update()
@@ -128,8 +141,21 @@ export class SubscriptionsService {
       .andWhere('expires_at < NOW()')
       .execute();
 
-    if (result.affected && result.affected > 0) {
-      this.logger.log(`Expired ${result.affected} subscriptions`);
+    // Decrement subscriber counts atomically
+    for (const { agentId, count } of expiring) {
+      await this.subRepo.manager
+        .createQueryBuilder()
+        .update('agents')
+        .set({
+          subscriberCount: () =>
+            `GREATEST(subscriber_count - ${parseInt(count, 10)}, 0)`,
+        })
+        .where('id = :id', { id: agentId })
+        .execute();
     }
+
+    this.logger.log(
+      `Expired ${result.affected} subscriptions across ${expiring.length} agents`,
+    );
   }
 }

@@ -51,6 +51,11 @@ export class CryptoDonationService {
 
     // Convert USD amount to ETH
     const ethAmount = this.ethPriceService.usdToEth(amount);
+    if (ethAmount === null || ethAmount === undefined) {
+      throw new BadRequestException(
+        'ETH price unavailable, please try again in a few moments',
+      );
+    }
 
     const donation = this.donationRepo.create({
       agentId,
@@ -58,7 +63,7 @@ export class CryptoDonationService {
       streamId: streamId || null,
       network,
       token,
-      amount: ethAmount ?? amount,
+      amount: ethAmount,
       amountUsd: amount,
       recipientAddress: wallet.address,
       message: message || null,
