@@ -39,7 +39,7 @@ export async function writeScript(
     ),
   ];
 
-  const episodeLabel = episodeNumber ? `\nEPISODE NUMBER: ${episodeNumber} (Larry must mention this in the intro)\n` : '';
+  const episodeLabel = episodeNumber ? `\nEPISODE NUMBER: ${episodeNumber}\nCRITICAL: Larry MUST say "Episode ${episodeNumber}" in the intro. Do NOT invent a different number. The exact number is ${episodeNumber}.\n` : '';
 
   const userPrompt = `Today: ${plan.date}${episodeLabel}
 

@@ -295,11 +295,12 @@ function buildScriptwriterPrompt(entity: EntityManifest, continuity: EpisodeCont
   // EPISODE RULES
   const episodeLines = (lb.episode_rules || []).map((r: string) => `- ${r}`).join('\n');
 
-  // OPENING LINES
-  const openingLines = (lb.opening_lines || []).map((l: string) => `  "${l}"`).join('\n');
-
-  // CLOSING LINES
-  const closingLines = (lb.closing_lines || []).map((l: string) => `  "${l}"`).join('\n');
+  // OPENING & CLOSING — pick one randomly per prompt build (i.e. per episode)
+  const allOpenings = lb.opening_lines || [];
+  const allClosings = lb.closing_lines || [];
+  const pickRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)] || '';
+  const selectedOpening = pickRandom(allOpenings);
+  const selectedClosing = pickRandom(allClosings);
 
   // SEGMENT TYPES
   const segmentLines = Object.entries(lb.segment_types || {})
@@ -327,10 +328,12 @@ WRITING RULES:
 ${writingLines}
 
 ${episodeLines ? `EPISODE RULES:\n${episodeLines}\n` : ''}
-- The intro should use one of these opening styles (vary each episode):
-${openingLines}
-- The closing should use one of these (vary each episode):
-${closingLines}
+- The intro MUST use this opening style for THIS episode (do NOT reuse from previous episodes):
+  "${selectedOpening}"
+  Adapt it naturally to today's news — don't copy it word-for-word, use it as inspiration.
+- The closing MUST use this style for THIS episode:
+  "${selectedClosing}"
+  Again, adapt it — make it feel fresh and specific to what just happened in the show.
 
 SEGMENT TYPES:
 ${segmentLines}
