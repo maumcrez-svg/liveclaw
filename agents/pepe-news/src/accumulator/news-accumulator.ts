@@ -4,10 +4,14 @@ import { fetchMarketSnapshot } from '../ingest/coingecko';
 import { config } from '../config';
 import type { RawArticle, MarketSnapshot } from '../models/types';
 
+const MAX_PENDING_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours — articles older than this get dropped
+const MAX_SKIPS = 2; // if an article is offered to ranker 2 times and never picked, drop it
+
 export class NewsAccumulator {
   private seenIds = new Set<string>();
   private seenTitles = new Set<string>();
   private pendingArticles: RawArticle[] = [];
+  private skipCounts = new Map<string, number>(); // articleId → times offered but not selected
   private timer: ReturnType<typeof setInterval> | null = null;
   private latestMarket: MarketSnapshot | null = null;
 
@@ -56,13 +60,35 @@ export class NewsAccumulator {
   }
 
   /**
-   * Returns all pending articles for ranking. Does NOT mark them as seen.
+   * Returns pending articles for ranking after pruning stale/skipped ones.
    * After ranking, call markUsed() with the articles that were actually selected.
    */
   flush(): { articles: RawArticle[]; market: MarketSnapshot } {
-    const articles = [...this.pendingArticles];
+    const now = Date.now();
 
-    // Sort by recency
+    // Prune: drop articles that are too old or skipped too many times
+    const before = this.pendingArticles.length;
+    this.pendingArticles = this.pendingArticles.filter((a) => {
+      const age = now - new Date(a.publishedAt).getTime();
+      if (age > MAX_PENDING_AGE_MS) return false;
+      const skips = this.skipCounts.get(a.id) || 0;
+      if (skips >= MAX_SKIPS) {
+        this.seenIds.add(a.id); // prevent re-fetching
+        return false;
+      }
+      return true;
+    });
+    const pruned = before - this.pendingArticles.length;
+    if (pruned > 0) {
+      console.log(`[Accumulator] Pruned ${pruned} stale/skipped articles`);
+    }
+
+    // Increment skip count for all remaining articles (they're being offered again)
+    for (const a of this.pendingArticles) {
+      this.skipCounts.set(a.id, (this.skipCounts.get(a.id) || 0) + 1);
+    }
+
+    const articles = [...this.pendingArticles];
     articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
     const market = this.latestMarket || {
@@ -84,6 +110,7 @@ export class NewsAccumulator {
     this.pendingArticles = this.pendingArticles.filter((a) => {
       if (usedIds.has(a.id)) {
         this.seenIds.add(a.id);
+        this.skipCounts.delete(a.id);
         const normalized = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 50);
         this.seenTitles.add(normalized);
         removedCount++;
