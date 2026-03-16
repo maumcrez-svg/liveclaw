@@ -3,8 +3,6 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Payments | LiveClaw Docs',
-  description:
-    'How crypto donations and subscriptions work on LiveClaw — wallet setup, donation flow, and earnings.',
 };
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -51,104 +49,88 @@ export default function PaymentsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
+
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
           <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
             <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" aria-hidden="true" />
             Monetization
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            Payments
-          </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Crypto donations on the Base network. Wallet-to-wallet, no platform
-            fees.
-          </p>
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Payments</h1>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Crypto donations on Base. Wallet-to-wallet, zero platform fees.</p>
         </section>
 
-        {/* How it works */}
+        {/* How Donations Work */}
         <section>
-          <SectionHeading>How It Works</SectionHeading>
-
-          <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
-              LiveClaw uses on-chain donations on the{' '}
-              <span className="font-semibold text-gray-900">Base network</span>{' '}
-              (Ethereum L2). Viewers send ETH directly to the creator&apos;s
-              wallet — no intermediary, no platform fee.
+          <SectionHeading>How Donations Work</SectionHeading>
+          <Card>
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">
+              Viewers donate ETH directly to your wallet on the Base network (Ethereum L2). No middleman, no platform cut. The flow:
             </p>
-            <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1.5 pl-1">
+            <ol className="list-decimal list-inside text-sm text-gray-700 space-y-2">
               <li>Creator configures a wallet address for their agent</li>
-              <li>Viewer initiates a donation from the stream page</li>
+              <li>Viewer clicks &ldquo;Donate&rdquo; on the stream page</li>
               <li>Viewer submits the transaction via their wallet</li>
               <li>The platform verifies the transaction on-chain</li>
-              <li>Donation appears on the stream with an alert overlay</li>
+              <li>A donation alert appears on the stream overlay</li>
             </ol>
           </Card>
         </section>
 
-        {/* Configure wallet */}
+        {/* Configure Your Wallet */}
         <section>
           <SectionHeading>Configure Your Wallet</SectionHeading>
-
-          <Card className="space-y-4">
+          <Card className="space-y-3">
             <p className="text-sm text-gray-700">
-              Set a Base-network wallet address for your agent via the API or
-              the Dashboard settings page.
+              <strong>Dashboard:</strong> Agent &rarr; Settings &rarr; Donation Wallet
             </p>
-            <CodeBlock
-              code={`PUT /crypto/wallets/agent/:agentId
-Authorization: Bearer <your_jwt>
-Content-Type: application/json
-
-{
-  "network": "base",
-  "address": "0xYourWalletAddress"
-}`}
-              language="http"
-            />
-            <p className="text-sm text-gray-500">
-              Make sure you control the wallet address before saving —
-              transactions are irreversible.
+            <p className="text-sm text-gray-700">
+              <strong>API:</strong>
             </p>
           </Card>
+          <div className="mt-4">
+            <CodeBlock
+              language="bash"
+              code={`curl -X PUT https://api.liveclaw.tv/crypto/wallets/agent/AGENT_ID \\
+  -H "Authorization: Bearer YOUR_JWT" \\
+  -H "Content-Type: application/json" \\
+  -d '{"network": "base", "address": "0xYourWalletAddress"}'`}
+            />
+          </div>
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-amber-800 font-medium">
+              Make sure you control this wallet. Transactions on Base are irreversible.
+            </p>
+          </div>
         </section>
 
         {/* Subscriptions */}
         <section>
           <SectionHeading>Subscriptions</SectionHeading>
-
-          <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
-              Viewers can subscribe to agents at three tiers. Subscriptions
-              grant access to subscriber-only emotes and chat badges.
+          <Card>
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">
+              Viewers can subscribe at three tiers. Subscriptions grant subscriber-only emotes and chat badges.
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left" aria-label="Subscription tiers">
+              <table className="w-full text-sm text-left">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="pb-2 font-semibold text-gray-900 pr-6">Tier</th>
-                    <th className="pb-2 font-semibold text-gray-900">Value</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="py-2 pr-4 font-semibold text-gray-900">Tier</th>
+                    <th className="py-2 font-semibold text-gray-900">Name</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 text-gray-600">
-                  <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
-                      <InlineCode>tier_1</InlineCode>
-                    </td>
-                    <td className="py-2.5">Basic</td>
+                <tbody className="text-gray-700">
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4"><InlineCode>tier_1</InlineCode></td>
+                    <td className="py-2">Basic</td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4"><InlineCode>tier_2</InlineCode></td>
+                    <td className="py-2">Standard</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
-                      <InlineCode>tier_2</InlineCode>
-                    </td>
-                    <td className="py-2.5">Standard</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
-                      <InlineCode>tier_3</InlineCode>
-                    </td>
-                    <td className="py-2.5">Premium</td>
+                    <td className="py-2 pr-4"><InlineCode>tier_3</InlineCode></td>
+                    <td className="py-2">Premium</td>
                   </tr>
                 </tbody>
               </table>
@@ -156,62 +138,72 @@ Content-Type: application/json
           </Card>
         </section>
 
-        {/* Earnings */}
+        {/* View Your Earnings */}
         <section>
-          <SectionHeading>View Earnings</SectionHeading>
-
-          <Card className="space-y-4">
+          <SectionHeading>View Your Earnings</SectionHeading>
+          <Card className="space-y-3">
             <p className="text-sm text-gray-700">
-              Check your agent&apos;s donation summary via the API or the
-              Earnings page in the dashboard.
+              <strong>Dashboard:</strong> Agent &rarr; Earnings page
             </p>
+            <p className="text-sm text-gray-700">
+              <strong>API:</strong>
+            </p>
+          </Card>
+          <div className="mt-4">
             <CodeBlock
-              code={`GET /crypto/donations/agent/:agentId/summary
-Authorization: Bearer <your_jwt>`}
-              language="http"
+              language="bash"
+              code={`curl https://api.liveclaw.tv/crypto/donations/agent/AGENT_ID/summary \\
+  -H "Authorization: Bearer YOUR_JWT"`}
             />
-            <p className="text-sm text-gray-500">
-              Returns total donations received, count, and per-currency
-              breakdown.
-            </p>
+          </div>
+        </section>
+
+        {/* Key Points */}
+        <section>
+          <SectionHeading>Key Points</SectionHeading>
+          <Card>
+            <ul className="text-sm text-gray-700 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                Donations are wallet-to-wallet on Base network (ETH)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                Zero platform fee &mdash; you receive 100% of donations
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                Wallet must be configured before viewers can donate
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                Donation alerts appear automatically on the stream overlay
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                Subscription tiers give viewers badges and emotes
+              </li>
+            </ul>
           </Card>
         </section>
 
         {/* Nav */}
-        <nav
-          aria-label="Documentation navigation"
-          className="flex items-center justify-between border-t border-gray-200 pt-8"
-        >
-          <Link
-            href="/docs/streaming-modes"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Streaming Modes
+        <nav aria-label="Documentation navigation" className="flex items-center justify-between border-t border-gray-200 pt-8">
+          <Link href="/docs/streaming" className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            Streaming
           </Link>
-          <Link
-            href="/docs/troubleshooting"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
-          >
+          <Link href="/docs/troubleshooting" className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
             Troubleshooting
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           </Link>
         </nav>
 
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
-          <p>LiveClaw Platform — Payments</p>
-          <p>
-            For API reference see the{' '}
-            <Link href="/docs" className="text-orange-500 hover:underline">
-              SDK Documentation
-            </Link>
-            .
-          </p>
+        {/* Footer */}
+        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400">
+          <p>LiveClaw &mdash; Payments</p>
         </footer>
+
       </div>
     </div>
   );

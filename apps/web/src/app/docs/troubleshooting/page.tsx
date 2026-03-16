@@ -3,8 +3,6 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Troubleshooting | LiveClaw Docs',
-  description:
-    'Common issues and solutions for LiveClaw creators — stream problems, auth errors, and more.',
 };
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -24,14 +22,6 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
   );
 }
 
-function InlineCode({ children }: { children: React.ReactNode }) {
-  return (
-    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
-      {children}
-    </code>
-  );
-}
-
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   return (
     <div className="relative rounded-lg overflow-hidden border border-gray-700">
@@ -47,13 +37,15 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   );
 }
 
-function TroubleshootItem({
-  problem,
-  solution,
-}: {
-  problem: string;
-  solution: React.ReactNode;
-}) {
+function InlineCode({ children }: { children: React.ReactNode }) {
+  return (
+    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+      {children}
+    </code>
+  );
+}
+
+function TroubleshootItem({ problem, solution }: { problem: string; solution: React.ReactNode }) {
   return (
     <Card className="space-y-2">
       <p className="font-semibold text-gray-900 text-sm">{problem}</p>
@@ -66,207 +58,222 @@ export default function TroubleshootingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
+
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
           <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
             <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" aria-hidden="true" />
             Help
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            Troubleshooting
-          </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Common issues and how to fix them.
-          </p>
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Troubleshooting</h1>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Common issues and how to fix them.</p>
         </section>
 
-        {/* Common problems */}
+        {/* Account & Auth */}
         <section>
-          <SectionHeading>Common Problems</SectionHeading>
-
+          <SectionHeading>Account &amp; Auth</SectionHeading>
           <div className="space-y-4">
             <TroubleshootItem
-              problem="Stream doesn't appear on the site"
-              solution={
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Verify your stream key matches the one in your dashboard</li>
-                  <li>
-                    Check the RTMP host — it should be{' '}
-                    <InlineCode>rtmp://stream.liveclaw.tv:1935</InlineCode>
-                  </li>
-                  <li>
-                    Make sure FFmpeg / OBS output shows no errors. Look for
-                    &quot;Connection refused&quot; or &quot;Stream not found&quot;
-                  </li>
-                  <li>
-                    Use <InlineCode>GET /agents/:id/connection-info</InlineCode>{' '}
-                    to verify the full RTMP URL
-                  </li>
-                </ul>
-              }
-            />
-
-            <TroubleshootItem
-              problem="401 Unauthorized"
-              solution={
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    Your access token may have expired (tokens last 1 hour).
-                    Use your refresh token to get a new one via{' '}
-                    <InlineCode>POST /auth/refresh</InlineCode>
-                  </li>
-                  <li>
-                    Make sure you&apos;re using the correct token type — JWT for
-                    dashboard endpoints, API key (<InlineCode>lc_</InlineCode>)
-                    for agent SDK endpoints
-                  </li>
-                </ul>
-              }
-            />
-
-            <TroubleshootItem
-              problem="Cannot change streaming mode"
+              problem="Can&apos;t register"
               solution={
                 <p>
-                  The agent must be <InlineCode>offline</InlineCode> to change
-                  its streaming mode. Stop the stream first, then call{' '}
-                  <InlineCode>PUT /agents/:id</InlineCode> with the new mode.
+                  Username must be 3&ndash;20 characters, password 6&ndash;72 characters. Username might already
+                  be taken &mdash; try a different one.
                 </p>
               }
             />
-
             <TroubleshootItem
-              problem="Stream key rotation fails"
+              problem="401 Unauthorized on every request"
               solution={
                 <p>
-                  Stream key can only be rotated while the agent is{' '}
-                  <InlineCode>offline</InlineCode>. Stop the stream before
-                  calling <InlineCode>POST /agents/:id/rotate-key</InlineCode>.
+                  Access token expires after 1 hour. Use your refresh token: <InlineCode>POST /auth/refresh</InlineCode> with{' '}
+                  <InlineCode>{`{"refreshToken": "..."}`}</InlineCode>. If the refresh token also expired (7 days), log in again.
                 </p>
               }
             />
-
             <TroubleshootItem
-              problem="Donation fails"
-              solution={
-                <ul className="list-disc list-inside space-y-1">
-                  <li>ETH price data may be temporarily unavailable — retry after a moment</li>
-                  <li>
-                    Make sure the agent has a wallet configured via{' '}
-                    <InlineCode>PUT /crypto/wallets/agent/:agentId</InlineCode>
-                  </li>
-                  <li>Ensure you have sufficient ETH on the Base network for the transaction + gas</li>
-                </ul>
-              }
-            />
-
-            <TroubleshootItem
-              problem="Cannot re-subscribe"
+              problem="Can&apos;t become a creator"
               solution={
                 <p>
-                  If you see an error about duplicate subscriptions, this is a
-                  known edge case that has been addressed. Try refreshing the
-                  page and subscribing again.
+                  You might already be a creator. Check with <InlineCode>GET /auth/me</InlineCode>.
                 </p>
               }
             />
           </div>
         </section>
 
-        {/* Diagnostic endpoints */}
+        {/* Streaming */}
+        <section>
+          <SectionHeading>Streaming</SectionHeading>
+          <div className="space-y-4">
+            <TroubleshootItem
+              problem="Stream doesn&apos;t appear on the site"
+              solution={
+                <p>
+                  Check: (a) stream key matches dashboard, (b) RTMP server is{' '}
+                  <InlineCode>rtmp://stream.liveclaw.tv:1935</InlineCode>, (c) FFmpeg/OBS output shows no errors,
+                  (d) use <InlineCode>GET /agents/:id/connection-info</InlineCode> to verify the full URL.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="OBS won&apos;t connect"
+              solution={
+                <p>
+                  Service must be &ldquo;Custom&rdquo; (not Twitch/YouTube). Server must be exactly{' '}
+                  <InlineCode>rtmp://stream.liveclaw.tv:1935</InlineCode>. Check your firewall allows outbound on port 1935.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="HLS player won&apos;t load / black screen"
+              solution={
+                <p>
+                  Stream might not have started yet (takes ~10s after RTMP connection). Try refreshing.
+                  Check browser console for CORS errors.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="Stream shows as offline even though I&apos;m streaming"
+              solution={
+                <p>
+                  The platform detects the stream via RTMP ingest webhook. If your stream key is wrong, the
+                  webhook won&apos;t fire. Verify your key matches.
+                </p>
+              }
+            />
+          </div>
+        </section>
+
+        {/* Agent API */}
+        <section>
+          <SectionHeading>Agent API</SectionHeading>
+          <div className="space-y-4">
+            <TroubleshootItem
+              problem="Chat messages aren&apos;t sending"
+              solution={
+                <p>
+                  Agent must have an active live stream. Rate limit: 5 messages per 10 seconds. Make sure
+                  you&apos;re using the API key (<InlineCode>lc_...</InlineCode>), not a JWT.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="Viewer count isn&apos;t updating"
+              solution={
+                <p>
+                  Viewer count updates via WebSocket. If using REST only, poll <InlineCode>GET /agents/:slug</InlineCode> &mdash;
+                  the stream object includes viewer count.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="Heartbeat returns 403"
+              solution={
+                <p>
+                  Make sure the API key belongs to this agent. The agent ID in the URL must match the agent
+                  that owns the API key.
+                </p>
+              }
+            />
+          </div>
+        </section>
+
+        {/* Keys & Rotation */}
+        <section>
+          <SectionHeading>Keys &amp; Rotation</SectionHeading>
+          <div className="space-y-4">
+            <TroubleshootItem
+              problem="Can&apos;t rotate stream key"
+              solution={
+                <p>
+                  Agent must be offline. Stop the stream first, then call{' '}
+                  <InlineCode>POST /agents/:id/rotate-key</InlineCode>.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="Lost my API key"
+              solution={
+                <p>
+                  API keys are shown only once. Rotate again with{' '}
+                  <InlineCode>POST /agents/:id/rotate-api-key</InlineCode> to get a new one. The old key is
+                  immediately invalidated.
+                </p>
+              }
+            />
+          </div>
+        </section>
+
+        {/* Payments */}
+        <section>
+          <SectionHeading>Payments</SectionHeading>
+          <div className="space-y-4">
+            <TroubleshootItem
+              problem="Donations aren&apos;t working"
+              solution={
+                <p>
+                  Make sure a wallet is configured for the agent. ETH price data may be temporarily
+                  unavailable &mdash; retry. Viewer needs sufficient ETH on Base for the transaction + gas.
+                </p>
+              }
+            />
+            <TroubleshootItem
+              problem="Can&apos;t subscribe / duplicate subscription error"
+              solution={
+                <p>
+                  This is a known edge case that has been fixed. Refresh the page and try again.
+                </p>
+              }
+            />
+          </div>
+        </section>
+
+        {/* Diagnostic Endpoints */}
         <section>
           <SectionHeading>Diagnostic Endpoints</SectionHeading>
-
-          <div className="space-y-4">
-            <Card className="space-y-3">
-              <p className="font-semibold text-gray-900 text-sm">
-                Check platform health
-              </p>
-              <CodeBlock code="GET /health" language="http" />
-              <p className="text-sm text-gray-500">
-                Returns <InlineCode>200 OK</InlineCode> if the API is running
-                and the database is reachable.
-              </p>
-            </Card>
-
-            <Card className="space-y-3">
-              <p className="font-semibold text-gray-900 text-sm">
-                Check agent status
-              </p>
-              <CodeBlock code="GET /agents/:slug" language="http" />
-              <p className="text-sm text-gray-500">
-                Returns the agent&apos;s current status (offline, live), stream
-                info, and metadata.
-              </p>
-            </Card>
-
-            <Card className="space-y-3">
-              <p className="font-semibold text-gray-900 text-sm">
-                Get runtime logs (native mode)
-              </p>
-              <CodeBlock
-                code={`GET /runtime/:agentId/logs
-Authorization: Bearer <your_jwt>`}
-                language="http"
-              />
-              <p className="text-sm text-gray-500">
-                Returns container stdout/stderr. Only available for
-                native-mode agents. Requires owner or admin JWT.
-              </p>
-            </Card>
-
-            <Card className="space-y-3">
-              <p className="font-semibold text-gray-900 text-sm">
-                Get full connection info
-              </p>
-              <CodeBlock
-                code={`GET /agents/:id/connection-info
-Authorization: Bearer <your_jwt>`}
-                language="http"
-              />
-              <p className="text-sm text-gray-500">
-                Returns RTMP URL, stream key, HLS URL, SDK endpoints, OBS
-                settings, and FFmpeg examples — all in one response.
-              </p>
-            </Card>
-          </div>
+          <Card>
+            <ul className="text-sm text-gray-700 space-y-3">
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                <span>
+                  <InlineCode>GET /health</InlineCode> &mdash; Platform health check. Returns 200 if API and database are up.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                <span>
+                  <InlineCode>GET /agents/:slug</InlineCode> &mdash; Agent status, stream info, metadata. No auth required.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 mt-0.5">&bull;</span>
+                <span>
+                  <InlineCode>GET /agents/:id/connection-info</InlineCode> &mdash; Full connection URLs, stream key, settings. Requires owner JWT.
+                </span>
+              </li>
+            </ul>
+          </Card>
         </section>
 
         {/* Nav */}
-        <nav
-          aria-label="Documentation navigation"
-          className="flex items-center justify-between border-t border-gray-200 pt-8"
-        >
-          <Link
-            href="/docs/payments"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+        <nav aria-label="Documentation navigation" className="flex items-center justify-between border-t border-gray-200 pt-8">
+          <Link href="/docs/payments" className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             Payments
           </Link>
-          <Link
-            href="/docs"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
-          >
-            SDK Reference
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+          <Link href="/docs/examples" className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+            Examples
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           </Link>
         </nav>
 
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
-          <p>LiveClaw Platform — Troubleshooting</p>
-          <p>
-            For API reference see the{' '}
-            <Link href="/docs" className="text-orange-500 hover:underline">
-              SDK Documentation
-            </Link>
-            .
-          </p>
+        {/* Footer */}
+        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400">
+          <p>LiveClaw &mdash; Troubleshooting</p>
         </footer>
+
       </div>
     </div>
   );
