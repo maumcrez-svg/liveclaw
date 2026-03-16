@@ -66,7 +66,7 @@ export function handleBattling(state: GameState): void {
     }).catch(() => { visionRequested = false; });
   }
 
-  if (state.menu.textboxOpen) {
+  if (state.menu.textboxOpen || state.menu.inCutscene) {
     sendInput(Button.A, 4);
     actionCooldown = 3;
     idleTickCount = 0;

@@ -9,12 +9,14 @@ type Tab = 'donations' | 'subscriptions';
 interface Donation {
   id: string;
   amount: number;
-  currency: string;
-  message: string;
-  paymentStatus: string;
-  paidAt: string | null;
+  amountUsd: number | null;
+  token: string;
+  txHash: string | null;
+  status: string;
+  type: 'donation' | 'subscription';
+  message: string | null;
   createdAt: string;
-  user?: { id: string; username: string };
+  viewerUser?: { id: string; username: string };
   agent?: { id: string; slug: string; name: string };
 }
 
@@ -22,10 +24,8 @@ interface Subscription {
   id: string;
   tier: string;
   isActive: boolean;
-  billingStatus: string;
   startedAt: string;
   expiresAt: string;
-  currentPeriodEnd: string | null;
   canceledAt: string | null;
   createdAt: string;
   user?: { id: string; username: string };
@@ -170,30 +170,42 @@ export default function AdminRevenuePage() {
                     <th className="text-left px-4 py-3">User</th>
                     <th className="text-left px-4 py-3">Agent</th>
                     <th className="text-left px-4 py-3">Amount</th>
-                    <th className="text-left px-4 py-3">Message</th>
+                    <th className="text-left px-4 py-3">Type</th>
+                    <th className="text-left px-4 py-3">Tx</th>
                     <th className="text-left px-4 py-3">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-claw-border">
                   {donLoading ? (
-                    <tr><td colSpan={5} className="px-4 py-12 text-center"><div className="w-6 h-6 border-2 border-claw-accent border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
+                    <tr><td colSpan={6} className="px-4 py-12 text-center"><div className="w-6 h-6 border-2 border-claw-accent border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
                   ) : donations.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-12 text-center text-claw-text-muted">No donations found.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-12 text-center text-claw-text-muted">No donations found.</td></tr>
                   ) : (
                     donations.map((d) => (
                       <tr key={d.id} className="hover:bg-claw-card/50 transition-colors">
                         <td className="px-4 py-3 text-xs">
-                          <span className="text-claw-text font-medium">{d.user?.username || 'Unknown'}</span>
+                          <span className="text-claw-text font-medium">{d.viewerUser?.username || 'Unknown'}</span>
                         </td>
                         <td className="px-4 py-3 text-xs">
                           <span className="text-claw-accent">{d.agent?.name || 'Unknown'}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-sm font-bold text-green-400">${Number(d.amount).toFixed(2)}</span>
-                          <span className="text-xs text-claw-text-muted ml-1">{d.currency}</span>
+                          <span className="text-sm font-bold text-green-400">${d.amountUsd ? Number(d.amountUsd).toFixed(2) : '—'}</span>
+                          <span className="text-xs text-claw-text-muted ml-1">{d.token}</span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-claw-text-muted max-w-[250px] truncate" title={d.message}>
-                          {d.message || '-'}
+                        <td className="px-4 py-3">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            d.type === 'subscription' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {d.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs font-mono text-claw-text-muted">
+                          {d.txHash ? (
+                            <a href={`https://basescan.org/tx/${d.txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {d.txHash.slice(0, 8)}...
+                            </a>
+                          ) : '—'}
                         </td>
                         <td className="px-4 py-3 text-xs text-claw-text-muted">
                           {new Date(d.createdAt).toLocaleString()}
@@ -260,16 +272,15 @@ export default function AdminRevenuePage() {
                     <th className="text-left px-4 py-3">Agent</th>
                     <th className="text-left px-4 py-3">Tier</th>
                     <th className="text-left px-4 py-3">Status</th>
-                    <th className="text-left px-4 py-3">Billing</th>
                     <th className="text-left px-4 py-3">Started</th>
-                    <th className="text-left px-4 py-3">Period End</th>
+                    <th className="text-left px-4 py-3">Expires</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-claw-border">
                   {subLoading ? (
-                    <tr><td colSpan={7} className="px-4 py-12 text-center"><div className="w-6 h-6 border-2 border-claw-accent border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
+                    <tr><td colSpan={6} className="px-4 py-12 text-center"><div className="w-6 h-6 border-2 border-claw-accent border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
                   ) : subs.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-12 text-center text-claw-text-muted">No subscriptions found.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-12 text-center text-claw-text-muted">No subscriptions found.</td></tr>
                   ) : (
                     subs.map((s) => (
                       <tr key={s.id} className="hover:bg-claw-card/50 transition-colors">
@@ -295,12 +306,11 @@ export default function AdminRevenuePage() {
                             <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">Inactive</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-claw-text-muted">{s.billingStatus}</td>
                         <td className="px-4 py-3 text-xs text-claw-text-muted">
                           {new Date(s.startedAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-xs text-claw-text-muted">
-                          {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString() : '-'}
+                          {s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : '-'}
                         </td>
                       </tr>
                     ))

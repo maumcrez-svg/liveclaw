@@ -1,12 +1,17 @@
 import {
   Controller,
   Get,
+  Post,
+  Patch,
   Delete,
   Param,
   Query,
+  Body,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
+import { CryptoSubscribeService } from './crypto-subscribe.service';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { OwnerGuard } from '../../common/owner.guard';
 
@@ -14,7 +19,36 @@ import { OwnerGuard } from '../../common/owner.guard';
 export class SubscriptionsController {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly cryptoSubscribeService: CryptoSubscribeService,
   ) {}
+
+  @Post('initiate')
+  @UseGuards(JwtAuthGuard)
+  async initiateSubscription(
+    @Body() body: { agentId: string; tier: string },
+    @Req() req: any,
+  ) {
+    return this.cryptoSubscribeService.initiateSubscription(
+      req.user.sub,
+      body.agentId,
+      body.tier,
+    );
+  }
+
+  @Patch(':paymentId/tx')
+  @UseGuards(JwtAuthGuard)
+  async submitSubscriptionTx(
+    @Param('paymentId') paymentId: string,
+    @Body() body: { txHash: string; senderAddress?: string },
+    @Req() req: any,
+  ) {
+    return this.cryptoSubscribeService.submitSubscriptionTx(
+      paymentId,
+      body.txHash,
+      body.senderAddress,
+      req.user.sub,
+    );
+  }
 
   @Delete(':userId/:agentId')
   @UseGuards(JwtAuthGuard)

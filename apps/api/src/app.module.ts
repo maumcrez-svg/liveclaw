@@ -10,7 +10,6 @@ import { RuntimeModule } from './modules/runtime/runtime.module';
 import { UsersModule } from './modules/users/users.module';
 import { FollowsModule } from './modules/follows/follows.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
-import { DonationsModule } from './modules/donations/donations.module';
 import { EmotesModule } from './modules/emotes/emotes.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -47,7 +46,6 @@ import { PlatformModule } from './modules/platform/platform.module';
     UsersModule,
     FollowsModule,
     SubscriptionsModule,
-    DonationsModule,
     EmotesModule,
     AuthModule,
     CategoriesModule,

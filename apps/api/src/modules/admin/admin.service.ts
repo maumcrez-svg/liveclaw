@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { UserEntity } from '../users/user.entity';
 import { AgentEntity } from '../agents/agent.entity';
 import { StreamEntity } from '../streams/stream.entity';
-import { DonationEntity } from '../donations/donation.entity';
+import { CryptoDonationEntity } from '../crypto/crypto-donation.entity';
 import { SubscriptionEntity } from '../subscriptions/subscription.entity';
 
 export interface PaginatedResult<T> {
@@ -32,8 +32,8 @@ export class AdminService {
     private readonly agentRepo: Repository<AgentEntity>,
     @InjectRepository(StreamEntity)
     private readonly streamRepo: Repository<StreamEntity>,
-    @InjectRepository(DonationEntity)
-    private readonly donationRepo: Repository<DonationEntity>,
+    @InjectRepository(CryptoDonationEntity)
+    private readonly donationRepo: Repository<CryptoDonationEntity>,
     @InjectRepository(SubscriptionEntity)
     private readonly subRepo: Repository<SubscriptionEntity>,
   ) {}
@@ -181,9 +181,9 @@ export class AdminService {
     // Revenue
     const donationStats = await this.donationRepo
       .createQueryBuilder('d')
-      .select('COALESCE(SUM(d.amount), 0)', 'totalDonations')
+      .select('COALESCE(SUM(d.amount_usd), 0)', 'totalDonations')
       .addSelect('COUNT(*)::int', 'donationCount')
-      .where('d.payment_status = :status', { status: 'completed' })
+      .where('d.status = :status', { status: 'confirmed' })
       .getRawOne();
 
     const activeSubs = await this.subRepo
@@ -230,22 +230,22 @@ export class AdminService {
     agentId?: string;
     userId?: string;
     sort?: string;
-  }): Promise<PaginatedResult<DonationEntity>> {
+  }): Promise<PaginatedResult<CryptoDonationEntity>> {
     const qb = this.donationRepo
       .createQueryBuilder('d')
-      .leftJoinAndSelect('d.user', 'user')
+      .leftJoinAndSelect('d.viewerUser', 'viewerUser')
       .leftJoinAndSelect('d.agent', 'agent')
-      .where('d.payment_status = :status', { status: 'completed' });
+      .where('d.status = :status', { status: 'confirmed' });
 
     if (opts.agentId) {
       qb.andWhere('d.agent_id = :agentId', { agentId: opts.agentId });
     }
     if (opts.userId) {
-      qb.andWhere('d.user_id = :userId', { userId: opts.userId });
+      qb.andWhere('d.viewer_user_id = :userId', { userId: opts.userId });
     }
 
     if (opts.sort === 'amount') {
-      qb.orderBy('d.amount', 'DESC');
+      qb.orderBy('d.amount_usd', 'DESC');
     } else {
       qb.orderBy('d.created_at', 'DESC');
     }

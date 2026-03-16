@@ -94,10 +94,14 @@ function parseBattle(): BattleState {
 }
 
 function parseMenu(): MenuState {
+  const joyIgnore = readByte(addr.JOY_IGNORE);
   return {
     textboxOpen: readByte(addr.TEXTBOX_ID) !== 0,
+    joyIgnore,
+    inCutscene: joyIgnore !== 0,
     selectedItem: readByte(addr.MENU_ITEM_ID),
     isMoving: (readByte(addr.MOVEMENT_FLAGS) & 1) !== 0,
+    walkCounter: readByte(addr.WALK_COUNTER),
   };
 }
 

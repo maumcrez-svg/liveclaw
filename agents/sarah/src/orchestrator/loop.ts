@@ -1,11 +1,12 @@
 import type { Page } from 'puppeteer-core';
 import { config } from '../config';
 import { getScreenPixels } from '../emulator/adapter';
-import { processFrame } from '../emulator/input';
+import { processFrame, queueLength } from '../emulator/input';
 import { parseGameState } from '../game/state-parser';
 import { tickFSM, getCurrentState } from '../engine/fsm';
 import { GameState } from '../game/state';
 import { checkTriggers } from '../commentator/trigger-engine';
+import { getExploringDebug } from '../engine/states/exploring';
 
 let page: Page;
 let loopTimer: ReturnType<typeof setInterval> | null = null;
@@ -34,24 +35,52 @@ function tick(): void {
     tickCount++;
 
     // Run 2 emulator frames per tick (~60fps at 30 ticks/sec).
-    // processFrame() handles: press keys → doFrame() → release keys.
-    // This is the CORRECT order per serverboy's implementation.
     const pressed1 = processFrame();
     const pressed2 = processFrame();
 
     // Parse game state (after frames have advanced)
     const state = parseGameState();
 
-    // Debug: log position + pressed keys every 60 ticks (~2s)
-    if (tickCount % 60 === 0) {
+    // Detect movement since last tick
+    const moved = prevState
+      ? state.position.x !== prevState.position.x ||
+        state.position.y !== prevState.position.y ||
+        state.position.mapId !== prevState.position.mapId
+      : false;
+
+    // Debug: structured log every 30 ticks (~1s)
+    if (tickCount % 30 === 0) {
       const btns = [...new Set([...pressed1, ...pressed2])];
-      console.log(
-        `[Loop] tick=${tickCount} map=${state.position.mapName}(${state.position.mapId}) ` +
-        `pos=(${state.position.x},${state.position.y}) ` +
-        `battle=${state.battle.active} dialog=${state.menu.textboxOpen} ` +
-        `party=${state.party.count} badges=${state.badgeCount} ` +
-        `keys=[${btns.join(',')}]`
-      );
+      const fsmState = getCurrentState();
+      const explDebug = fsmState === 'EXPLORING' ? getExploringDebug() : null;
+
+      const parts = [
+        `[Loop] t=${tickCount}`,
+        `fsm=${fsmState}`,
+        `map=${state.position.mapName}(${state.position.mapId})`,
+        `pos=(${state.position.x},${state.position.y})`,
+        `moved=${moved ? 'YES' : 'no'}`,
+        `battle=${state.battle.active}`,
+        `cutscene=${state.menu.inCutscene}`,
+        `joyIgn=0x${state.menu.joyIgnore.toString(16)}`,
+        `walk=${state.menu.walkCounter}`,
+        `queue=${queueLength()}`,
+        `keys=[${btns.join(',')}]`,
+      ];
+
+      if (explDebug) {
+        parts.push(
+          `blocked=${explDebug.blocked}`,
+          `detour=${explDebug.detour}`,
+          `hist=${explDebug.historySize}/${explDebug.uniquePositions}u`,
+        );
+        // Log decision reason every 60 ticks to avoid spam
+        if (tickCount % 60 === 0 && explDebug.lastReason) {
+          parts.push(`| ${explDebug.lastReason}`);
+        }
+      }
+
+      console.log(parts.join(' '));
     }
 
     // Check for game events (diff prev vs current state)

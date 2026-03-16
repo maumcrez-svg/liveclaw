@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Post,
   UseGuards,
-  ValidationPipe,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, AuthResponse } from './auth.service';
@@ -22,7 +21,7 @@ export class AuthController {
   @Post('register')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   async register(
-    @Body(new ValidationPipe({ whitelist: true })) dto: RegisterDto,
+    @Body() dto: RegisterDto,
   ): Promise<AuthResponse> {
     return this.authService.register(dto);
   }
@@ -31,7 +30,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
-    @Body(new ValidationPipe({ whitelist: true })) dto: LoginDto,
+    @Body() dto: LoginDto,
   ): Promise<AuthResponse> {
     return this.authService.login(dto);
   }
@@ -46,7 +45,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async walletLogin(
-    @Body(new ValidationPipe({ whitelist: true })) dto: WalletLoginDto,
+    @Body() dto: WalletLoginDto,
   ): Promise<AuthResponse> {
     return this.authService.walletLogin(dto);
   }

@@ -54,6 +54,17 @@ node dist/index.js &
 AGENT_PID=$!
 sleep 5
 
+# Route ONLY this agent's Chromium sink-inputs to sarah_voice.
+# Filter by display :95 to avoid stealing other agents' audio.
+echo "[2.5/4] Routing audio to sarah_voice (display $DISPLAY only)..."
+pactl list sink-inputs | awk -v display="$DISPLAY" '
+  /Sink Input #/ { idx = $3; gsub(/#/, "", idx) }
+  /window.x11.display/ { if ($3 == "\"" display "\"") print idx }
+' | while read -r si; do
+  pactl move-sink-input "$si" sarah_voice 2>/dev/null && \
+    echo "  Moved sink-input $si -> sarah_voice" || true
+done
+
 # Start FFmpeg capture (video from Xvfb + audio from PulseAudio)
 echo "[3/4] Starting FFmpeg capture..."
 RTMP_URL="${MEDIAMTX_RTMP_URL}/${STREAM_KEY}"

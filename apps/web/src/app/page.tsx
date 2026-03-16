@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { StreamCard } from '@/components/browse/StreamCard';
 import { CategoryCard } from '@/components/browse/CategoryCard';
+import { LiveViewerBadge } from '@/components/LiveViewerBadge';
 import { formatLastStreamed, formatCount } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -176,11 +177,11 @@ export default async function HomePage() {
                     {/* Badges top-left */}
                     <div className="absolute top-3 left-3 flex items-center gap-2">
                       <span className="px-2.5 py-1 bg-claw-live text-white text-sm font-bold rounded">LIVE</span>
-                      {typeof featuredStream.currentViewers === 'number' && featuredStream.currentViewers > 0 && (
-                        <span className="px-2.5 py-1 bg-black/70 text-white text-sm rounded">
-                          {featuredStream.currentViewers.toLocaleString()} viewers
-                        </span>
-                      )}
+                      <LiveViewerBadge
+                        agentId={featuredStream.agentId || featuredStream.agent?.id || ''}
+                        fallbackCount={featuredStream.currentViewers ?? 0}
+                        className="px-2.5 py-1 bg-black/70 text-white text-sm rounded"
+                      />
                     </div>
                     {/* Info bottom */}
                     <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3">

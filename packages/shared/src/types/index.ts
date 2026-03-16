@@ -146,12 +146,19 @@ export interface Emote {
 
 export interface Donation {
   id: string;
-  userId: string;
   agentId: string;
-  streamId: string;
+  viewerUserId: string | null;
+  streamId: string | null;
+  network: string;
+  token: string;
   amount: number;
-  message: string;
-  currency: string;
+  amountUsd: number | null;
+  recipientAddress: string;
+  senderAddress: string | null;
+  txHash: string | null;
+  message: string | null;
+  status: 'initiated' | 'pending' | 'confirming' | 'confirmed' | 'failed' | 'expired';
+  type: 'donation' | 'subscription';
   createdAt: string;
 }
 

@@ -5,12 +5,10 @@ import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 const TIERS = [
-  { id: 'tier_1', name: 'Tier 1', price: '$4.99', color: 'text-blue-400', icon: '\u2605' },
-  { id: 'tier_2', name: 'Tier 2', price: '$9.99', color: 'text-purple-400', icon: '\u2605\u2605' },
-  { id: 'tier_3', name: 'Tier 3', price: '$24.99', color: 'text-yellow-400', icon: '\u2666' },
+  { id: 'tier_1', name: 'Tier 1', price: 4.99, color: 'text-blue-400', icon: '\u2605' },
+  { id: 'tier_2', name: 'Tier 2', price: 9.99, color: 'text-purple-400', icon: '\u2605\u2605' },
+  { id: 'tier_3', name: 'Tier 3', price: 24.99, color: 'text-yellow-400', icon: '\u2666' },
 ];
 
 interface SubscribeButtonProps {
@@ -18,39 +16,102 @@ interface SubscribeButtonProps {
   agentName: string;
 }
 
+type ModalStep = 'tiers' | 'pay' | 'tx' | 'success';
+
+function truncateAddress(addr: string): string {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
+function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-all ${
+        copied
+          ? 'bg-green-500/15 border-green-500/40 text-green-400'
+          : 'bg-claw-card border-claw-border text-claw-text-muted hover:border-claw-accent'
+      }`}
+    >
+      {copied ? 'Copied!' : label}
+    </button>
+  );
+}
+
 export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
   const { user, isLoggedIn, setShowLoginModal } = useUser();
   const [currentTier, setCurrentTier] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<ModalStep>('tiers');
+
+  // Payment state
+  const [paymentId, setPaymentId] = useState('');
+  const [recipientAddress, setRecipientAddress] = useState('');
+  const [ethAmount, setEthAmount] = useState(0);
+  const [selectedTier, setSelectedTier] = useState('');
+  const [txHash, setTxHash] = useState('');
 
   useEffect(() => {
     if (!user) return;
-    fetch(`${API_URL}/subscriptions/check?userId=${user.id}&agentId=${agentId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/subscriptions/check?userId=${user.id}&agentId=${agentId}`)
       .then((r) => r.json())
       .then((data) => setCurrentTier(data?.tier || null))
       .catch(() => {});
   }, [user, agentId]);
 
-  const subscribe = useCallback(async (tier: string) => {
+  const initiateSubscription = useCallback(async (tier: string) => {
     if (!user) return;
     setLoading(true);
+    setSelectedTier(tier);
     try {
-      const data = await api<{ url: string }>('/subscriptions/checkout', {
+      const data = await api<{
+        paymentId: string;
+        recipientAddress: string;
+        ethAmount: number;
+        usdAmount: number;
+        tier: string;
+        expiresAt: string;
+      }>('/subscriptions/initiate', {
         method: 'POST',
         body: JSON.stringify({ agentId, tier }),
       });
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error('Failed to create checkout session');
-      }
+      setPaymentId(data.paymentId);
+      setRecipientAddress(data.recipientAddress);
+      setEthAmount(data.ethAmount);
+      setStep('pay');
     } catch (err: any) {
-      const msg = err?.body?.message || 'Failed to subscribe';
+      const msg = err?.body?.message || 'Failed to initiate subscription';
       toast.error(msg);
     }
     setLoading(false);
   }, [user, agentId]);
+
+  const submitTx = useCallback(async () => {
+    if (!txHash.trim()) return;
+    setLoading(true);
+    try {
+      await api(`/subscriptions/${paymentId}/tx`, {
+        method: 'PATCH',
+        body: JSON.stringify({ txHash: txHash.trim() }),
+      });
+      setStep('success');
+      toast.success('Subscription payment submitted!');
+    } catch {
+      toast.error('Failed to submit transaction');
+    }
+    setLoading(false);
+  }, [txHash, paymentId]);
 
   const unsubscribe = useCallback(async () => {
     if (!user) return;
@@ -58,13 +119,20 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
     try {
       await api(`/subscriptions/${user.id}/${agentId}`, { method: 'DELETE' });
       setCurrentTier(null);
-      setShowModal(false);
+      closeModal();
       toast('Unsubscribed');
     } catch {
       toast.error('Failed to unsubscribe');
     }
     setLoading(false);
   }, [user, agentId]);
+
+  const closeModal = () => {
+    setShowModal(false);
+    setStep('tiers');
+    setTxHash('');
+    setPaymentId('');
+  };
 
   const handleClick = () => {
     if (!isLoggedIn) {
@@ -93,7 +161,7 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="bg-claw-surface border border-claw-border rounded-xl p-6 w-[420px] shadow-2xl shadow-black/50">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-purple-600/20 flex items-center justify-center">
@@ -103,53 +171,160 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
               </div>
               <div>
                 <h2 className="text-lg font-bold">Subscribe to {agentName}</h2>
-                <p className="text-xs text-claw-text-muted">Choose a subscription tier</p>
+                <p className="text-xs text-claw-text-muted">
+                  {step === 'tiers' && 'Pay with ETH on Base'}
+                  {step === 'pay' && 'Send ETH to subscribe'}
+                  {step === 'tx' && 'Paste your transaction hash'}
+                  {step === 'success' && 'Payment submitted!'}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              {TIERS.map((tier) => (
-                <button
-                  key={tier.id}
-                  onClick={() => subscribe(tier.id)}
-                  disabled={loading}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-lg border transition-all ${
-                    currentTier === tier.id
-                      ? 'border-purple-500 bg-purple-600/10 shadow-sm shadow-purple-900/20'
-                      : 'border-claw-border hover:border-claw-accent hover:bg-claw-card'
-                  } disabled:opacity-50`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`text-lg ${tier.color}`}>{tier.icon}</span>
-                    <div className="text-left">
-                      <span className="font-semibold text-sm">{tier.name}</span>
-                      {currentTier === tier.id && (
-                        <span className="ml-2 text-[10px] text-purple-400 font-medium uppercase">Current</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-sm font-medium text-claw-text-muted">{tier.price}/mo</span>
-                </button>
-              ))}
-            </div>
+            {/* Step: Choose tier */}
+            {step === 'tiers' && (
+              <>
+                <div className="space-y-2">
+                  {TIERS.map((tier) => (
+                    <button
+                      key={tier.id}
+                      onClick={() => initiateSubscription(tier.id)}
+                      disabled={loading}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-lg border transition-all ${
+                        currentTier === tier.id
+                          ? 'border-purple-500 bg-purple-600/10 shadow-sm shadow-purple-900/20'
+                          : 'border-claw-border hover:border-claw-accent hover:bg-claw-card'
+                      } disabled:opacity-50`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`text-lg ${tier.color}`}>{tier.icon}</span>
+                        <div className="text-left">
+                          <span className="font-semibold text-sm">{tier.name}</span>
+                          {currentTier === tier.id && (
+                            <span className="ml-2 text-[10px] text-purple-400 font-medium uppercase">Current</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium text-claw-text-muted">${tier.price}/mo</span>
+                    </button>
+                  ))}
+                </div>
 
-            <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium border border-claw-border rounded-lg hover:bg-claw-card transition-colors"
-              >
-                Cancel
-              </button>
-              {currentTier && (
+                <div className="flex gap-2 mt-5">
+                  <button
+                    onClick={closeModal}
+                    className="flex-1 px-4 py-2.5 text-sm font-medium border border-claw-border rounded-lg hover:bg-claw-card transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  {currentTier && (
+                    <button
+                      onClick={unsubscribe}
+                      disabled={loading}
+                      className="flex-1 px-4 py-2.5 text-sm font-medium text-red-400 border border-red-800/50 rounded-lg hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                    >
+                      Unsubscribe
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Step: Pay — show address */}
+            {step === 'pay' && (
+              <div>
+                <div className="bg-blue-500/8 border border-blue-500/20 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-claw-text font-medium mb-1">
+                    Send {ethAmount.toFixed(6)} ETH
+                  </p>
+                  <p className="text-xs text-claw-text-muted mb-3">
+                    Transfer to this address on the <strong className="text-blue-400">Base</strong> network:
+                  </p>
+                  <div className="flex items-center justify-between gap-2 bg-claw-bg rounded-lg px-3 py-2 border border-claw-border">
+                    <code className="text-xs font-mono text-claw-text break-all">{recipientAddress}</code>
+                    <CopyButton text={recipientAddress} />
+                  </div>
+                </div>
+
+                <p className="text-xs text-claw-text-muted mb-4">
+                  After sending, click below to enter your transaction hash.
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStep('tiers')}
+                    className="flex-1 px-4 py-2.5 text-sm font-medium border border-claw-border rounded-lg hover:bg-claw-card transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setStep('tx')}
+                    className="flex-1 px-4 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-500 transition-colors"
+                  >
+                    I've sent the ETH
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: Paste tx hash */}
+            {step === 'tx' && (
+              <div>
+                <label className="block text-xs font-medium text-claw-text-muted uppercase tracking-wide mb-1.5">
+                  Transaction Hash
+                </label>
+                <input
+                  type="text"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full bg-claw-bg border border-claw-border rounded-lg px-3 py-2 text-sm font-mono text-claw-text placeholder:text-claw-text-muted focus:outline-none focus:border-purple-500 transition-colors mb-3"
+                  spellCheck={false}
+                />
+                <p className="text-xs text-claw-text-muted mb-4">
+                  Find your tx hash on{' '}
+                  <a href={`https://basescan.org/address/${recipientAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                    BaseScan
+                  </a>
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStep('pay')}
+                    className="flex-1 px-4 py-2.5 text-sm font-medium border border-claw-border rounded-lg hover:bg-claw-card transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={submitTx}
+                    disabled={loading || !txHash.trim()}
+                    className="flex-1 px-4 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-500 disabled:opacity-50 transition-colors"
+                  >
+                    {loading ? 'Submitting...' : 'Confirm Subscription'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: Success */}
+            {step === 'success' && (
+              <div className="py-2">
+                <div className="flex flex-col items-center text-center gap-3 mb-5">
+                  <div className="w-12 h-12 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <p className="text-base font-bold text-claw-text">Payment submitted!</p>
+                  <p className="text-xs text-claw-text-muted">Your subscription will activate once the transaction is confirmed on-chain.</p>
+                </div>
                 <button
-                  onClick={unsubscribe}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-red-400 border border-red-800/50 rounded-lg hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                  onClick={closeModal}
+                  className="w-full px-4 py-2.5 text-sm border border-claw-border rounded-lg hover:bg-claw-card transition-colors"
                 >
-                  Unsubscribe
+                  Close
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

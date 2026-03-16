@@ -27,9 +27,12 @@ export interface BattleState {
 }
 
 export interface MenuState {
-  textboxOpen: boolean;
+  textboxOpen: boolean;       // wAutoTextBoxDrawingControl (may be unreliable)
+  joyIgnore: number;          // wJoyIgnore — non-zero means game ignores joypad
+  inCutscene: boolean;        // derived: joyIgnore !== 0 (best dialog/cutscene indicator)
   selectedItem: number;
   isMoving: boolean;
+  walkCounter: number;        // wWalkCounter — non-zero = mid-step
 }
 
 export interface InventoryState {

@@ -4,7 +4,7 @@ import { initEmulator } from './emulator/adapter';
 import { startBroadcastServer } from './visual/broadcast-server';
 import { initBridge } from './visual/bridge';
 import { initLoop, startLoop, stopLoop } from './orchestrator/loop';
-import { startScheduler, stopScheduler } from './orchestrator/scheduler';
+import { startScheduler, stopScheduler, loadSaveData, persistSaveData } from './orchestrator/scheduler';
 import { initSpeechQueue } from './voice/speech-queue';
 import { startChatPoller, stopChatPoller } from './chat/chat-poller';
 import { initCommandHandler } from './chat/command-handler';
@@ -21,9 +21,10 @@ async function main(): Promise<void> {
   console.log(`Broadcast port: ${config.broadcastPort}`);
   console.log(`ROM: ${config.rom.path}`);
 
-  // 1. Initialize emulator with ROM
+  // 1. Initialize emulator with ROM + saved SRAM
   console.log('[Init] Loading ROM...');
-  initEmulator(config.rom.path);
+  const saveData = loadSaveData();
+  initEmulator(config.rom.path, saveData);
 
   // 2. Start the broadcast HTTP server
   await startBroadcastServer();
@@ -122,6 +123,7 @@ async function main(): Promise<void> {
     stopLoop();
     stopChatPoller();
     stopScheduler();
+    persistSaveData(); // Save SRAM before exit
     await sendChatMessage('Stream ending! Thanks for watching, chat! See you next time~ ✌️').catch(() => {});
     await browser.close();
     process.exit(0);

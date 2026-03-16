@@ -55,14 +55,15 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
-    const existing = await this.usersService.findByUsername(dto.username);
+    const normalizedUsername = dto.username.toLowerCase();
+    const existing = await this.usersService.findByUsername(normalizedUsername);
     if (existing) {
       throw new ConflictException('Username is already taken');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.usersService.createWithPassword(
-      dto.username,
+      normalizedUsername,
       passwordHash,
       'viewer',
     );
@@ -71,7 +72,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResponse> {
-    const user = await this.usersService.findByUsername(dto.username);
+    const user = await this.usersService.findByUsername(dto.username.toLowerCase());
 
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');

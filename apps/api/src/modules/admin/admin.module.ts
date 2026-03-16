@@ -5,7 +5,7 @@ import { AdminController } from './admin.controller';
 import { UserEntity } from '../users/user.entity';
 import { AgentEntity } from '../agents/agent.entity';
 import { StreamEntity } from '../streams/stream.entity';
-import { DonationEntity } from '../donations/donation.entity';
+import { CryptoDonationEntity } from '../crypto/crypto-donation.entity';
 import { SubscriptionEntity } from '../subscriptions/subscription.entity';
 import { AuthModule } from '../auth/auth.module';
 
@@ -15,7 +15,7 @@ import { AuthModule } from '../auth/auth.module';
       UserEntity,
       AgentEntity,
       StreamEntity,
-      DonationEntity,
+      CryptoDonationEntity,
       SubscriptionEntity,
     ]),
     forwardRef(() => AuthModule),

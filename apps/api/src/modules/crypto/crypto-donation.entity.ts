@@ -83,6 +83,15 @@ export class CryptoDonationEntity {
   @Column({ name: 'expires_at', type: 'timestamp', nullable: true })
   expiresAt: Date | null;
 
+  @Column({ default: 'donation' })
+  type: 'donation' | 'subscription';
+
+  @Column({ name: 'subscription_id', type: 'uuid', nullable: true })
+  subscriptionId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  tier: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

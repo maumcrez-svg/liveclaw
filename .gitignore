@@ -5,5 +5,13 @@ dist/
 *.log
 .env
 .env.local
+.env.production
 .DS_Store
 .vercel
+.wallet.json
+**/secrets/
+**/*.key
+**/*.pem
+
+# Secrets (wallets, private keys)
+.secrets/

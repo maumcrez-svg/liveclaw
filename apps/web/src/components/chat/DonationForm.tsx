@@ -91,6 +91,18 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [addressCopied, setAddressCopied] = useState(false);
+  const [ethPrice, setEthPrice] = useState<number | null>(null);
+
+  // Fetch ETH price
+  useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${API_URL}/crypto/eth-price`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.available && data.price) setEthPrice(data.price);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -268,7 +280,7 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
             </div>
 
             {/* Custom amount */}
-            <div className="relative mb-4">
+            <div className="relative mb-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-claw-text-muted text-sm select-none">$</span>
               <input
                 type="number"
@@ -281,6 +293,12 @@ export function DonationForm({ agentId, streamId, onClose }: DonationFormProps) 
                 aria-label="Donation amount in USD"
               />
             </div>
+            {ethPrice && amount && parseFloat(amount) > 0 && (
+              <p className="text-xs text-claw-text-muted mb-4">
+                ≈ {(parseFloat(amount) / ethPrice).toFixed(6)} ETH
+              </p>
+            )}
+            {!(ethPrice && amount && parseFloat(amount) > 0) && <div className="mb-4" />}
 
             {/* Message */}
             <textarea

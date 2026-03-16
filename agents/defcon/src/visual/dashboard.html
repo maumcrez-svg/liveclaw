@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CRISIS MONITOR // ISRAEL-IRAN THEATER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--panel:#0d1117;--border:#1a2332;
+  --green:#00ff41;--amber:#ffb000;--red:#ff0040;--cyan:#00d4ff;
+  --text:#c9d1d9;--text-dim:#6e7681;--text-bright:#e6edf3;
+  --font-mono:'Share Tech Mono',monospace;--font-body:'Rajdhani',sans-serif;
+}
+html{font-size:14px;scrollbar-width:thin;scrollbar-color:var(--border) var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);width:1280px;height:720px;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* SCANLINE EFFECT */
+.panel::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,.015) 2px,rgba(0,255,65,.015) 4px);
+  pointer-events:none;z-index:1;
+}
+
+/* PANELS */
+.panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:2px;
+  position:relative;overflow:hidden;display:flex;flex-direction:column;
+}
+.panel:hover{border-color:rgba(0,255,65,.3);box-shadow:0 0 15px rgba(0,255,65,.05)}
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--border);
+  font-family:var(--font-mono);font-size:.75rem;color:var(--green);
+  text-transform:uppercase;letter-spacing:1px;flex-shrink:0;
+  background:linear-gradient(180deg,rgba(0,255,65,.04) 0%,transparent 100%);
+}
+.panel-header i{margin-right:6px;font-size:.65rem}
+.panel-body{flex:1;overflow:auto;padding:8px;position:relative}
+.status-led{
+  width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;
+  box-shadow:0 0 4px currentColor;
+}
+.led-green{background:var(--green);color:var(--green)}
+.led-amber{background:var(--amber);color:var(--amber)}
+.led-red{background:var(--red);color:var(--red)}
+.led-off{background:#333;color:#333;box-shadow:none}
+
+/* HEADER */
+#header{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 20px;border-bottom:2px solid var(--green);
+  background:linear-gradient(180deg,rgba(0,255,65,.06) 0%,var(--panel) 100%);
+  flex-shrink:0;
+}
+#header h1{
+  font-family:var(--font-mono);font-size:1.1rem;color:var(--green);
+  text-shadow:0 0 10px rgba(0,255,65,.5);letter-spacing:2px;white-space:nowrap;
+}
+.header-clocks{display:flex;gap:20px;font-family:var(--font-mono);font-size:.85rem}
+.clock-label{color:var(--text-dim);font-size:.6rem;text-transform:uppercase;letter-spacing:1px}
+.clock-value{color:var(--cyan);font-size:1rem;text-shadow:0 0 5px rgba(0,212,255,.3)}
+.header-status{display:flex;align-items:center;gap:12px}
+.source-status{display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:.6rem;color:var(--text-dim);text-transform:uppercase}
+
+/* DEFCON HEADER */
+.defcon-display{display:flex;align-items:center;gap:6px}
+.defcon-bar{width:18px;height:24px;border-radius:2px;border:1px solid rgba(255,255,255,.1);transition:all .5s}
+.defcon-label{font-family:var(--font-mono);font-size:.75rem;margin-left:4px;font-weight:700;letter-spacing:1px}
+
+/* GRID — 8 panels, 2 rows */
+.grid-container{
+  display:grid;grid-template-columns:repeat(12,1fr);gap:6px;
+  padding:6px;
+  grid-auto-rows:minmax(200px,310px);
+}
+/* Row 1 */
+.grid-container>.panel:nth-child(1){grid-column:span 4}
+.grid-container>.panel:nth-child(2){grid-column:span 4}
+.grid-container>.panel:nth-child(3){grid-column:span 4}
+/* Row 2 */
+.grid-container>.panel:nth-child(4){grid-column:span 3}
+.grid-container>.panel:nth-child(5){grid-column:span 3}
+.grid-container>.panel:nth-child(6){grid-column:span 3}
+.grid-container>.panel:nth-child(7){grid-column:span 3}
+/* Row 3 — full width */
+.grid-container>.panel:nth-child(8){grid-column:span 12}
+
+/* MAP */
+#map{width:100%;height:100%;min-height:200px;background:#0d1117}
+.map-controls{
+  position:absolute;top:10px;right:10px;z-index:1000;
+  display:flex;flex-direction:column;gap:4px;
+}
+.map-toggle{
+  padding:4px 8px;font-family:var(--font-mono);font-size:.6rem;
+  background:rgba(13,17,23,.9);border:1px solid var(--border);color:var(--text-dim);
+  cursor:pointer;border-radius:2px;text-transform:uppercase;transition:all .2s;
+  backdrop-filter:blur(4px);
+}
+.map-toggle.active{border-color:var(--green);color:var(--green);background:rgba(0,255,65,.1)}
+.leaflet-container{background:var(--bg)!important;font-family:var(--font-mono)!important}
+
+/* PULSE MARKER */
+@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(3);opacity:0}}
+.pulse-marker{
+  width:12px;height:12px;border-radius:50%;position:relative;
+}
+.pulse-marker::after{
+  content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+  border-radius:50%;animation:pulse 2s infinite;
+}
+.pulse-red{background:var(--red)}.pulse-red::after{background:var(--red)}
+.pulse-amber{background:var(--amber)}.pulse-amber::after{background:var(--amber)}
+.pulse-cyan{background:var(--cyan)}.pulse-cyan::after{background:var(--cyan)}
+
+/* NEWS FEED */
+.news-card{
+  padding:8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s;
+}
+.news-card:hover{background:rgba(0,255,65,.03)}
+.news-card:last-child{border-bottom:none}
+.news-source{
+  display:inline-block;padding:1px 6px;border-radius:2px;
+  font-family:var(--font-mono);font-size:.55rem;text-transform:uppercase;
+  margin-bottom:4px;letter-spacing:.5px;
+}
+.news-headline{font-size:.85rem;color:var(--text-bright);line-height:1.3;margin-bottom:3px;font-weight:500}
+.news-time{font-family:var(--font-mono);font-size:.6rem;color:var(--text-dim)}
+.news-flash{animation:flash .5s ease-out}
+@keyframes flash{0%{background:rgba(0,255,65,.15)}100%{background:transparent}}
+
+/* FLIGHT TRACKER TABLE */
+.flight-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:.65rem}
+.flight-table th{
+  text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);
+  color:var(--green);text-transform:uppercase;letter-spacing:.5px;
+  position:sticky;top:0;background:var(--panel);cursor:pointer;
+}
+.flight-table td{padding:3px 6px;border-bottom:1px solid rgba(26,35,50,.5);color:var(--text)}
+.flight-table tr:hover td{background:rgba(0,255,65,.03)}
+.flight-count{font-family:var(--font-mono);font-size:.65rem;color:var(--cyan)}
+
+/* OSINT LOG */
+.osint-entry{
+  padding:6px 8px;border-bottom:1px solid rgba(26,35,50,.3);
+  font-family:var(--font-mono);font-size:.7rem;line-height:1.4;
+}
+.osint-ts{color:var(--text-dim);margin-right:6px}
+.osint-tag{
+  display:inline-block;padding:0 4px;border-radius:2px;font-size:.55rem;
+  margin-right:4px;text-transform:uppercase;letter-spacing:.5px;
+}
+.osint-title{color:var(--text-bright)}
+.osint-tone-pos{color:var(--green)}.osint-tone-neg{color:var(--red)}.osint-tone-neu{color:var(--text-dim)}
+
+/* THREAT MATRIX */
+.defcon-big{
+  text-align:center;padding:12px 0;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.defcon-big-bars{display:flex;justify-content:center;gap:6px;margin:8px 0}
+.defcon-big-bar{width:30px;height:40px;border-radius:2px;border:1px solid rgba(255,255,255,.1);transition:all .5s}
+.defcon-big-label{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;letter-spacing:2px}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;flex-shrink:0}
+.metric-card{
+  padding:8px;border:1px solid var(--border);border-radius:2px;text-align:center;
+  background:rgba(0,0,0,.2);
+}
+.metric-value{font-family:var(--font-mono);font-size:1.2rem;color:var(--cyan);font-weight:700}
+.metric-label{font-family:var(--font-mono);font-size:.55rem;color:var(--text-dim);text-transform:uppercase;margin-top:2px;letter-spacing:.5px}
+.entity-board{flex:1;overflow:auto;padding:6px}
+.entity-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 8px;border-bottom:1px solid rgba(26,35,50,.3);
+  font-family:var(--font-mono);font-size:.7rem;
+}
+.entity-name{color:var(--text-bright)}
+.entity-status{padding:2px 6px;border-radius:2px;font-size:.55rem;text-transform:uppercase;letter-spacing:.5px}
+.sparkline-container{padding:8px;border-bottom:1px solid var(--border);flex-shrink:0}
+
+/* TICKER */
+#ticker{
+  border-top:2px solid var(--green);background:var(--panel);overflow:hidden;
+  white-space:nowrap;position:relative;height:32px;flex-shrink:0;
+}
+#ticker::before{
+  content:'BREAKING';position:absolute;left:0;top:0;z-index:2;
+  padding:7px 12px;background:var(--red);color:#fff;font-family:var(--font-mono);
+  font-size:.7rem;font-weight:700;letter-spacing:1px;
+}
+.ticker-track{
+  display:inline-block;padding-left:100px;line-height:32px;
+  font-family:var(--font-mono);font-size:.75rem;color:var(--text);
+  animation:ticker-scroll 120s linear infinite;
+}
+@keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-sep{color:var(--green);margin:0 20px;animation:diamond-pulse 2s infinite}
+@keyframes diamond-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* STALE BADGE */
+.stale-badge{
+  display:inline-block;padding:2px 6px;background:rgba(255,176,0,.15);
+  border:1px solid var(--amber);color:var(--amber);font-family:var(--font-mono);
+  font-size:.55rem;border-radius:2px;text-transform:uppercase;letter-spacing:.5px;
+  animation:stale-blink 2s infinite;
+}
+@keyframes stale-blink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* LOADING */
+.loading-spinner{
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;
+}
+.loading-spinner::before{
+  content:'';width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--green);border-radius:50%;margin-right:8px;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MISC */
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+.text-green{color:var(--green)}.text-amber{color:var(--amber)}.text-red{color:var(--red)}.text-cyan{color:var(--cyan)}
+.dark-tooltip{background:#0d1117!important;color:#c9d1d9!important;border:1px solid var(--cyan)!important;font-family:var(--font-mono)!important;font-size:11px!important}
+
+/* VESSEL TRACKER TABLE */
+.vessel-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:.65rem}
+.vessel-table th{
+  text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);
+  color:var(--green);text-transform:uppercase;letter-spacing:.5px;
+  position:sticky;top:0;background:var(--panel);
+}
+.vessel-table td{padding:3px 6px;border-bottom:1px solid rgba(26,35,50,.5);color:var(--text)}
+.vessel-table tr:hover td{background:rgba(0,255,65,.03)}
+.vessel-count{font-family:var(--font-mono);font-size:.65rem;color:var(--cyan)}
+
+/* RECENT INTEL */
+.intel-entry{
+  padding:6px 8px;border-bottom:1px solid rgba(26,35,50,.3);
+  font-family:var(--font-mono);font-size:.65rem;line-height:1.4;
+  animation:flash .5s ease-out;
+}
+.intel-entry .intel-badge{
+  display:inline-block;padding:1px 5px;border-radius:2px;font-size:.5rem;
+  text-transform:uppercase;letter-spacing:.5px;margin-right:4px;
+}
+.intel-badge-rss{background:rgba(0,255,65,.15);color:var(--green);border:1px solid rgba(0,255,65,.3)}
+.intel-badge-osint{background:rgba(0,212,255,.15);color:var(--cyan);border:1px solid rgba(0,212,255,.3)}
+.intel-badge-tweet{background:rgba(255,176,0,.15);color:var(--amber);border:1px solid rgba(255,176,0,.3)}
+.intel-ts{color:var(--text-dim);margin-right:6px;font-size:.55rem}
+.intel-title{color:var(--text-bright)}
+
+/* ALERT FLASH */
+@keyframes alert-flash{0%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body style="display:flex;flex-direction:column;height:720px">
+
+<!-- HEADER -->
+<header id="header">
+  <h1><i class="fas fa-satellite-dish"></i> CRISIS MONITOR // ISRAEL-IRAN THEATER</h1>
+  <div class="header-clocks">
+    <div><div class="clock-label">UTC</div><div class="clock-value" id="clock-utc">--:--:--</div></div>
+    <div><div class="clock-label">Local</div><div class="clock-value" id="clock-local">--:--:--</div></div>
+  </div>
+  <div class="defcon-display">
+    <div class="defcon-bar" id="defcon-bar-1"></div>
+    <div class="defcon-bar" id="defcon-bar-2"></div>
+    <div class="defcon-bar" id="defcon-bar-3"></div>
+    <div class="defcon-bar" id="defcon-bar-4"></div>
+    <div class="defcon-bar" id="defcon-bar-5"></div>
+    <div class="defcon-label" id="defcon-label">DEFCON ?</div>
+  </div>
+  <div class="header-status">
+    <div class="source-status">RSS<span class="status-led led-off" id="led-rss"></span></div>
+    <div class="source-status">GDELT<span class="status-led led-off" id="led-gdelt"></span></div>
+    <div class="source-status">OpenSky<span class="status-led led-off" id="led-opensky"></span></div>
+    <div class="source-status">AIS<span class="status-led led-off" id="led-ais"></span></div>
+  </div>
+</header>
+
+<!-- MAIN GRID -->
+<div class="grid-container" style="flex:1;overflow:hidden">
+
+  <!-- 1. COMMS — Agent Voice Status (span 4) -->
+  <div class="panel" id="panel-comms">
+    <div class="panel-header"><span><i class="fas fa-broadcast-tower"></i> COMMS // WATCHDOG</span><span class="status-led led-green" id="led-comms"></span></div>
+    <div class="panel-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+      <div id="comms-mode" style="font-family:var(--font-mono);font-size:1.4rem;color:var(--green);text-shadow:0 0 10px rgba(0,255,65,.5);letter-spacing:2px">IDLE</div>
+      <canvas id="comms-waveform" width="300" height="60" style="border:1px solid var(--border);border-radius:2px"></canvas>
+      <div id="comms-message" style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);text-align:center;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+    </div>
+  </div>
+
+  <!-- 2. THEATER MAP (span 4) -->
+  <div class="panel" id="panel-map">
+    <div class="panel-header"><span><i class="fas fa-map-marked-alt"></i> THEATER MAP</span><span class="flight-count" id="flight-count-header"></span></div>
+    <div class="panel-body" style="padding:0;position:relative">
+      <div id="map"></div>
+      <div class="map-controls" id="map-controls"></div>
+    </div>
+  </div>
+
+  <!-- 3. NEWS FEED (span 4) -->
+  <div class="panel" id="panel-news">
+    <div class="panel-header"><span><i class="fas fa-rss"></i> NEWS FEED</span><span class="status-led led-off" id="led-news-inner"></span></div>
+    <div class="panel-body" id="news-body">
+      <div class="loading-spinner">Loading feeds...</div>
+    </div>
+  </div>
+
+  <!-- 4. RECENT INTEL (span 3) -->
+  <div class="panel" id="panel-intel-log">
+    <div class="panel-header"><span><i class="fas fa-scroll"></i> RECENT INTEL</span><span id="intel-log-count" style="font-family:var(--font-mono);font-size:.65rem;color:var(--cyan)"></span></div>
+    <div class="panel-body" id="intel-log-body">
+      <div class="loading-spinner">Awaiting intelligence...</div>
+    </div>
+  </div>
+
+  <!-- 5. FLIGHT TRACKER (span 3) -->
+  <div class="panel" id="panel-flights">
+    <div class="panel-header"><span><i class="fas fa-plane"></i> FLIGHT TRACKER</span><span class="flight-count" id="flight-count"></span></div>
+    <div class="panel-body" id="flights-body">
+      <div class="loading-spinner">Awaiting OpenSky data...</div>
+    </div>
+  </div>
+
+  <!-- 6. VESSEL TRACKER (span 3) -->
+  <div class="panel" id="panel-vessels">
+    <div class="panel-header"><span><i class="fas fa-ship"></i> VESSEL TRACKER // AIS</span><span class="vessel-count" id="vessel-count"></span></div>
+    <div class="panel-body" id="vessels-body">
+      <div class="loading-spinner">Connecting to AISStream...</div>
+    </div>
+  </div>
+
+  <!-- 7. OSINT // GDELT (span 3) -->
+  <div class="panel" id="panel-osint">
+    <div class="panel-header"><span><i class="fas fa-terminal"></i> OSINT // GDELT</span><span class="status-led led-off" id="led-osint-inner"></span></div>
+    <div class="panel-body" id="osint-body">
+      <div class="loading-spinner">Querying GDELT...</div>
+    </div>
+  </div>
+
+  <!-- 8. THREAT MATRIX (span 12) -->
+  <div class="panel" id="panel-threat">
+    <div class="panel-header"><span><i class="fas fa-exclamation-triangle"></i> THREAT MATRIX</span></div>
+    <div class="defcon-big">
+      <div class="defcon-big-label" id="defcon-big-label">DEFCON ?</div>
+      <div class="defcon-big-bars">
+        <div class="defcon-big-bar" id="db-1"></div>
+        <div class="defcon-big-bar" id="db-2"></div>
+        <div class="defcon-big-bar" id="db-3"></div>
+        <div class="defcon-big-bar" id="db-4"></div>
+        <div class="defcon-big-bar" id="db-5"></div>
+      </div>
+    </div>
+    <div class="sparkline-container"><svg id="sparkline" width="100%" height="40" viewBox="0 0 200 40"></svg></div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-value" id="metric-articles">--</div><div class="metric-label">Articles/hr</div></div>
+      <div class="metric-card"><div class="metric-value" id="metric-tone">--</div><div class="metric-label">Avg Tone</div></div>
+      <div class="metric-card"><div class="metric-value" id="metric-flights">--</div><div class="metric-label">Active Flights</div></div>
+      <div class="metric-card"><div class="metric-value" id="metric-feeds">--</div><div class="metric-label">Feed Health</div></div>
+    </div>
+    <div class="entity-board" id="entity-board"></div>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="ticker-track" id="ticker-track">
+    <span class="text-dim">Awaiting data feeds...</span>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+(function(){
+'use strict';
+
+// ============================================================
+// CONFIG
+// ============================================================
+const CONFIG = {
+  mapCenter: [32.5, 48.0],
+  mapZoom: 5,
+  tileUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  tileAttr: '&copy; OpenStreetMap &copy; CARTO',
+  adsbUrl: '/api/flights',
+  gdeltDocUrl: '/api/proxy?url=' + encodeURIComponent('https://api.gdeltproject.org/api/v2/doc/doc?query=%28Israel+OR+Iran+OR+IDF+OR+IRGC+OR+Hezbollah+OR+Houthi%29&mode=artlist&maxrecords=50&format=json&sort=datedesc'),
+  gdeltGeoUrl: '/api/proxy?url=' + encodeURIComponent('https://api.gdeltproject.org/api/v2/geo/geo?query=%28Israel+OR+Iran+OR+IDF+OR+IRGC+OR+Hezbollah+OR+Houthi%29&format=GeoJSON&maxpoints=100'),
+  gdeltToneUrl: '/api/proxy?url=' + encodeURIComponent('https://api.gdeltproject.org/api/v2/doc/doc?query=%28Israel+OR+Iran+OR+IDF+OR+IRGC+OR+Hezbollah+OR+Houthi%29&mode=timelinetone&format=json&TIMESPAN=7d'),
+  rssProxy: 'https://api.rss2json.com/v1/api.json?rss_url=',
+  rssFallback: '/api/proxy?url=',
+  aisStreamUrl: 'wss://stream.aisstream.io/v0/stream',
+  aisApiKey: '75838e4d7f0c7ae87436d4040ff465d4b387caa1',
+};
+
+const RSS_FEEDS = [
+  { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml', color: '#d4a017' },
+  { name: 'Reuters', url: 'https://www.reutersagency.com/feed/?taxonomy=best-regions&post_type=best', color: '#ff6600' },
+  { name: 'BBC ME', url: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml', color: '#bb1919' },
+  { name: 'Jerusalem Post', url: 'https://www.jpost.com/rss/rssfeedsfrontpage.aspx', color: '#1a5276' },
+  { name: 'Times of Israel', url: 'https://www.timesofisrael.com/feed/', color: '#2e86c1' },
+  { name: 'Middle East Eye', url: 'https://www.middleeasteye.net/rss', color: '#8e44ad' },
+  { name: 'Defense One', url: 'https://www.defenseone.com/rss/', color: '#566573' },
+  { name: 'Arab News', url: 'https://www.arabnews.com/rss.xml', color: '#1e8449' },
+  { name: 'Bellingcat', url: 'https://www.bellingcat.com/feed/', color: '#e74c3c' },
+  { name: 'CrisisWatch', url: 'https://www.crisisgroup.org/rss-0', color: '#3498db' },
+  { name: 'ISW', url: 'https://understandingwar.org/feed', color: '#9b59b6' },
+  { name: 'HRW', url: 'https://www.hrw.org/rss/news', color: '#27ae60' },
+  { name: 'ReliefWeb', url: 'https://reliefweb.int/updates/rss.xml', color: '#e67e22' },
+  { name: 'Amnesty Intl', url: 'https://www.amnesty.org/en/feed/', color: '#f1c40f' },
+];
+
+const CONFLICT_ZONES = [
+  // Israel targets
+  { name: 'Tel Aviv', lat: 32.0853, lon: 34.7818, type: 'red', desc: 'Israel — Government/military HQ, primary IRGC target package' },
+  { name: 'Dimona', lat: 31.0680, lon: 35.2063, type: 'red', desc: 'Israel — Negev Nuclear Research Center (plutonium reactor)' },
+  { name: 'Haifa', lat: 32.7940, lon: 34.9896, type: 'amber', desc: 'Israel — Northern port, Rafael defense industries, Haifa refinery' },
+  // Iran nuclear sites
+  { name: 'Tehran', lat: 35.6892, lon: 51.3890, type: 'red', desc: 'Iran — Capital, Supreme Leader compound, IRGC-AF C2 nodes' },
+  { name: 'Natanz', lat: 33.5114, lon: 51.7275, type: 'red', desc: 'Iran — FEP/PFEP enrichment halls, IR-6 cascade clusters (underground)' },
+  { name: 'Isfahan / UCF', lat: 32.6546, lon: 51.6680, type: 'red', desc: 'Iran — Uranium Conversion Facility, UF\u2086 feedstock for Natanz' },
+  { name: 'Fordow / Qom', lat: 34.7080, lon: 51.0440, type: 'red', desc: 'Iran — Deep-mountain enrichment plant, hardened to bunker busters' },
+  { name: 'Arak / Khondab', lat: 34.3560, lon: 49.2430, type: 'amber', desc: 'Iran — IR-40 heavy-water reactor (redesigned), plutonium pathway' },
+  { name: 'Parchin', lat: 35.5220, lon: 51.7700, type: 'amber', desc: 'Iran — Military complex, suspected weapons-design R&D & EBW testing' },
+  { name: 'Bushehr', lat: 28.8329, lon: 50.8882, type: 'amber', desc: 'Iran — VVER-1000 power reactor (Russian-built), civilian but strategic' },
+  // Iran military / naval
+  { name: 'Bandar Abbas', lat: 27.1832, lon: 56.2666, type: 'red', desc: 'Iran — IRGC Navy HQ, fast-attack craft & anti-ship cruise missiles' },
+  { name: 'Strait of Hormuz', lat: 26.5667, lon: 56.2500, type: 'red', desc: 'Iran — Chokepoint for 21% of global oil; IRGC mines & patrol boats' },
+  { name: 'Chabahar', lat: 25.2919, lon: 60.6430, type: 'amber', desc: 'Iran — Makran coast naval expansion, drone & missile storage' },
+  { name: 'Tabriz / IRGC-AF', lat: 38.0800, lon: 46.2919, type: 'amber', desc: 'Iran — IRGC Aerospace Force base, Shahab-3 TEL garrison' },
+  { name: 'Khorramabad', lat: 33.4878, lon: 48.3558, type: 'amber', desc: 'Iran — IRGC-AF missile base, Emad & Sejjil solid-fuel storage' },
+  { name: 'Semnan Space Center', lat: 35.2344, lon: 53.9211, type: 'amber', desc: 'Iran — SLV launches (Simorgh/Qased), dual-use ICBM technology' },
+];
+
+const MILITARY_BASES = [
+  // US Air Bases
+  { name: 'Al Udeid AB', lat: 25.1174, lon: 51.3150, flag: 'US/Qatar', type: 'air',
+    info: 'CENTCOM Forward HQ \u00b7 379th AEW \u00b7 KC-135/KC-10 tankers, F-15E, RQ-4 Global Hawk \u00b7 ~10,000 personnel' },
+  { name: 'Al Dhafra AB', lat: 24.2483, lon: 54.5478, flag: 'US/UAE', type: 'air',
+    info: '380th AEW \u00b7 F-22 Raptor det., F-35A rotational, U-2S, MQ-9 Reaper \u00b7 THAAD battery' },
+  { name: 'Incirlik AB', lat: 37.0021, lon: 35.4259, flag: 'US/Turkey', type: 'air',
+    info: '39th ABW \u00b7 F-15E/F-16 rotational \u00b7 B61 nuclear gravity bombs (NATO share) \u00b7 ~5,000 personnel' },
+  { name: 'Prince Sultan AB', lat: 24.0625, lon: 47.5802, flag: 'US/Saudi', type: 'air',
+    info: '378th AEW \u00b7 F-16/F-15E det., Patriot PAC-3 batteries \u00b7 ~2,500 personnel' },
+  { name: 'Al Salem AB', lat: 29.3468, lon: 47.5210, flag: 'US/Kuwait', type: 'air',
+    info: '386th AEW \u00b7 C-130J, A-10C, MQ-9 Reaper ops \u00b7 combat search & rescue hub' },
+  { name: 'Muwaffaq Salti AB', lat: 31.8268, lon: 36.7822, flag: 'US/Jordan', type: 'air',
+    info: 'F-16 Fighting Falcon det., MQ-9 Reaper \u00b7 ISR & strike staging for Levant theater' },
+  // US Army / Ground
+  { name: 'Camp Arifjan', lat: 29.1282, lon: 48.0759, flag: 'US/Kuwait', type: 'army',
+    info: 'US Army Central (ARCENT) Forward HQ \u00b7 3rd Army logistics hub \u00b7 ~13,000 personnel' },
+  { name: 'Camp Buehring', lat: 29.8225, lon: 47.6758, flag: 'US/Kuwait', type: 'army',
+    info: 'BCT staging & training area \u00b7 heavy armor pre-positioned stock (APS-5)' },
+  { name: 'Camp As Sayliyah', lat: 25.3200, lon: 51.3800, flag: 'US/Qatar', type: 'army',
+    info: 'Army Prepositioned Stock (APS-5) \u00b7 full brigade combat team equipment set' },
+  // US Navy
+  { name: 'NSA Bahrain', lat: 26.2361, lon: 50.6156, flag: 'US/Bahrain', type: 'naval',
+    info: 'NAVCENT / 5th Fleet HQ \u00b7 Destroyer Squadron 50, patrol coastal ships, mine countermeasures' },
+  { name: 'Camp Lemonnier', lat: 11.5470, lon: 43.1450, flag: 'US/Djibouti', type: 'naval',
+    info: 'CJTF-HOA \u00b7 P-8A Poseidon MPA, MQ-9 Reaper \u00b7 anti-piracy & Red Sea security' },
+  { name: 'Diego Garcia', lat: -7.3195, lon: 72.4229, flag: 'US/UK', type: 'naval',
+    info: 'NSF Diego Garcia \u00b7 B-2/B-52 capable \u00b7 maritime pre-positioning ships (MPS-2)' },
+  // Carrier Strike Groups (approx. operating areas)
+  { name: 'CSG \u2014 N. Arabian Sea', lat: 23.5000, lon: 63.0000, flag: 'US Navy', type: 'carrier',
+    info: 'Carrier Strike Group \u00b7 Nimitz-class CVN + CVW air wing (F/A-18E/F, EA-18G, E-2D) \u00b7 Aegis cruiser + DDGs' },
+  { name: 'CSG \u2014 E. Mediterranean', lat: 34.0000, lon: 32.0000, flag: 'US Navy', type: 'carrier',
+    info: 'Carrier Strike Group \u00b7 eastern Med patrol \u00b7 Tomahawk TLAM coverage of Levant & western Iran' },
+  { name: 'ESG \u2014 Gulf of Oman', lat: 25.0000, lon: 58.5000, flag: 'US Navy', type: 'carrier',
+    info: 'Expeditionary Strike Group \u00b7 LHD/LHA + Marines MEU \u00b7 V-22 Osprey, AH-1Z, F-35B (Lightning det.)' },
+  // UK / France
+  { name: 'RAF Akrotiri', lat: 34.5904, lon: 32.9879, flag: 'UK/Cyprus', type: 'air',
+    info: 'RAF 903 EAW \u00b7 Typhoon FGR4, Voyager tanker \u00b7 Raptor ELINT pod \u00b7 sovereign base area' },
+  { name: 'Duqm Naval Facility', lat: 19.5045, lon: 57.6346, flag: 'UK/Oman', type: 'naval',
+    info: 'Joint Logistics Support Base \u00b7 dry dock for QE-class carriers \u00b7 pre-positioned stores' },
+  { name: 'French Naval \u2014 Abu Dhabi', lat: 24.4539, lon: 54.3773, flag: 'France/UAE', type: 'naval',
+    info: 'FFEAU \u00b7 Rafale M det., La Fayette frigate, Rubis-class SSN port calls \u00b7 ~700 personnel' },
+  // Israel
+  { name: 'Nevatim AB', lat: 31.2083, lon: 35.0123, flag: 'Israel', type: 'air',
+    info: 'IAF "Wing 28" \u00b7 F-35I Adir (2 sqns), F-16I Sufa \u00b7 Iron Dome & David\'s Sling batteries' },
+  { name: 'Ramon AB', lat: 30.7763, lon: 34.6672, flag: 'Israel', type: 'air',
+    info: 'IAF "Wing 25" \u00b7 F-16C/D Barak, advanced pilot training \u00b7 southern Negev air defense sector' },
+  { name: 'Hatzerim AB', lat: 31.2344, lon: 34.6627, flag: 'Israel', type: 'air',
+    info: 'IAF "Wing 6" \u00b7 F-15I Ra\'am (69th "Hammers" sqn) \u00b7 Hatzerim IAF Museum & OCA base' },
+  { name: 'Tel Nof AB', lat: 31.8391, lon: 34.8218, flag: 'Israel', type: 'air',
+    info: 'IAF "Wing 8" \u00b7 CH-53 Yasur, F-16I, Arrow-3 ABM battery \u00b7 strategic weapons depot' },
+  { name: 'Ramat David AB', lat: 32.6651, lon: 35.1832, flag: 'Israel', type: 'air',
+    info: 'IAF "Wing 1" \u00b7 F-16C/D, AH-64D Saraph attack helos \u00b7 northern theater air superiority' },
+  { name: 'Palmachim AB', lat: 31.8979, lon: 34.6907, flag: 'Israel', type: 'air',
+    info: 'IAF \u00b7 Arrow-2/3 ABM test range, Jericho MRBM/IRBM site, Ofek satellite launches' },
+];
+
+const AIS_BBOX = [[10, 28], [40, 68]];
+const NAV_STATUS = {
+  0: 'Under Way', 1: 'At Anchor', 2: 'Not Commanding', 3: 'Restricted',
+  4: 'Constrained Draught', 5: 'Moored', 6: 'Aground', 7: 'Fishing',
+  8: 'Under Sail', 11: 'Towing', 12: 'Towing (200m+)', 14: 'AIS-SART', 15: 'Undefined',
+};
+
+const ENTITIES = [
+  { name: 'IRAN / SUPREME LEADER', icon: 'fa-crosshairs', status: 'ELEVATED', color: 'var(--red)' },
+  { name: 'IRGC AEROSPACE FORCE', icon: 'fa-rocket', status: 'ELEVATED', color: 'var(--red)' },
+  { name: 'IRGC NAVY', icon: 'fa-anchor', status: 'ELEVATED', color: 'var(--red)' },
+  { name: 'AEOI NUCLEAR', icon: 'fa-atom', status: 'CRITICAL', color: 'var(--red)' },
+  { name: 'ISRAEL / IDF', icon: 'fa-shield-halved', status: 'ACTIVE', color: 'var(--cyan)' },
+  { name: 'IAF AIR FORCE', icon: 'fa-jet-fighter', status: 'ACTIVE', color: 'var(--cyan)' },
+  { name: 'MOSSAD / AMAN', icon: 'fa-eye', status: 'ACTIVE', color: 'var(--cyan)' },
+  { name: 'IAEA INSPECTORS', icon: 'fa-magnifying-glass', status: 'MONITORING', color: 'var(--amber)' },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  newsItems: [],
+  osintItems: [],
+  flights: [],
+  prevFlights: {},
+  flightAnimId: null,
+  flightLastFetch: 0,
+  flightRefreshMs: 30000,
+  toneHistory: [],
+  defconLevel: 3,
+  feedHealth: { rss: 0, gdelt: 0, opensky: 0, ais: 0 },
+  lastUpdate: { rss: 0, gdelt: 0, opensky: 0 },
+  rssFeedIndex: 0,
+  vessels: {},
+  vesselMarkers: {},
+  vesselTrails: {},
+  vesselLayer: null,
+  vesselTrailLayer: null,
+  vesselTrailPolylines: {},
+  vesselSocket: null,
+  militaryFlights: [],
+  vesselReconnectDelay: 2000,
+  vesselMaxCount: 500,
+  vesselLastRender: 0,
+  map: null,
+  flightMarkers: [],
+  flightTrails: {},
+  trailLayer: null,
+  trailPolylines: {},
+  trailAnimCounter: 0,
+  heatLayer: null,
+  flightLayer: null,
+  geoLayer: null,
+  missileLayer: null,
+};
+
+// ============================================================
+// AUDIO PLAYBACK (TTS from Node via Puppeteer)
+// ============================================================
+let audioCtx = null;
+let analyser = null;
+let isSpeaking = false;
+let currentAmplitude = 0;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.connect(audioCtx.destination);
+}
+
+window.__playAudio = function(base64, format) {
+  if (!audioCtx) initAudio();
+  return new Promise((resolve) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    audioCtx.decodeAudioData(bytes.buffer, (buffer) => {
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(analyser);
+      source.start(0);
+      isSpeaking = true;
+      source.onended = () => {
+        isSpeaking = false;
+        currentAmplitude = 0;
+        resolve();
+      };
+    }, () => resolve());
+  });
+};
+
+// ============================================================
+// RESILIENT FETCH
+// ============================================================
+async function resilientFetch(url, opts = {}, retries = 2, timeout = 10000) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeout);
+      const res = await fetch(url, { ...opts, signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (e) {
+      if (i === retries) throw e;
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+    }
+  }
+}
+
+// ============================================================
+// CACHE
+// ============================================================
+function cacheSet(key, data) {
+  try { sessionStorage.setItem('cm_' + key, JSON.stringify({ t: Date.now(), d: data })); } catch(e) {}
+}
+function cacheGet(key, maxAge = 600000) {
+  try {
+    const raw = sessionStorage.getItem('cm_' + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.t > maxAge) return null;
+    return parsed.d;
+  } catch(e) { return null; }
+}
+
+// ============================================================
+// CLOCKS
+// ============================================================
+function updateClocks() {
+  const now = new Date();
+  document.getElementById('clock-utc').textContent = now.toUTCString().slice(17, 25);
+  document.getElementById('clock-local').textContent = now.toLocaleTimeString('en-GB');
+}
+
+// ============================================================
+// LED STATUS
+// ============================================================
+function setLed(id, status) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'status-led ' + ({ ok: 'led-green', warn: 'led-amber', err: 'led-red', off: 'led-off' }[status] || 'led-off');
+}
+
+// ============================================================
+// DEFCON CALCULATION
+// ============================================================
+const HIGH_PRIORITY_KEYWORDS_DEFCON = [
+  'attack', 'strike', 'missile', 'nuclear', 'bombing', 'airstrike', 'drone',
+  'escalation', 'retaliation', 'military operation', 'intercept', 'invasion',
+  'ballistic', 'cruise missile', 'carrier strike', 'blockade', 'casualties',
+  'explosion', 'detonation', 'WMD', 'chemical', 'biological',
+];
+
+function calcDefcon(avgTone) {
+  // Legacy single-source — used only if multi-source has no data
+  if (avgTone <= -6) return 1;
+  if (avgTone <= -4) return 2;
+  if (avgTone <= -2) return 3;
+  if (avgTone <= 0) return 4;
+  return 5;
+}
+
+function calcMultiSourceDefcon() {
+  let score = 0;
+
+  // 1. GDELT tone (0-30 points)
+  if (state.toneHistory.length > 0) {
+    const recent = state.toneHistory.slice(-10);
+    const avgTone = recent.reduce((a, b) => a + b, 0) / recent.length;
+    score += Math.max(0, Math.min(30, Math.round(((5 - avgTone) / 13) * 30)));
+  }
+
+  // 2. Keyword density from recent articles (0-30 points)
+  const recentArticles = state.newsItems.slice(0, 20);
+  const criticalHits = recentArticles.filter(a =>
+    HIGH_PRIORITY_KEYWORDS_DEFCON.some(kw => a.title.toLowerCase().includes(kw))
+  ).length;
+  score += Math.min(criticalHits * 3, 30);
+
+  // 3. Military flight count (0-20 points)
+  const milFlights = (state.militaryFlights || []).length;
+  score += Math.min(milFlights * 4, 20);
+
+  // 4. Article velocity (0-20 points)
+  const articlesPerHour = state.newsItems.filter(a =>
+    a.pubDate && (Date.now() - new Date(a.pubDate).getTime() < 3600000)
+  ).length;
+  score += Math.min(articlesPerHour * 2, 20);
+
+  if (score >= 80) return 1;
+  if (score >= 60) return 2;
+  if (score >= 40) return 3;
+  if (score >= 20) return 4;
+  return 5;
+}
+
+function renderDefcon(level) {
+  const prevLevel = state.defconLevel;
+  state.defconLevel = level;
+  const colors = ['#00ff41', '#00d4ff', '#ffb000', '#ff6600', '#ff0040'];
+  const labels = ['DEFCON 5', 'DEFCON 4', 'DEFCON 3', 'DEFCON 2', 'DEFCON 1'];
+  const textColors = [colors[4], colors[3], colors[2], colors[1], colors[0]];
+
+  // Header bars
+  for (let i = 1; i <= 5; i++) {
+    const bar = document.getElementById('defcon-bar-' + i);
+    const active = i <= (6 - level);
+    bar.style.background = active ? colors[i - 1] : 'rgba(255,255,255,.05)';
+    bar.style.boxShadow = active ? `0 0 8px ${colors[i - 1]}` : 'none';
+  }
+  const lbl = document.getElementById('defcon-label');
+  lbl.textContent = labels[level - 1];
+  lbl.style.color = textColors[level - 1];
+
+  // Big display
+  for (let i = 1; i <= 5; i++) {
+    const bar = document.getElementById('db-' + i);
+    const active = i <= (6 - level);
+    bar.style.background = active ? colors[i - 1] : 'rgba(255,255,255,.05)';
+    bar.style.boxShadow = active ? `0 0 12px ${colors[i - 1]}` : 'none';
+  }
+  const bigLbl = document.getElementById('defcon-big-label');
+  bigLbl.textContent = labels[level - 1];
+  bigLbl.style.color = textColors[level - 1];
+  bigLbl.style.textShadow = `0 0 20px ${textColors[level - 1]}`;
+
+  if (typeof window.__onDefconChange === 'function' && level !== prevLevel) {
+    window.__onDefconChange(level);
+  }
+}
+
+// ============================================================
+// SPARKLINE
+// ============================================================
+function renderSparkline(data) {
+  if (!data || data.length < 2) return;
+  const svg = document.getElementById('sparkline');
+  const w = 200, h = 40, pad = 2;
+  const vals = data.slice(-30);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  const points = vals.map((v, i) => {
+    const x = pad + (i / (vals.length - 1)) * (w - 2 * pad);
+    const y = h - pad - ((v - min) / range) * (h - 2 * pad);
+    return `${x},${y}`;
+  });
+  const zeroY = h - pad - ((0 - min) / range) * (h - 2 * pad);
+  svg.innerHTML = `
+    <line x1="${pad}" y1="${zeroY}" x2="${w-pad}" y2="${zeroY}" stroke="rgba(255,255,255,.1)" stroke-dasharray="2,2"/>
+    <polyline points="${points.join(' ')}" fill="none" stroke="var(--cyan)" stroke-width="1.5"/>
+    <circle cx="${points[points.length-1].split(',')[0]}" cy="${points[points.length-1].split(',')[1]}" r="2" fill="var(--cyan)"/>
+  `;
+}
+
+// ============================================================
+// MAP (Leaflet)
+// ============================================================
+function initMap() {
+  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
+  L.control.zoom({ position: 'bottomleft' }).addTo(map);
+  L.tileLayer(CONFIG.tileUrl, { attribution: CONFIG.tileAttr, maxZoom: 18 }).addTo(map);
+  state.map = map;
+
+  // Conflict zones
+  CONFLICT_ZONES.forEach(z => {
+    const color = z.type === 'red' ? '#ff0040' : '#ffb000';
+    const marker = L.circleMarker([z.lat, z.lon], {
+      radius: 7, fillColor: color, fillOpacity: 0.8, color: color, weight: 1,
+      className: 'pulse-' + z.type,
+    }).addTo(map);
+    marker.bindPopup(`<div style="font-family:var(--font-mono);font-size:12px;color:#fff;background:#0d1117;padding:8px;border:1px solid ${color}">
+      <b style="color:${color}">${z.name}</b><br>${z.desc}</div>`, { className: 'dark-popup' });
+
+    const pulse = L.circleMarker([z.lat, z.lon], {
+      radius: 7, fillColor: color, fillOpacity: 0, color: color, weight: 2, opacity: 0.5,
+    }).addTo(map);
+    animatePulse(pulse, color);
+  });
+
+  // Military bases
+  const baseIcons = { air: 'fa-jet-fighter', naval: 'fa-anchor', carrier: 'fa-ship', army: 'fa-campground' };
+  MILITARY_BASES.forEach(b => {
+    const ico = baseIcons[b.type] || 'fa-jet-fighter';
+    const clr = b.flag.startsWith('Israel') ? 'var(--cyan)' : b.flag.startsWith('US') ? 'var(--green)' : 'var(--amber)';
+    const icon = L.divIcon({
+      html: `<i class="fas ${ico}" style="color:${clr};font-size:10px"></i>`,
+      className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+    });
+    const infoHtml = b.info ? `<hr style="border:none;border-top:1px solid #1a2332;margin:4px 0"><span style="color:#8b949e;font-size:10px;line-height:1.35;display:block">${b.info}</span>` : '';
+    L.marker([b.lat, b.lon], { icon }).addTo(map)
+      .bindPopup(`<div style="font-family:var(--font-mono);font-size:12px;color:#fff;background:#0d1117;padding:8px;border:1px solid ${clr};max-width:280px">
+        <b style="color:${clr}">${b.name}</b> <span style="color:#6e7681;font-size:10px">[${b.flag}]</span>${infoHtml}</div>`, { className: 'dark-popup', maxWidth: 300 });
+  });
+
+  // Missile range circles
+  state.missileLayer = L.layerGroup();
+  const missileOrigins = [
+    { lat: 35.6892, lon: 51.389, radius: 2000000, label: 'Iran Shahab-3/Emad MRBM (~2,000km)', color: '#ff0040', opacity: 0.4, fillOpacity: 0.04 },
+    { lat: 35.6892, lon: 51.389, radius: 2500000, label: 'Iran Khorramshahr/Sejjil (~2,500km)', color: '#ff0040', opacity: 0.2, fillOpacity: 0.02 },
+    { lat: 32.0853, lon: 34.7818, radius: 1500000, label: 'Israel Jericho II MRBM (~1,500km)', color: '#00d4ff', opacity: 0.4, fillOpacity: 0.04 },
+    { lat: 32.0853, lon: 34.7818, radius: 4800000, label: 'Israel Jericho III IRBM (~4,800km+)', color: '#00d4ff', opacity: 0.15, fillOpacity: 0.01 },
+  ];
+  missileOrigins.forEach(m => {
+    L.circle([m.lat, m.lon], {
+      radius: m.radius, color: m.color, fillColor: m.color,
+      fillOpacity: m.fillOpacity, weight: 1, dashArray: '8,4', opacity: m.opacity,
+    }).addTo(state.missileLayer).bindPopup(`<div style="font-family:var(--font-mono);font-size:11px;color:${m.color}">${m.label}</div>`);
+  });
+  state.missileLayer.addTo(map);
+
+  // Flight layer
+  state.flightLayer = L.layerGroup().addTo(map);
+
+  // Trail layer
+  state.trailLayer = L.layerGroup().addTo(map);
+
+  // Vessel layers
+  state.vesselLayer = L.layerGroup().addTo(map);
+  state.vesselTrailLayer = L.layerGroup();
+
+  // Heat layer
+  state.heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 10, gradient: { 0.2: '#0d1117', 0.4: '#00d4ff', 0.6: '#ffb000', 0.8: '#ff6600', 1: '#ff0040' } });
+
+  // Geo layer
+  state.geoLayer = L.layerGroup();
+
+  // Map controls
+  const controls = document.getElementById('map-controls');
+  const layers = [
+    { name: 'Flights', layer: state.flightLayer, active: true },
+    { name: 'Trails', layer: state.trailLayer, active: true },
+    { name: 'Missiles', layer: state.missileLayer, active: true },
+    { name: 'Vessels', layer: state.vesselLayer, active: true },
+    { name: 'V-Trails', layer: state.vesselTrailLayer, active: false },
+    { name: 'Heatmap', layer: state.heatLayer, active: false },
+    { name: 'GDELT Geo', layer: state.geoLayer, active: false },
+  ];
+  layers.forEach(l => {
+    const btn = document.createElement('button');
+    btn.className = 'map-toggle' + (l.active ? ' active' : '');
+    btn.textContent = l.name;
+    btn.onclick = () => {
+      if (map.hasLayer(l.layer)) { map.removeLayer(l.layer); btn.classList.remove('active'); }
+      else { l.layer.addTo(map); btn.classList.add('active'); }
+    };
+    controls.appendChild(btn);
+  });
+}
+
+function animatePulse(circle, color) {
+  let r = 7;
+  const maxR = 25;
+  function step() {
+    r += 0.15;
+    if (r > maxR) r = 7;
+    const opacity = 0.5 * (1 - (r - 7) / (maxR - 7));
+    circle.setRadius(r);
+    circle.setStyle({ opacity, fillOpacity: 0 });
+    requestAnimationFrame(step);
+  }
+  step();
+}
+
+// ============================================================
+// NEWS FEED (RSS)
+// ============================================================
+async function fetchRSSFeed(feed) {
+  const cached = cacheGet('rss_' + feed.name, 300000);
+  if (cached) return cached;
+
+  // Try rss2json
+  try {
+    const res = await resilientFetch(CONFIG.rssProxy + encodeURIComponent(feed.url), {}, 1, 8000);
+    const data = await res.json();
+    if (data.status === 'ok' && data.items) {
+      const items = data.items.slice(0, 10).map(it => ({
+        title: it.title, link: it.link, pubDate: it.pubDate || it.published,
+        source: feed.name, color: feed.color,
+      }));
+      cacheSet('rss_' + feed.name, items);
+      return items;
+    }
+  } catch(e) { console.error('[RSS] rss2json failed for', feed.name, e); }
+
+  // Fallback: allorigins
+  try {
+    const res = await resilientFetch(CONFIG.rssFallback + encodeURIComponent(feed.url), {}, 1, 8000);
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    const items = [...xml.querySelectorAll('item, entry')].slice(0, 10).map(el => ({
+      title: (el.querySelector('title') || {}).textContent || 'No title',
+      link: (el.querySelector('link') || {}).textContent || (el.querySelector('link') || {}).getAttribute('href') || '#',
+      pubDate: (el.querySelector('pubDate, published, updated') || {}).textContent || '',
+      source: feed.name, color: feed.color,
+    }));
+    cacheSet('rss_' + feed.name, items);
+    return items;
+  } catch(e) { console.error('[RSS] Proxy fallback failed for', feed.name, e); }
+
+  return [];
+}
+
+async function fetchNextRSSFeed() {
+  const feed = RSS_FEEDS[state.rssFeedIndex % RSS_FEEDS.length];
+  state.rssFeedIndex++;
+  try {
+    const items = await fetchRSSFeed(feed);
+    if (items.length > 0) {
+      // Merge, dedup by title
+      const existingTitles = new Set(state.newsItems.map(n => n.title));
+      let newCount = 0;
+      items.forEach(it => {
+        if (!existingTitles.has(it.title)) {
+          state.newsItems.unshift(it);
+          existingTitles.add(it.title);
+          newCount++;
+          // Bridge hook: notify Node of new article
+          if (typeof window.__onNewArticle === 'function') {
+            window.__onNewArticle({
+              id: 'rss-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+              title: it.title,
+              source: it.source,
+              url: it.link || '',
+            });
+          }
+          updateEntityFromArticle(it.title);
+        }
+      });
+      state.newsItems.sort((a, b) => {
+        const da = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+        const db = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+        return db - da;
+      });
+      state.newsItems = state.newsItems.slice(0, 100);
+      renderNews(newCount);
+      setLed('led-rss', 'ok');
+      setLed('led-news-inner', 'ok');
+      state.feedHealth.rss = 1;
+      state.lastUpdate.rss = Date.now();
+      // Recalculate DEFCON on new articles
+      const newDefcon = calcMultiSourceDefcon();
+      renderDefcon(newDefcon);
+    }
+  } catch(e) {
+    setLed('led-rss', 'warn');
+    setLed('led-news-inner', 'warn');
+  }
+}
+
+function renderNews(newCount) {
+  const body = document.getElementById('news-body');
+  const items = state.newsItems;
+  if (items.length === 0) {
+    body.innerHTML = '<div class="loading-spinner">No articles yet...</div>';
+    return;
+  }
+  body.innerHTML = items.map((it, i) => {
+    const timeAgo = it.pubDate ? relativeTime(new Date(it.pubDate)) : '';
+    const flashClass = i < newCount ? ' news-flash' : '';
+    return `<div class="news-card${flashClass}" onclick="window.open('${escHtml(it.link)}','_blank')">
+      <span class="news-source" style="background:${it.color}22;color:${it.color};border:1px solid ${it.color}44">${escHtml(it.source)}</span>
+      <div class="news-headline">${escHtml(it.title)}</div>
+      <div class="news-time">${timeAgo}</div>
+    </div>`;
+  }).join('');
+}
+
+function relativeTime(date) {
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+// ============================================================
+// FLIGHT TRACKER (adsb.lol)
+// ============================================================
+const MILITARY_PREFIXES = [
+  'RCH', 'DUKE', 'VALOR', 'REACH', 'KING', 'EVAC', 'JAKE', 'NCHO', 'NATO',
+  'IAF', 'RRR', 'ASCOT', 'LAGR', 'STEEL',
+];
+const MILITARY_SQUAWKS = ['7700', '7600', '7500'];
+
+async function fetchFlights() {
+  try {
+    const res = await resilientFetch(CONFIG.adsbUrl, {}, 1, 12000);
+    const data = await res.json();
+    if (data.ac && data.ac.length > 0) {
+      // Save previous positions for interpolation
+      const prev = {};
+      state.flights.forEach(f => { prev[f.icao24] = { lat: f.lat, lon: f.lon, heading: f.heading }; });
+      state.prevFlights = prev;
+
+      // Accumulate trail points from current positions before overwriting
+      state.flights.forEach(f => {
+        if (!f.lat || !f.lon) return;
+        if (!state.flightTrails[f.icao24]) state.flightTrails[f.icao24] = [];
+        const trail = state.flightTrails[f.icao24];
+        const last = trail[trail.length - 1];
+        if (!last || Math.abs(last[0] - f.lat) > 0.005 || Math.abs(last[1] - f.lon) > 0.005) {
+          trail.push([f.lat, f.lon]);
+          if (trail.length > 40) trail.shift();
+        }
+      });
+
+      // Filter: only airborne flights within the Middle East bounding box
+      state.flights = data.ac
+        .filter(a => a.lat && a.lon && a.alt_baro !== 'ground'
+          && a.lat >= 12 && a.lat <= 42 && a.lon >= 28 && a.lon <= 65)
+        .map(a => ({
+          icao24: a.hex || a.icao, callsign: (a.flight || '').trim(), country: a.r || a.t || '',
+          lon: a.lon, lat: a.lat, alt: a.alt_baro || a.alt_geom, vel: a.gs, heading: a.track || a.true_heading,
+          squawk: a.squawk,
+        }));
+      // Detect military flights
+      state.militaryFlights = state.flights.filter(f => {
+        const cs = (f.callsign || '').toUpperCase();
+        return MILITARY_PREFIXES.some(p => cs.startsWith(p)) ||
+               MILITARY_SQUAWKS.includes(f.squawk);
+      });
+      if (state.militaryFlights.length > 0 && typeof window.__onMilitaryFlight === 'function') {
+        state.militaryFlights.forEach(mf => {
+          window.__onMilitaryFlight({
+            callsign: mf.callsign, type: mf.country,
+            lat: mf.lat, lon: mf.lon, alt: mf.alt, heading: mf.heading,
+          });
+        });
+      }
+      cacheSet('flights', state.flights);
+      setLed('led-opensky', 'ok');
+      state.feedHealth.opensky = 1;
+      state.lastUpdate.opensky = Date.now();
+      state.flightLastFetch = Date.now();
+    }
+  } catch(e) {
+    const cached = cacheGet('flights', 120000);
+    if (cached) { state.flights = cached; setLed('led-opensky', 'warn'); }
+    else setLed('led-opensky', 'err');
+  }
+  renderFlights();
+  initFlightMarkers();
+  document.getElementById('metric-flights').textContent = state.flights.length;
+  document.getElementById('flight-count').textContent = state.flights.length + ' active';
+  document.getElementById('flight-count-header').textContent = state.flights.length + ' flights';
+  if (typeof window.__onFlightCount === 'function') {
+    window.__onFlightCount(state.flights.length);
+  }
+}
+
+function renderFlights() {
+  const body = document.getElementById('flights-body');
+  const flights = state.flights.slice(0, 50);
+  if (flights.length === 0) {
+    body.innerHTML = '<div class="loading-spinner">No flight data...</div>';
+    return;
+  }
+  const staleHtml = (Date.now() - state.lastUpdate.opensky > 60000) ? '<span class="stale-badge">STALE DATA</span> ' : '';
+  body.innerHTML = staleHtml + `<table class="flight-table"><thead><tr>
+    <th>Callsign</th><th>Country</th><th>Alt (m)</th><th>Spd (m/s)</th></tr></thead><tbody>` +
+    flights.map(f => `<tr><td style="color:var(--cyan)">${escHtml(f.callsign || f.icao24)}</td>
+      <td>${escHtml(f.country)}</td><td>${f.alt ? Math.round(f.alt) : '---'}</td>
+      <td>${f.vel ? Math.round(f.vel) : '---'}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+// Create markers once per fetch, then animate them
+function initFlightMarkers() {
+  if (!state.flightLayer) return;
+  state.flightLayer.clearLayers();
+  state.flightMarkers = [];
+
+  state.flights.forEach(f => {
+    const prev = state.prevFlights[f.icao24];
+    const startLat = prev ? prev.lat : f.lat;
+    const startLon = prev ? prev.lon : f.lon;
+    const rot = f.heading || 0;
+
+    const isMilitary = MILITARY_PREFIXES.some(p => (f.callsign || '').toUpperCase().startsWith(p)) ||
+                       MILITARY_SQUAWKS.includes(f.squawk);
+    const planeColor = isMilitary ? '#ff0040' : '#00d4ff';
+    const icon = L.divIcon({
+      html: `<i class="fas fa-plane" style="color:${planeColor};font-size:9px;transform:rotate(${rot}deg);opacity:0.8;transition:transform 1s"></i>`,
+      className: '', iconSize: [12, 12], iconAnchor: [6, 6],
+    });
+    const marker = L.marker([startLat, startLon], { icon }).addTo(state.flightLayer);
+    marker.bindPopup(`<div style="font-family:var(--font-mono);font-size:11px;color:#fff;background:#0d1117;padding:6px;border:1px solid var(--cyan)">
+      <b style="color:var(--cyan)">${escHtml(f.callsign || f.icao24)}</b><br>
+      ${escHtml(f.country)}<br>Alt: ${f.alt ? Math.round(f.alt) + 'm' : '---'}<br>
+      Spd: ${f.vel ? Math.round(f.vel) + ' m/s' : '---'}</div>`);
+
+    state.flightMarkers.push({
+      marker,
+      fromLat: startLat, fromLon: startLon,
+      toLat: f.lat, toLon: f.lon,
+      heading: rot, vel: f.vel || 0,
+    });
+  });
+
+  // Draw trail polylines (fading segments)
+  if (state.trailLayer) {
+    state.trailLayer.clearLayers();
+    state.trailPolylines = {};
+    Object.keys(state.flightTrails).forEach(icao => {
+      const pts = state.flightTrails[icao];
+      if (pts.length < 2) return;
+      const segments = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const opacity = 0.6 * ((i + 1) / pts.length);
+        const seg = L.polyline([pts[i], pts[i + 1]], {
+          color: '#00d4ff', weight: 1.5, opacity: opacity,
+        }).addTo(state.trailLayer);
+        segments.push(seg);
+      }
+      state.trailPolylines[icao] = segments;
+    });
+  }
+
+  // Start smooth animation loop
+  if (state.flightAnimId) cancelAnimationFrame(state.flightAnimId);
+  state.trailAnimCounter = 0;
+  animateFlights();
+}
+
+// Lerp markers smoothly from old position to new, then extrapolate based on heading/speed
+function animateFlights() {
+  const elapsed = Date.now() - state.flightLastFetch;
+  const interpDuration = 3000;
+  const refreshMs = state.flightRefreshMs;
+
+  state.flightMarkers.forEach(fm => {
+    let lat, lon;
+    if (elapsed < interpDuration) {
+      const t = elapsed / interpDuration;
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      lat = fm.fromLat + (fm.toLat - fm.fromLat) * ease;
+      lon = fm.fromLon + (fm.toLon - fm.fromLon) * ease;
+    } else {
+      const extraMs = elapsed - interpDuration;
+      const extraSec = extraMs / 1000;
+      const distDeg = (fm.vel * extraSec) / 111320;
+      const hdgRad = (fm.heading * Math.PI) / 180;
+      lat = fm.toLat + distDeg * Math.cos(hdgRad);
+      lon = fm.toLon + distDeg * Math.sin(hdgRad) / Math.cos(fm.toLat * Math.PI / 180);
+    }
+    fm.marker.setLatLng([lat, lon]);
+    fm._curLat = lat;
+    fm._curLon = lon;
+  });
+
+  // Grow trails every ~2s (approx 120 frames at 60fps)
+  state.trailAnimCounter++;
+  if (state.trailAnimCounter % 120 === 0 && state.trailLayer) {
+    state.flightMarkers.forEach((fm, idx) => {
+      const f = state.flights[idx];
+      if (!f || !fm._curLat) return;
+      const icao = f.icao24;
+      if (!state.flightTrails[icao]) state.flightTrails[icao] = [];
+      const trail = state.flightTrails[icao];
+      const last = trail[trail.length - 1];
+      if (!last || Math.abs(last[0] - fm._curLat) > 0.003 || Math.abs(last[1] - fm._curLon) > 0.003) {
+        const newPt = [fm._curLat, fm._curLon];
+        trail.push(newPt);
+        if (trail.length > 40) trail.shift();
+        if (last) {
+          const seg = L.polyline([last, newPt], {
+            color: '#00d4ff', weight: 1.5, opacity: 0.6,
+          }).addTo(state.trailLayer);
+          if (!state.trailPolylines[icao]) state.trailPolylines[icao] = [];
+          state.trailPolylines[icao].push(seg);
+        }
+      }
+    });
+  }
+
+  state.flightAnimId = requestAnimationFrame(animateFlights);
+}
+
+// ============================================================
+// VESSEL TRACKER (AISStream.io WebSocket)
+// ============================================================
+function getVesselColor(navStatus) {
+  if (navStatus === 14) return '#ff0040';
+  if (navStatus === 7) return '#ffb000';
+  if (navStatus === 1 || navStatus === 5 || navStatus === 6) return '#6e7681';
+  return '#00d4ff';
+}
+
+let aisWsFailCount = 0;
+let aisPollingMode = false;
+
+function connectAIS() {
+  if (state.vesselSocket && state.vesselSocket.readyState <= 1) return;
+  try {
+    const ws = new WebSocket(CONFIG.aisStreamUrl);
+    state.vesselSocket = ws;
+
+    ws.onopen = () => {
+      state.vesselReconnectDelay = 2000;
+      const subscribeMsg = {
+        APIKey: CONFIG.aisApiKey,
+        BoundingBoxes: [AIS_BBOX],
+        FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
+      };
+      ws.send(JSON.stringify(subscribeMsg));
+      setLed('led-ais', 'ok');
+      state.feedHealth.ais = 1;
+    };
+
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        handleAISMessage(msg);
+      } catch(e) { console.error('[AIS] Message parse error:', e); }
+    };
+
+    ws.onerror = () => {
+      console.error('[AIS] WebSocket error');
+      setLed('led-ais', 'err');
+      state.feedHealth.ais = 0;
+      aisWsFailCount++;
+      if (aisWsFailCount >= 3 && !aisPollingMode) {
+        console.log('[AIS] Switching to polling mode after 3 WebSocket failures');
+        aisPollingMode = true;
+        fetchVesselsPoll();
+        setInterval(fetchVesselsPoll, 60000);
+      }
+    };
+
+    ws.onclose = () => {
+      setLed('led-ais', 'warn');
+      state.feedHealth.ais = 0;
+      scheduleAISReconnect();
+    };
+  } catch(e) {
+    setLed('led-ais', 'err');
+    scheduleAISReconnect();
+  }
+}
+
+function scheduleAISReconnect() {
+  setTimeout(() => {
+    connectAIS();
+  }, state.vesselReconnectDelay);
+  state.vesselReconnectDelay = Math.min(state.vesselReconnectDelay * 2, 60000);
+}
+
+async function fetchVesselsPoll() {
+  try {
+    const res = await resilientFetch('/api/vessels', {}, 1, 15000);
+    const data = await res.json();
+    if (data.features && data.features.length > 0) {
+      data.features.forEach(f => {
+        const props = f.properties || {};
+        const coords = f.geometry?.coordinates;
+        if (!coords) return;
+        const mmsi = String(props.mmsi);
+        const lon = coords[0];
+        const lat = coords[1];
+        if (!lat || !lon) return;
+        if (!state.vessels[mmsi] && Object.keys(state.vessels).length >= state.vesselMaxCount) {
+          evictOldestVessel();
+        }
+        state.vessels[mmsi] = {
+          mmsi, lat, lon,
+          name: props.name || 'UNKNOWN',
+          shipType: props.shipType || 0,
+          navStatus: props.navStatus || 0,
+          sog: props.sog || 0,
+          cog: props.cog || 0,
+          heading: props.heading || 0,
+          destination: props.destination || '',
+          lastUpdate: Date.now(),
+        };
+      });
+      setLed('led-ais', 'ok');
+      state.feedHealth.ais = 1;
+      if (typeof window.__onVesselCount === 'function') {
+        window.__onVesselCount(Object.keys(state.vessels).length);
+      }
+    }
+  } catch(e) {
+    console.error('[AIS] Polling fetch failed:', e);
+    setLed('led-ais', 'warn');
+  }
+}
+
+function handleAISMessage(msg) {
+  const meta = msg.MetaData;
+  if (!meta) return;
+  const mmsi = String(meta.MMSI);
+  const lat = meta.latitude;
+  const lon = meta.longitude;
+  if (!lat || !lon || lat === 0 || lon === 0) return;
+
+  if (!state.vessels[mmsi] && Object.keys(state.vessels).length >= state.vesselMaxCount) {
+    evictOldestVessel();
+  }
+
+  const msgType = msg.MessageType;
+  const existing = state.vessels[mmsi] || {};
+
+  if (msgType === 'PositionReport' && msg.Message && msg.Message.PositionReport) {
+    const pr = msg.Message.PositionReport;
+    state.vessels[mmsi] = {
+      ...existing,
+      mmsi, lat, lon,
+      sog: pr.Sog != null ? pr.Sog : (existing.sog || 0),
+      cog: pr.Cog != null ? pr.Cog : (existing.cog || 0),
+      heading: pr.TrueHeading != null && pr.TrueHeading !== 511 ? pr.TrueHeading : (pr.Cog || existing.heading || 0),
+      navStatus: pr.NavigationalStatus != null ? pr.NavigationalStatus : (existing.navStatus ?? 15),
+      name: existing.name || meta.ShipName || '',
+      lastUpdate: Date.now(),
+    };
+  } else if (msgType === 'ShipStaticData' && msg.Message && msg.Message.ShipStaticData) {
+    const sd = msg.Message.ShipStaticData;
+    state.vessels[mmsi] = {
+      ...existing,
+      mmsi,
+      lat: existing.lat || lat,
+      lon: existing.lon || lon,
+      name: sd.Name || existing.name || meta.ShipName || '',
+      shipType: sd.Type || existing.shipType,
+      lastUpdate: Date.now(),
+    };
+  } else {
+    state.vessels[mmsi] = {
+      ...existing,
+      mmsi, lat, lon,
+      name: existing.name || meta.ShipName || '',
+      lastUpdate: Date.now(),
+    };
+  }
+
+  updateVesselMarker(mmsi);
+  updateVesselTrail(mmsi);
+}
+
+function updateVesselMarker(mmsi) {
+  const v = state.vessels[mmsi];
+  if (!v || !v.lat || !v.lon) return;
+
+  const color = getVesselColor(v.navStatus);
+  const rot = v.heading || v.cog || 0;
+  const icon = L.divIcon({
+    html: `<i class="fas fa-ship" style="color:${color};font-size:10px;transform:rotate(${rot}deg);opacity:0.85;transition:transform 2s,color 1s"></i>`,
+    className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+  });
+
+  const statusText = NAV_STATUS[v.navStatus] || 'Unknown';
+  const popupHtml = `<div style="font-family:var(--font-mono);font-size:11px;color:#fff;background:#0d1117;padding:8px;border:1px solid ${color};min-width:180px">
+    <b style="color:${color}">${escHtml(v.name || 'UNKNOWN')}</b><br>
+    MMSI: ${mmsi}<br>
+    SOG: ${v.sog != null ? v.sog.toFixed(1) + ' kn' : '---'}<br>
+    Heading: ${rot}\u00b0<br>
+    COG: ${v.cog != null ? v.cog.toFixed(1) + '\u00b0' : '---'}<br>
+    Status: ${statusText}<br>
+    <span style="color:var(--text-dim);font-size:9px">${new Date(v.lastUpdate).toISOString().slice(11,19)}Z</span>
+  </div>`;
+
+  if (state.vesselMarkers[mmsi]) {
+    state.vesselMarkers[mmsi].setLatLng([v.lat, v.lon]);
+    state.vesselMarkers[mmsi].setIcon(icon);
+    state.vesselMarkers[mmsi].setPopupContent(popupHtml);
+  } else {
+    const marker = L.marker([v.lat, v.lon], { icon }).bindPopup(popupHtml, { className: 'dark-popup', maxWidth: 250 });
+    marker.addTo(state.vesselLayer);
+    state.vesselMarkers[mmsi] = marker;
+  }
+}
+
+function updateVesselTrail(mmsi) {
+  const v = state.vessels[mmsi];
+  if (!v || !v.lat || !v.lon) return;
+
+  if (!state.vesselTrails[mmsi]) state.vesselTrails[mmsi] = [];
+  const trail = state.vesselTrails[mmsi];
+  const last = trail[trail.length - 1];
+  if (!last || Math.abs(last[0] - v.lat) > 0.003 || Math.abs(last[1] - v.lon) > 0.003) {
+    trail.push([v.lat, v.lon]);
+    if (trail.length > 30) trail.shift();
+  }
+
+  if (state.vesselTrailPolylines[mmsi]) {
+    state.vesselTrailPolylines[mmsi].forEach(seg => state.vesselTrailLayer.removeLayer(seg));
+  }
+  const segments = [];
+  const color = getVesselColor(v.navStatus);
+  for (let i = 0; i < trail.length - 1; i++) {
+    const opacity = 0.15 + 0.45 * ((i + 1) / trail.length);
+    const seg = L.polyline([trail[i], trail[i + 1]], {
+      color, weight: 1.5, opacity,
+    }).addTo(state.vesselTrailLayer);
+    segments.push(seg);
+  }
+  state.vesselTrailPolylines[mmsi] = segments;
+}
+
+function renderVessels() {
+  const now = Date.now();
+  if (now - state.vesselLastRender < 4500) return;
+  state.vesselLastRender = now;
+
+  const body = document.getElementById('vessels-body');
+  const countEl = document.getElementById('vessel-count');
+  const vessels = Object.values(state.vessels);
+
+  if (vessels.length === 0) {
+    body.innerHTML = '<div class="loading-spinner">No vessel data yet...</div>';
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  vessels.sort((a, b) => b.lastUpdate - a.lastUpdate);
+  const top50 = vessels.slice(0, 50);
+  if (countEl) countEl.textContent = vessels.length + ' tracked';
+
+  body.innerHTML = `<table class="vessel-table"><thead><tr>
+    <th>Name</th><th>MMSI</th><th>SOG</th><th>HDG</th><th>Status</th></tr></thead><tbody>` +
+    top50.map(v => {
+      const color = getVesselColor(v.navStatus);
+      const statusText = NAV_STATUS[v.navStatus] || '---';
+      return `<tr>
+        <td style="color:${color}">${escHtml(v.name || '---')}</td>
+        <td>${v.mmsi}</td>
+        <td>${v.sog != null ? v.sog.toFixed(1) : '---'}</td>
+        <td>${v.heading != null ? Math.round(v.heading) + '\u00b0' : '---'}</td>
+        <td>${statusText}</td></tr>`;
+    }).join('') + '</tbody></table>';
+
+  if (typeof window.__onVesselCount === 'function') {
+    window.__onVesselCount(Object.keys(state.vessels).length);
+  }
+}
+
+function pruneStaleVessels() {
+  const cutoff = Date.now() - 600000;
+  Object.keys(state.vessels).forEach(mmsi => {
+    if (state.vessels[mmsi].lastUpdate < cutoff) {
+      removeVessel(mmsi);
+    }
+  });
+}
+
+function evictOldestVessel() {
+  let oldestMmsi = null, oldestTime = Infinity;
+  Object.keys(state.vessels).forEach(mmsi => {
+    if (state.vessels[mmsi].lastUpdate < oldestTime) {
+      oldestTime = state.vessels[mmsi].lastUpdate;
+      oldestMmsi = mmsi;
+    }
+  });
+  if (oldestMmsi) removeVessel(oldestMmsi);
+}
+
+function removeVessel(mmsi) {
+  delete state.vessels[mmsi];
+  if (state.vesselMarkers[mmsi]) {
+    state.vesselLayer.removeLayer(state.vesselMarkers[mmsi]);
+    delete state.vesselMarkers[mmsi];
+  }
+  if (state.vesselTrailPolylines[mmsi]) {
+    state.vesselTrailPolylines[mmsi].forEach(seg => state.vesselTrailLayer.removeLayer(seg));
+    delete state.vesselTrailPolylines[mmsi];
+  }
+  delete state.vesselTrails[mmsi];
+}
+
+// ============================================================
+// OSINT / GDELT (sequenced to respect 5s rate limit)
+// ============================================================
+function gdeltDelay() { return new Promise(r => setTimeout(r, 6000)); }
+
+async function fetchAllGDELT() {
+  // 1. Articles
+  try {
+    const res = await resilientFetch(CONFIG.gdeltDocUrl, {}, 2, 25000);
+    const data = await res.json();
+    if (data.articles) {
+      state.osintItems = data.articles.slice(0, 50).map(a => ({
+        title: a.title, url: a.url, source: a.domain || a.source || 'unknown',
+        date: a.seendate, tone: a.tone, lang: a.language,
+        image: a.socialimage,
+      }));
+      cacheSet('osint', state.osintItems);
+      setLed('led-gdelt', 'ok');
+      setLed('led-osint-inner', 'ok');
+      state.feedHealth.gdelt = 1;
+      state.lastUpdate.gdelt = Date.now();
+      // Notify Node of GDELT articles for narration
+      if (typeof window.__onOsintUpdate === 'function') {
+        window.__onOsintUpdate(state.osintItems.length);
+      }
+    }
+  } catch(e) { console.error('[GDELT] Doc fetch failed:', e);
+    const cached = cacheGet('osint', 600000);
+    if (cached) { state.osintItems = cached; setLed('led-gdelt', 'warn'); setLed('led-osint-inner', 'warn'); }
+    else { setLed('led-gdelt', 'err'); setLed('led-osint-inner', 'err'); }
+  }
+  renderOSINT();
+  document.getElementById('metric-articles').textContent = state.osintItems.length;
+
+  await gdeltDelay();
+
+  // 2. Geo
+  try {
+    const res = await resilientFetch(CONFIG.gdeltGeoUrl, {}, 2, 25000);
+    const data = await res.json();
+    if (data.features && state.geoLayer) {
+      state.geoLayer.clearLayers();
+      const heatPoints = [];
+      data.features.forEach(f => {
+        if (f.geometry && f.geometry.coordinates) {
+          const [lon, lat] = f.geometry.coordinates;
+          heatPoints.push([lat, lon, 0.5]);
+          L.circleMarker([lat, lon], {
+            radius: 4, fillColor: '#ff6600', fillOpacity: 0.5, color: '#ff6600', weight: 1,
+          }).addTo(state.geoLayer).bindPopup(
+            `<div style="font-family:var(--font-mono);font-size:11px;color:#fff;background:#0d1117;padding:6px">
+            ${escHtml(f.properties?.name || f.properties?.html || 'Event')}</div>`
+          );
+        }
+      });
+      if (state.heatLayer) state.heatLayer.setLatLngs(heatPoints);
+    }
+  } catch(e) { console.error('[GDELT] Geo fetch failed:', e); }
+
+  await gdeltDelay();
+
+  // 3. Tone timeline
+  try {
+    const res = await resilientFetch(CONFIG.gdeltToneUrl, {}, 2, 25000);
+    const data = await res.json();
+    if (data.timeline && data.timeline.length > 0) {
+      const series = data.timeline[0].data || [];
+      state.toneHistory = series.map(d => d.value);
+      renderSparkline(state.toneHistory);
+
+      const recent = state.toneHistory.slice(-10);
+      const avg = recent.reduce((a, b) => a + b, 0) / recent.length;
+      document.getElementById('metric-tone').textContent = avg.toFixed(2);
+      document.getElementById('metric-tone').style.color = avg < -2 ? 'var(--red)' : avg < 0 ? 'var(--amber)' : 'var(--green)';
+      const level = calcMultiSourceDefcon();
+      renderDefcon(level);
+    }
+  } catch(e) { console.error('[GDELT] Tone fetch failed:', e); }
+}
+
+function renderOSINT() {
+  const body = document.getElementById('osint-body');
+  if (state.osintItems.length === 0) {
+    body.innerHTML = '<div class="loading-spinner">No GDELT data...</div>';
+    return;
+  }
+  const staleHtml = (Date.now() - state.lastUpdate.gdelt > 300000) ? '<div style="padding:4px 8px"><span class="stale-badge">STALE DATA</span></div>' : '';
+  body.innerHTML = staleHtml + state.osintItems.map(item => {
+    const tone = parseFloat(item.tone) || 0;
+    const toneClass = tone < -2 ? 'osint-tone-neg' : tone > 2 ? 'osint-tone-pos' : 'osint-tone-neu';
+    const toneIcon = tone < -2 ? 'fa-arrow-down' : tone > 2 ? 'fa-arrow-up' : 'fa-minus';
+    const ts = item.date ? formatGdeltDate(item.date) : '';
+    return `<div class="osint-entry" onclick="window.open('${escHtml(item.url)}','_blank')" style="cursor:pointer">
+      <span class="osint-ts">${ts}</span>
+      <span class="osint-tag" style="background:rgba(0,212,255,.15);color:var(--cyan)">${escHtml((item.source || '').substring(0, 20))}</span>
+      <span class="${toneClass}"><i class="fas ${toneIcon}" style="font-size:.5rem"></i> ${tone.toFixed(1)}</span>
+      <div class="osint-title">${escHtml(item.title)}</div>
+    </div>`;
+  }).join('');
+}
+
+function formatGdeltDate(str) {
+  if (!str || str.length < 12) return str;
+  return str.substring(0, 4) + '-' + str.substring(4, 6) + '-' + str.substring(6, 8) + ' ' + str.substring(8, 10) + ':' + str.substring(10, 12);
+}
+
+// ============================================================
+// ENTITY BOARD
+// ============================================================
+function renderEntityBoard() {
+  const board = document.getElementById('entity-board');
+  board.innerHTML = ENTITIES.map(e => {
+    const bgColor = e.color === 'var(--red)' ? 'rgba(255,0,64,.15)' :
+                    e.color === 'var(--amber)' ? 'rgba(255,176,0,.15)' :
+                    e.color === 'var(--cyan)' ? 'rgba(0,212,255,.15)' : 'rgba(0,255,65,.15)';
+    return `<div class="entity-row">
+      <span class="entity-name"><i class="fas ${e.icon}" style="color:${e.color};margin-right:6px;font-size:.65rem"></i>${e.name}</span>
+      <span class="entity-status" style="background:${bgColor};color:${e.color};border:1px solid ${e.color}44">${e.status}</span>
+    </div>`;
+  }).join('');
+}
+
+function updateEntityFromArticle(title) {
+  const lower = title.toLowerCase();
+  const ACTIVE_KEYWORDS = ['strike', 'attack', 'launch', 'deploy', 'operation', 'offensive'];
+  const ELEVATED_KEYWORDS = ['threaten', 'warn', 'mobilize', 'prepare', 'escalat', 'tension'];
+
+  for (const entity of ENTITIES) {
+    const parts = entity.name.toLowerCase().split(/[\/\s]+/);
+    const matched = parts.some(p => p.length > 2 && lower.includes(p));
+    if (matched) {
+      if (ACTIVE_KEYWORDS.some(k => lower.includes(k))) {
+        entity.status = 'ACTIVE'; entity.color = 'var(--red)';
+      } else if (ELEVATED_KEYWORDS.some(k => lower.includes(k))) {
+        entity.status = 'ELEVATED'; entity.color = 'var(--amber)';
+      }
+      entity.lastUpdate = Date.now();
+    }
+  }
+
+  // Decay: entities not mentioned in 30min → back to MONITORING
+  const now = Date.now();
+  for (const entity of ENTITIES) {
+    if (entity.lastUpdate && now - entity.lastUpdate > 1800000) {
+      entity.status = 'MONITORING'; entity.color = 'var(--green)';
+    }
+  }
+
+  renderEntityBoard();
+}
+
+// ============================================================
+// METRICS
+// ============================================================
+function updateMetrics() {
+  const healthy = Object.values(state.feedHealth).filter(v => v).length;
+  const total = Object.keys(state.feedHealth).length;
+  const el = document.getElementById('metric-feeds');
+  el.textContent = healthy + '/' + total;
+  el.style.color = healthy === total ? 'var(--green)' : healthy >= 2 ? 'var(--amber)' : 'var(--red)';
+}
+
+// ============================================================
+// TICKER
+// ============================================================
+function buildTicker() {
+  const track = document.getElementById('ticker-track');
+  const headlines = state.newsItems.slice(0, 20).map(n => escHtml(n.title));
+  if (headlines.length === 0) {
+    track.innerHTML = '<span style="color:var(--text-dim)">Awaiting data feeds...</span>';
+    return;
+  }
+  const sep = ' <span class="ticker-sep">&#9670;</span> ';
+  const text = headlines.join(sep);
+  track.innerHTML = text + sep + text;
+}
+
+// ============================================================
+// WAVEFORM VISUALIZATION (COMMS panel)
+// ============================================================
+function drawWaveform() {
+  const canvas = document.getElementById('comms-waveform');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (isSpeaking && analyser) {
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(dataArray);
+    ctx.beginPath();
+    ctx.strokeStyle = '#00ff41';
+    ctx.lineWidth = 2;
+    const sliceWidth = w / dataArray.length;
+    let x = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      const v = dataArray[i] / 128.0;
+      const y = v * h / 2;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    ctx.stroke();
+  } else {
+    // Flat line when idle
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0,255,65,0.3)';
+    ctx.lineWidth = 1;
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(drawWaveform);
+}
+requestAnimationFrame(drawWaveform);
+
+// ============================================================
+// BRIDGE HOOKS — called from Node -> browser via exposeFunction
+// ============================================================
+window.__updateComms = function(mode, message) {
+  const modeEl = document.getElementById('comms-mode');
+  const msgEl = document.getElementById('comms-message');
+  if (modeEl) {
+    modeEl.textContent = mode;
+    const colors = {
+      IDLE: 'var(--green)',
+      NARRATING: 'var(--cyan)',
+      ALERT: 'var(--red)',
+      SITREP: 'var(--amber)',
+      RESPONDING: 'var(--cyan)',
+    };
+    modeEl.style.color = colors[mode] || 'var(--green)';
+    modeEl.style.textShadow = '0 0 10px ' + (colors[mode] || 'var(--green)');
+  }
+  if (msgEl) msgEl.textContent = message || '';
+};
+
+window.__addIntelEntry = function(source, title, type) {
+  const body = document.getElementById('intel-log-body');
+  const countEl = document.getElementById('intel-log-count');
+  if (!body) return;
+
+  // Remove "awaiting" spinner if present
+  const spinner = body.querySelector('.loading-spinner');
+  if (spinner) spinner.remove();
+
+  const entry = document.createElement('div');
+  entry.className = 'intel-entry';
+  const now = new Date();
+  const ts = now.toUTCString().slice(17, 25);
+  const badgeClass = type === 'X/OSINT' ? 'intel-badge-tweet'
+    : type === 'RSS' ? 'intel-badge-rss'
+    : 'intel-badge-osint';
+  entry.innerHTML = '<span class="intel-ts">' + ts + '</span>' +
+    '<span class="intel-badge ' + badgeClass + '">' + (type || 'INTEL') + '</span>' +
+    '<span class="intel-title">' + title.substring(0, 120) + '</span>';
+
+  body.insertBefore(entry, body.firstChild);
+
+  // Cap at 50 entries
+  while (body.children.length > 50) body.removeChild(body.lastChild);
+
+  // Update count
+  if (countEl) countEl.textContent = body.children.length + ' items';
+};
+
+window.__triggerAlert = function() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,0,64,0.3);z-index:9999;pointer-events:none;animation:alert-flash 2s ease-out forwards';
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 2000);
+};
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+  // Clocks
+  updateClocks();
+  setInterval(updateClocks, 1000);
+
+  // Default DEFCON
+  renderDefcon(3);
+
+  // Entity board
+  renderEntityBoard();
+
+  // Map
+  initMap();
+
+  // Initial data fetches
+  setTimeout(() => { fetchNextRSSFeed(); }, 500);
+  setTimeout(() => { fetchNextRSSFeed(); }, 2000);
+  setTimeout(() => { fetchNextRSSFeed(); }, 3500);
+  setTimeout(() => { fetchAllGDELT(); }, 2000);
+  setTimeout(() => { fetchFlights(); }, 1500);
+  setTimeout(connectAIS, 3000);
+
+  // Schedules
+  setInterval(fetchNextRSSFeed, 20000);
+  setInterval(fetchFlights, 30000);
+  setInterval(renderVessels, 5000);
+  setInterval(pruneStaleVessels, 60000);
+  // GDELT: every 5 min (3 requests sequenced internally with 6s gaps)
+  setInterval(fetchAllGDELT, 300000);
+
+  // Ticker rebuild: every 5 min
+  setInterval(buildTicker, 300000);
+  setTimeout(buildTicker, 8000);
+
+  // Metrics update: every 30s
+  setInterval(updateMetrics, 30000);
+  setTimeout(updateMetrics, 5000);
+
+  // Stale check: every 30s
+  setInterval(() => {
+    if (Date.now() - state.lastUpdate.rss > 600000 && state.lastUpdate.rss > 0) { setLed('led-rss', 'warn'); setLed('led-news-inner', 'warn'); }
+    if (Date.now() - state.lastUpdate.gdelt > 600000 && state.lastUpdate.gdelt > 0) { setLed('led-gdelt', 'warn'); setLed('led-osint-inner', 'warn'); }
+    if (Date.now() - state.lastUpdate.opensky > 60000 && state.lastUpdate.opensky > 0) setLed('led-opensky', 'warn');
+  }, 30000);
+}
+
+// Popup styling override for dark theme
+const style = document.createElement('style');
+style.textContent = `.leaflet-popup-content-wrapper{background:#0d1117!important;color:#c9d1d9!important;border-radius:2px!important;border:1px solid #1a2332!important;box-shadow:0 0 15px rgba(0,0,0,.5)!important}.leaflet-popup-tip{background:#0d1117!important}.leaflet-popup-close-button{color:#6e7681!important}`;
+document.head.appendChild(style);
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

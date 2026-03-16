@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useLiveViewerCounts } from '@/components/LiveViewerCounts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -52,7 +53,11 @@ function formatUptime(startedAt: string): string {
 export function StreamCard({ stream, featured = false }: StreamCardProps) {
   const agent = stream.agent;
   const [imgError, setImgError] = useState(false);
+  const viewerCounts = useLiveViewerCounts();
   if (!agent) return null;
+
+  // Prefer real-time count from Socket.IO, fall back to DB value
+  const liveViewers = viewerCounts.get((stream as any).agentId ?? '') ?? stream.currentViewers ?? 0;
 
   const thumbSrc = resolveThumbnailUrl(stream.thumbnailUrl);
   const showImage = thumbSrc && !imgError;
@@ -82,9 +87,9 @@ export function StreamCard({ stream, featured = false }: StreamCardProps) {
             <span className={`px-2 py-0.5 bg-claw-live text-white font-bold rounded ${featured ? 'text-sm' : 'text-xs'}`}>
               LIVE
             </span>
-            {typeof stream.currentViewers === 'number' && stream.currentViewers > 0 && (
+            {liveViewers > 0 && (
               <span className={`px-2 py-0.5 bg-black/70 text-white rounded ${featured ? 'text-sm' : 'text-xs'}`}>
-                {stream.currentViewers.toLocaleString()} viewers
+                {liveViewers.toLocaleString()} viewers
               </span>
             )}
           </div>

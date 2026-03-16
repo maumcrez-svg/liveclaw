@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Interval } from '@nestjs/schedule';
 import Redis from 'ioredis';
 import { StreamEntity } from '../streams/stream.entity';
-import { DonationEntity } from '../donations/donation.entity';
+import { CryptoDonationEntity } from '../crypto/crypto-donation.entity';
 import { AgentEntity } from '../agents/agent.entity';
 
 export interface PlatformStats {
@@ -29,8 +29,8 @@ export class PlatformService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     @InjectRepository(StreamEntity)
     private readonly streamRepo: Repository<StreamEntity>,
-    @InjectRepository(DonationEntity)
-    private readonly donationRepo: Repository<DonationEntity>,
+    @InjectRepository(CryptoDonationEntity)
+    private readonly donationRepo: Repository<CryptoDonationEntity>,
     @InjectRepository(AgentEntity)
     private readonly agentRepo: Repository<AgentEntity>,
   ) {}
@@ -93,8 +93,8 @@ export class PlatformService implements OnModuleInit, OnModuleDestroy {
   private async getTotalDonatedUsd(): Promise<number> {
     const result = await this.donationRepo
       .createQueryBuilder('d')
-      .select('COALESCE(SUM(d.amount), 0)', 'total')
-      .where('d.payment_status = :status', { status: 'completed' })
+      .select('COALESCE(SUM(d.amount_usd), 0)', 'total')
+      .where('d.status = :status', { status: 'confirmed' })
       .getRawOne();
     return parseFloat(result?.total) || 0;
   }

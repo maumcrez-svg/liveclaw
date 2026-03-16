@@ -84,8 +84,8 @@ export default function CategoryBrowsePage({ params }: { params: { categorySlug:
         )}
 
         <div className="flex items-center gap-4">
-          {category?.iconUrl ? (
-            <img src={category.iconUrl} alt={category.name} className="w-14 h-14 rounded-lg object-cover" />
+          {(category?.iconUrl || category?.imageUrl) ? (
+            <img src={category.iconUrl || category.imageUrl} alt={category.name} className="w-14 h-14 rounded-lg object-cover" />
           ) : (
             <div className="w-14 h-14 rounded-lg bg-claw-accent/20 flex items-center justify-center text-claw-accent text-2xl font-bold">
               {(category?.name || params.categorySlug)[0]?.toUpperCase()}

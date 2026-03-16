@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, Logger, Inject, Optional, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
+import { Interval } from '@nestjs/schedule';
 import { SubscriptionEntity } from './subscription.entity';
 import { AgentsService } from '../agents/agents.service';
 import { ChatService } from '../chat/chat.service';
@@ -119,5 +120,21 @@ export class SubscriptionsService {
       mrr: Math.round(mrr * 100) / 100,
       recent,
     };
+  }
+
+  /** Expire subscriptions every 6 hours */
+  @Interval(6 * 60 * 60 * 1000)
+  async expireSubscriptions(): Promise<void> {
+    const result = await this.subRepo
+      .createQueryBuilder()
+      .update()
+      .set({ isActive: false })
+      .where('is_active = true')
+      .andWhere('expires_at < NOW()')
+      .execute();
+
+    if (result.affected && result.affected > 0) {
+      this.logger.log(`Expired ${result.affected} subscriptions`);
+    }
   }
 }

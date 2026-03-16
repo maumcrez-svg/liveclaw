@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
+import { useViewerCounts } from '@/hooks/useViewerCounts';
 import { SearchBar } from './SearchBar';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -76,6 +77,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const [agents, setAgents] = useState<any[]>([]);
   const [followedAgentIds, setFollowedAgentIds] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(false);
+  const viewerCounts = useViewerCounts();
 
   useEffect(() => {
     async function fetchAgents() {
@@ -174,9 +176,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-claw-live" />
               <span className="text-[11px] text-gray-500 font-medium">
-                {typeof agent.currentViewers === 'number'
-                  ? agent.currentViewers.toLocaleString()
-                  : '0'}
+                {(viewerCounts.get(agent.id) ?? agent.currentViewers ?? 0).toLocaleString()}
               </span>
             </div>
           )}

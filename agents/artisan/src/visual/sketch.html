@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ArtisanAI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; overflow: hidden; width: 1280px; height: 720px; }
+  canvas { display: block; }
+
+  #hud {
+    position: fixed; top: 16px; left: 16px; z-index: 100;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: white; pointer-events: none;
+  }
+  .hud-card {
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 12px 16px;
+    min-width: 220px;
+  }
+  .hud-title {
+    font-size: 18px; font-weight: 700;
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .hud-row { font-size: 13px; color: rgba(255,255,255,0.7); margin: 3px 0; }
+  .hud-row span { color: rgba(255,255,255,0.95); }
+
+  #chat-bubble {
+    position: fixed; bottom: 24px; left: 24px; z-index: 100;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    pointer-events: none; opacity: 0; transition: opacity 0.5s;
+    max-width: 500px;
+  }
+  #chat-bubble.visible { opacity: 1; }
+  .bubble-inner {
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 12px; padding: 10px 16px;
+    display: inline-block;
+  }
+  .bubble-user { font-size: 12px; color: #a855f7; font-weight: 600; }
+  .bubble-text { font-size: 14px; color: rgba(255,255,255,0.9); margin-top: 2px; }
+
+  /* DALL-E reveal overlay */
+  #dalle-canvas {
+    position: fixed; top: 0; left: 0; width: 1280px; height: 720px;
+    z-index: 50; pointer-events: none; opacity: 0;
+    transition: opacity 1s;
+  }
+  #dalle-canvas.visible { opacity: 1; }
+
+  /* Live2D avatar container */
+  #avatar-container {
+    position: fixed; bottom: 0; right: 0;
+    width: 350px; height: 500px;
+    z-index: 90; pointer-events: none;
+    opacity: 0; transition: opacity 1s;
+  }
+  #avatar-container.loaded { opacity: 1; }
+  #avatar-container canvas {
+    width: 100% !important; height: 100% !important;
+  }
+
+  /* Speaking indicator */
+  #speaking-indicator {
+    position: fixed; bottom: 8px; right: 140px;
+    z-index: 101; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 11px; color: rgba(168,85,247,0.8);
+  }
+  #speaking-indicator.active { opacity: 1; }
+  .sound-bars {
+    display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; vertical-align: middle; margin-right: 4px;
+  }
+  .sound-bars .bar {
+    width: 3px; background: #a855f7; border-radius: 1px;
+    animation: soundBar 0.8s ease-in-out infinite;
+  }
+  .bar:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .bar:nth-child(2) { height: 70%; animation-delay: 0.15s; }
+  .bar:nth-child(3) { height: 50%; animation-delay: 0.3s; }
+  .bar:nth-child(4) { height: 80%; animation-delay: 0.1s; }
+  @keyframes soundBar {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+</style>
+
+<!-- p5.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<!-- Avatar rendered via Canvas 2D (no WebGL needed) -->
+</head>
+<body>
+
+<div id="hud">
+  <div class="hud-card">
+    <div class="hud-title">ArtisanAI</div>
+    <div class="hud-row">Mode: <span id="hud-mode">Flow Field</span></div>
+    <div class="hud-row">Mood: <span id="hud-mood">serene</span></div>
+    <div class="hud-row">Iterations: <span id="hud-iter">0</span></div>
+  </div>
+</div>
+
+<div id="chat-bubble">
+  <div class="bubble-inner">
+    <div class="bubble-user" id="bubble-user"></div>
+    <div class="bubble-text" id="bubble-text"></div>
+  </div>
+</div>
+
+<canvas id="dalle-canvas" width="1280" height="720"></canvas>
+
+<div id="avatar-container"></div>
+
+<div id="speaking-indicator">
+  <span class="sound-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
+  speaking
+</div>
+
+<script>
+// =============================================
+// Global state controlled by Node.js via page.evaluate()
+// =============================================
+window.__artisan = {
+  mode: 'flow-field',
+  palette: ['#a855f7', '#6366f1', '#8b5cf6', '#7c3aed', '#4f46e5'],
+  mood: 'serene',
+  speed: 1.0,
+  noiseScale: 0.003,
+  particleCount: 800,
+  iteration: 0,
+  dalleImage: null,
+  dalleRevealType: 'dissolve',
+  dalleRevealProgress: 0,
+  hudMode: 'Flow Field',
+  hudMood: 'serene',
+  hudMoodEmoji: '',
+  chatBubbleUser: '',
+  chatBubbleText: '',
+  chatBubbleShow: false,
+};
+
+// =============================================
+// Audio System (TTS playback + lip sync amplitude)
+// =============================================
+let audioCtx = null;
+let analyser = null;
+let amplitudeData = new Uint8Array(0);
+let currentAmplitude = 0;
+let isSpeakingNow = false;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.6;
+  amplitudeData = new Uint8Array(analyser.frequencyBinCount);
+  analyser.connect(audioCtx.destination);
+}
+
+// Called by Node.js via page.evaluate()
+window.__playAudio = function(audioBase64, format) {
+  return new Promise(async (resolve) => {
+    if (!audioCtx) initAudio();
+
+    try {
+      const binary = atob(audioBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+      const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(analyser);
+      source.start(0);
+
+      isSpeakingNow = true;
+      document.getElementById('speaking-indicator').classList.add('active');
+
+      source.onended = () => {
+        isSpeakingNow = false;
+        currentAmplitude = 0;
+        document.getElementById('speaking-indicator').classList.remove('active');
+        resolve(audioBuffer.duration * 1000);
+      };
+    } catch (err) {
+      console.error('Audio playback error:', err);
+      isSpeakingNow = false;
+      resolve(0);
+    }
+  });
+};
+
+function updateAmplitude() {
+  if (!analyser || !isSpeakingNow) {
+    currentAmplitude *= 0.85; // decay
+    return;
+  }
+  analyser.getByteFrequencyData(amplitudeData);
+  let sum = 0;
+  // Focus on voice frequency range (bins ~2-20 for speech)
+  const start = 2, end = Math.min(20, amplitudeData.length);
+  for (let i = start; i < end; i++) sum += amplitudeData[i];
+  currentAmplitude = sum / ((end - start) * 255); // normalize 0-1
+}
+
+// =============================================
+// Palettes
+// =============================================
+const PALETTES = {
+  ocean:   ['#0077b6','#00b4d8','#90e0ef','#caf0f8','#023e8a'],
+  sunset:  ['#ff6b6b','#ffa06b','#ffd93d','#ff8e53','#c44569'],
+  forest:  ['#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2'],
+  neon:    ['#ff00ff','#00ffff','#ff006e','#8338ec','#3a86ff'],
+  pastel:  ['#cdb4db','#ffc8dd','#ffafcc','#bde0fe','#a2d2ff'],
+  mono:    ['#f8f9fa','#dee2e6','#adb5bd','#6c757d','#343a40'],
+  default: ['#a855f7','#6366f1','#8b5cf6','#7c3aed','#4f46e5'],
+};
+
+// =============================================
+// Flow Field
+// =============================================
+let particles = [];
+const FIELD_COLS = 80, FIELD_ROWS = 45;
+let flowField = [];
+
+function initParticles(count) {
+  particles = [];
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * 1280, y: Math.random() * 720,
+      vx: 0, vy: 0, life: Math.random() * 200 + 100, maxLife: 300,
+      colorIdx: Math.floor(Math.random() * 5),
+    });
+  }
+}
+
+function updateFlowField(t) {
+  const ns = window.__artisan.noiseScale || 0.003;
+  for (let y = 0; y < FIELD_ROWS; y++)
+    for (let x = 0; x < FIELD_COLS; x++)
+      flowField[y * FIELD_COLS + x] = noise(x * ns * 100, y * ns * 100, t * 0.3) * TWO_PI * 2;
+}
+
+// =============================================
+// Particle System
+// =============================================
+let orbitParticles = [];
+
+function initOrbitParticles(count) {
+  orbitParticles = [];
+  const cx = 640, cy = 360;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * TWO_PI;
+    const radius = 50 + Math.random() * 250;
+    orbitParticles.push({
+      x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius,
+      angle, radius, speed: 0.005 + Math.random() * 0.02,
+      size: 2 + Math.random() * 4, colorIdx: Math.floor(Math.random() * 5),
+    });
+  }
+}
+
+// =============================================
+// Fractal
+// =============================================
+let fractalZoom = 1, fractalCx = -0.7, fractalCy = 0, fractalMaxIter = 80;
+
+// =============================================
+// Watercolor
+// =============================================
+let watercolorDrops = [];
+function addWatercolorDrop() {
+  watercolorDrops.push({
+    x: Math.random() * 1280, y: Math.random() * 720,
+    maxRadius: 30 + Math.random() * 120, radius: 0,
+    colorIdx: Math.floor(Math.random() * 5),
+    opacity: 0.02 + Math.random() * 0.04, growing: true,
+  });
+  if (watercolorDrops.length > 200) watercolorDrops.splice(0, 50);
+}
+
+// =============================================
+// Geometric
+// =============================================
+let geoAngle = 0, geoSymmetry = 6;
+
+// =============================================
+// p5.js
+// =============================================
+let pg, lastMode = '', t = 0;
+
+function setup() {
+  createCanvas(1280, 720);
+  pg = createGraphics(1280, 720);
+  pg.background(10);
+  initParticles(window.__artisan.particleCount || 800);
+  initOrbitParticles(400);
+  noiseSeed(42);
+  frameRate(30);
+}
+
+function draw() {
+  const a = window.__artisan;
+  const spd = a.speed || 1.0;
+  t += 0.01 * spd;
+  a.iteration = (a.iteration || 0) + 1;
+  const pal = a.palette || PALETTES.default;
+
+  if (a.mode !== lastMode) {
+    pg.background(10);
+    if (a.mode === 'flow-field') initParticles(a.particleCount || 800);
+    if (a.mode === 'particles') initOrbitParticles(400);
+    watercolorDrops = [];
+    lastMode = a.mode;
+  }
+
+  pg.noStroke();
+  pg.fill(10, 10, 10, a.mode === 'watercolor' ? 1 : 8);
+  pg.rect(0, 0, 1280, 720);
+
+  switch (a.mode) {
+    case 'flow-field': drawFlowField(pg, pal, spd); break;
+    case 'particles': drawParticleSystem(pg, pal, spd); break;
+    case 'fractals': drawFractal(pg, pal); break;
+    case 'watercolor': drawWatercolor(pg, pal); break;
+    case 'geometric': drawGeometric(pg, pal, spd); break;
+    default: drawFlowField(pg, pal, spd);
+  }
+
+  image(pg, 0, 0);
+
+  // Update audio amplitude for lip sync
+  updateAmplitude();
+
+  // Lip sync is handled by the avatar's drawAvatar() loop reading currentAmplitude
+
+  // HUD updates (throttled)
+  if (a.iteration % 15 === 0) {
+    const el = (id) => document.getElementById(id);
+    el('hud-mode').textContent = a.hudMode || a.mode;
+    el('hud-mood').textContent = (a.hudMoodEmoji || '') + ' ' + (a.hudMood || a.mood);
+    el('hud-iter').textContent = String(a.iteration);
+
+    const bubble = document.getElementById('chat-bubble');
+    if (a.chatBubbleShow) {
+      el('bubble-user').textContent = a.chatBubbleUser;
+      el('bubble-text').textContent = a.chatBubbleText;
+      bubble.classList.add('visible');
+    } else {
+      bubble.classList.remove('visible');
+    }
+  }
+}
+
+// =============================================
+// Mode Renderers (same as before)
+// =============================================
+
+function drawFlowField(g, pal, spd) {
+  updateFlowField(t);
+  for (const p of particles) {
+    const col = Math.floor(p.x / (1280 / FIELD_COLS));
+    const row = Math.floor(p.y / (720 / FIELD_ROWS));
+    if (col >= 0 && col < FIELD_COLS && row >= 0 && row < FIELD_ROWS) {
+      const angle = flowField[row * FIELD_COLS + col];
+      p.vx += Math.cos(angle) * 0.3 * spd;
+      p.vy += Math.sin(angle) * 0.3 * spd;
+    }
+    p.vx *= 0.95; p.vy *= 0.95;
+    p.x += p.vx; p.y += p.vy;
+    p.life--;
+    if (p.life <= 0 || p.x < 0 || p.x > 1280 || p.y < 0 || p.y > 720) {
+      p.x = Math.random() * 1280; p.y = Math.random() * 720;
+      p.vx = 0; p.vy = 0; p.life = Math.random() * 200 + 100;
+      p.colorIdx = Math.floor(Math.random() * pal.length);
+    }
+    const c = color(pal[p.colorIdx % pal.length]);
+    c.setAlpha(40 + (p.life / p.maxLife) * 60);
+    g.noStroke(); g.fill(c);
+    g.ellipse(p.x, p.y, 2.5, 2.5);
+  }
+}
+
+function drawParticleSystem(g, pal, spd) {
+  const cx = 640, cy = 360;
+  for (const p of orbitParticles) {
+    p.angle += p.speed * spd;
+    p.radius += Math.sin(t * 2 + p.angle) * 0.3;
+    p.x = cx + Math.cos(p.angle) * p.radius;
+    p.y = cy + Math.sin(p.angle) * p.radius;
+    const c = color(pal[p.colorIdx % pal.length]);
+    c.setAlpha(120);
+    g.noStroke(); g.fill(c);
+    g.ellipse(p.x, p.y, p.size, p.size);
+  }
+}
+
+function drawFractal(g, pal) {
+  fractalZoom *= 1.002;
+  if (fractalZoom > 500) { fractalZoom = 1; fractalCx += 0.01; }
+  const w = 1280, h = 720;
+  g.loadPixels();
+  const step = 4;
+  for (let px = 0; px < w; px += step) {
+    for (let py = 0; py < h; py += step) {
+      let x0 = (px - w/2) / (0.5 * fractalZoom * w) + fractalCx;
+      let y0 = (py - h/2) / (0.5 * fractalZoom * h) + fractalCy;
+      let x = 0, y = 0, iter = 0;
+      while (x*x + y*y <= 4 && iter < fractalMaxIter) {
+        const xt = x*x - y*y + x0; y = 2*x*y + y0; x = xt; iter++;
+      }
+      const c = iter === fractalMaxIter ? color(10) : color(pal[iter % pal.length]);
+      for (let dx = 0; dx < step; dx++) {
+        for (let dy = 0; dy < step; dy++) {
+          const idx = 4 * ((py+dy) * w + (px+dx));
+          g.pixels[idx] = red(c); g.pixels[idx+1] = green(c);
+          g.pixels[idx+2] = blue(c); g.pixels[idx+3] = 255;
+        }
+      }
+    }
+  }
+  g.updatePixels();
+}
+
+function drawWatercolor(g, pal) {
+  if (frameCount % 3 === 0) addWatercolorDrop();
+  for (const d of watercolorDrops) {
+    if (d.growing && d.radius < d.maxRadius) {
+      d.radius += 0.5;
+      const c = color(pal[d.colorIdx % pal.length]);
+      c.setAlpha(d.opacity * 255);
+      g.noStroke(); g.fill(c);
+      for (let i = 0; i < 3; i++) {
+        const ox = (Math.random() - 0.5) * d.radius * 0.3;
+        const oy = (Math.random() - 0.5) * d.radius * 0.3;
+        g.ellipse(d.x + ox, d.y + oy, d.radius, d.radius * (0.8 + Math.random() * 0.4));
+      }
+    }
+  }
+}
+
+function drawGeometric(g, pal, spd) {
+  geoAngle += 0.003 * spd;
+  const cx = 640, cy = 360;
+  g.push(); g.translate(cx, cy); g.rotate(geoAngle);
+  for (let s = 0; s < geoSymmetry; s++) {
+    g.push(); g.rotate((TWO_PI / geoSymmetry) * s);
+    const c = color(pal[s % pal.length]); c.setAlpha(60);
+    g.stroke(c); g.strokeWeight(1); g.noFill();
+    const r = 100 + Math.sin(t * 2 + s) * 80;
+    const r2 = 150 + Math.cos(t * 1.5 + s * 0.5) * 100;
+    g.beginShape();
+    for (let i = 0; i <= 6; i++) { const a = (TWO_PI / 6) * i; g.vertex(Math.cos(a) * r, Math.sin(a) * r); }
+    g.endShape(CLOSE);
+    g.beginShape();
+    for (let i = 0; i <= 8; i++) { const a = (TWO_PI / 8) * i + geoAngle * 0.5; g.vertex(Math.cos(a) * r2, Math.sin(a) * r2); }
+    g.endShape(CLOSE);
+    g.pop();
+  }
+  g.pop();
+}
+
+// =============================================
+// DALL-E Reveal
+// =============================================
+window.__startDalleReveal = function(imageBase64, revealType) {
+  const canvas = document.getElementById('dalle-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.classList.add('visible');
+  const img = new Image();
+  img.onload = function() {
+    let progress = 0;
+    const duration = 45000;
+    const start = performance.now();
+    function animate() {
+      const elapsed = performance.now() - start;
+      progress = Math.min(elapsed / duration, 1);
+      ctx.clearRect(0, 0, 1280, 720);
+      switch (revealType) {
+        case 'dissolve':
+          ctx.globalAlpha = progress;
+          ctx.drawImage(img, 0, 0, 1280, 720); break;
+        case 'radial':
+          ctx.save(); ctx.beginPath();
+          ctx.arc(640, 360, Math.sqrt(640*640 + 360*360) * progress, 0, Math.PI * 2);
+          ctx.clip(); ctx.drawImage(img, 0, 0, 1280, 720); ctx.restore(); break;
+        case 'scanlines':
+          for (let y = 0; y < 720; y++) {
+            const lp = (progress * 720 - y) / 50;
+            if (lp > 0) { ctx.globalAlpha = Math.min(lp, 1); ctx.drawImage(img, 0, y, 1280, 1, 0, y, 1280, 1); }
+          } break;
+        default:
+          const bc = Math.floor(progress * 500);
+          for (let i = 0; i < bc; i++) {
+            const bx = (Math.sin(i * 0.73) * 0.5 + 0.5) * 1280;
+            const by = (Math.cos(i * 0.91) * 0.5 + 0.5) * 720;
+            const bs = 30 + Math.sin(i * 0.37) * 20;
+            ctx.drawImage(img, bx-bs/2, by-bs/2, bs, bs, bx-bs/2, by-bs/2, bs, bs);
+          } break;
+      }
+      ctx.globalAlpha = 1;
+      if (progress < 1) requestAnimationFrame(animate);
+      else setTimeout(() => { canvas.classList.remove('visible'); setTimeout(() => ctx.clearRect(0, 0, 1280, 720), 1000); }, 5000);
+    }
+    animate();
+  };
+  img.src = 'data:image/png;base64,' + imageBase64;
+};
+
+// =============================================
+// Canvas 2D Avatar (no WebGL required)
+// =============================================
+let avatarCanvas, avatarCtx;
+let avatarMood = 'serene';
+let avatarMouthOpen = 0;
+let avatarBlink = 0;
+let avatarBlinkTimer = 0;
+let avatarBreathPhase = 0;
+let avatarReaction = null;
+let avatarReactionTimer = 0;
+
+function initAvatar() {
+  avatarCanvas = document.createElement('canvas');
+  avatarCanvas.width = 300;
+  avatarCanvas.height = 400;
+  document.getElementById('avatar-container').appendChild(avatarCanvas);
+  avatarCtx = avatarCanvas.getContext('2d');
+  document.getElementById('avatar-container').classList.add('loaded');
+  console.log('[Avatar] Canvas 2D avatar initialized');
+  requestAnimationFrame(drawAvatar);
+}
+
+function drawAvatar() {
+  const ctx = avatarCtx;
+  const w = 300, h = 400;
+  ctx.clearRect(0, 0, w, h);
+
+  avatarBreathPhase += 0.03;
+  avatarBlinkTimer++;
+
+  // Blink every ~3-5s
+  if (avatarBlinkTimer > 90 + Math.random() * 60) {
+    avatarBlink = 1;
+    avatarBlinkTimer = 0;
+  }
+  if (avatarBlink > 0) avatarBlink = Math.max(0, avatarBlink - 0.15);
+
+  // Reaction timer
+  if (avatarReactionTimer > 0) avatarReactionTimer--;
+  else avatarReaction = null;
+
+  // Mouth follows audio amplitude
+  avatarMouthOpen = currentAmplitude * 1.2;
+
+  const breathY = Math.sin(avatarBreathPhase) * 3;
+  const cx = 150, cy = 180 + breathY;
+
+  // Mood colors
+  const moodColors = {
+    serene:        { glow: '#a855f7', eye: '#8b5cf6', cheek: 'rgba(168,85,247,0.1)' },
+    excited:       { glow: '#f59e0b', eye: '#ef4444', cheek: 'rgba(239,68,68,0.15)' },
+    contemplative: { glow: '#6366f1', eye: '#4f46e5', cheek: 'rgba(79,70,229,0.08)' },
+    playful:       { glow: '#10b981', eye: '#06b6d4', cheek: 'rgba(16,185,129,0.12)' },
+    melancholic:   { glow: '#64748b', eye: '#475569', cheek: 'rgba(71,85,105,0.08)' },
+  };
+  const mc = moodColors[avatarMood] || moodColors.serene;
+
+  // Head glow
+  const glow = ctx.createRadialGradient(cx, cy, 40, cx, cy, 100);
+  glow.addColorStop(0, mc.glow + '30');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h);
+
+  // Head (circle)
+  ctx.beginPath();
+  ctx.arc(cx, cy, 65, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fill();
+  ctx.strokeStyle = mc.glow + '80';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Eyes
+  const eyeSpread = 22;
+  const eyeY = cy - 8;
+  const eyeH = avatarBlink > 0.5 ? 1 : 10;
+  for (const side of [-1, 1]) {
+    const ex = cx + side * eyeSpread;
+    // Eye shape
+    ctx.beginPath();
+    ctx.ellipse(ex, eyeY, 8, eyeH, 0, 0, Math.PI * 2);
+    ctx.fillStyle = mc.eye;
+    ctx.fill();
+    // Pupil (if not blinking)
+    if (eyeH > 3) {
+      ctx.beginPath();
+      ctx.arc(ex, eyeY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f0f1a';
+      ctx.fill();
+      // Eye shine
+      ctx.beginPath();
+      ctx.arc(ex + 2, eyeY - 2, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+  }
+
+  // Mouth
+  const mouthY = cy + 20;
+  const mouthW = 18 + avatarMouthOpen * 10;
+  const mouthH = 2 + avatarMouthOpen * 14;
+  ctx.beginPath();
+  if (avatarMouthOpen > 0.1) {
+    // Open mouth (talking)
+    ctx.ellipse(cx, mouthY, mouthW / 2, mouthH / 2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#2d1b4e';
+    ctx.fill();
+    ctx.strokeStyle = mc.glow + '60';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  } else {
+    // Closed mouth (slight smile)
+    ctx.moveTo(cx - 12, mouthY);
+    ctx.quadraticCurveTo(cx, mouthY + 6, cx + 12, mouthY);
+    ctx.strokeStyle = mc.glow + '80';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Cheeks (subtle glow)
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(cx + side * 40, cy + 10, 12, 0, Math.PI * 2);
+    ctx.fillStyle = mc.cheek;
+    ctx.fill();
+  }
+
+  // "Antenna" / artistic flair on top
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 65);
+  ctx.quadraticCurveTo(cx + 15, cy - 90, cx + 5, cy - 100 + Math.sin(avatarBreathPhase * 2) * 5);
+  ctx.strokeStyle = mc.glow;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx + 5, cy - 100 + Math.sin(avatarBreathPhase * 2) * 5, 4, 0, Math.PI * 2);
+  ctx.fillStyle = mc.glow;
+  ctx.fill();
+
+  // Reaction effects
+  if (avatarReaction === 'happy') {
+    ctx.font = '24px sans-serif';
+    ctx.fillText('✨', cx + 50, cy - 40 - avatarReactionTimer * 0.3);
+  } else if (avatarReaction === 'surprise') {
+    ctx.font = '20px sans-serif';
+    ctx.fillText('!', cx + 55, cy - 30);
+  } else if (avatarReaction === 'think') {
+    ctx.font = '18px sans-serif';
+    ctx.fillText('💭', cx + 50, cy - 50);
+  }
+
+  // Name tag
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = mc.glow;
+  ctx.textAlign = 'center';
+  ctx.fillText('ArtisanAI', cx, cy + 80);
+  ctx.textAlign = 'start';
+
+  requestAnimationFrame(drawAvatar);
+}
+
+// Called by Node.js
+window.__setAvatarExpression = function(expression, motionGroup) {
+  avatarMood = window.__artisan.mood || 'serene';
+};
+
+window.__avatarReact = function(reaction) {
+  avatarReaction = reaction;
+  avatarReactionTimer = 60;
+};
+
+// Initialize after page load
+window.addEventListener('load', () => {
+  setTimeout(initAvatar, 1000);
+});
+</script>
+</body>
+</html>

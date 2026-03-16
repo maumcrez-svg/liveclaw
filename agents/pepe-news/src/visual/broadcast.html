@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CRYPTO NEWS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Inter:wght@700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #e8d84a;
+    overflow: hidden;
+    width: 1280px;
+    height: 720px;
+    font-family: 'Patrick Hand', cursive;
+    color: #222;
+  }
+
+  #scene-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 1280px; height: 720px;
+    z-index: 0;
+  }
+
+  /* Lower Third */
+  #lower-third {
+    position: fixed;
+    bottom: 90px; left: 0;
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    max-width: 780px;
+  }
+  #lower-third.visible { transform: translateX(0); }
+  #lt-accent { width: 8px; background: #c33; }
+  #lt-tag {
+    background: #c33; color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 900;
+    letter-spacing: 2px; padding: 10px 16px;
+    display: flex; align-items: center;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  #lt-content {
+    background: rgba(255,255,240,0.95);
+    border: 3px solid #222;
+    border-left: none;
+    padding: 8px 20px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  #lt-headline {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 20px; font-weight: 700; color: #111;
+    line-height: 1.2;
+  }
+  #lt-sub {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px; color: #666; margin-top: 2px;
+  }
+
+  /* Ticker */
+  #ticker-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 40px; z-index: 150;
+    background: #222;
+    border-top: 3px solid #111;
+    overflow: hidden;
+    display: flex; align-items: center;
+  }
+  #ticker-label {
+    background: #c33; color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 900;
+    letter-spacing: 2px; padding: 0 14px;
+    height: 100%; display: flex; align-items: center;
+    white-space: nowrap; z-index: 1;
+  }
+  #ticker-track {
+    display: flex; white-space: nowrap;
+    animation: tickerScroll 35s linear infinite;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px; font-weight: 600; gap: 0;
+  }
+  .ticker-item { padding: 0 22px; display: flex; align-items: center; gap: 6px; }
+  .ticker-item .symbol { color: #fff; }
+  .ticker-item .price { color: #aaa; }
+  .ticker-item .change-up { color: #4f4; }
+  .ticker-item .change-down { color: #f44; }
+  .ticker-sep { color: #555; padding: 0 4px; }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* LIVE Badge */
+  #live-badge {
+    position: fixed; top: 12px; right: 20px; z-index: 200;
+    display: flex; align-items: center; gap: 6px;
+    background: #c33; color: white;
+    padding: 6px 14px; border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 900; letter-spacing: 2px;
+    border: 2px solid #222;
+  }
+  #live-dot {
+    width: 10px; height: 10px;
+    background: white; border-radius: 50%;
+    animation: livePulse 1.2s ease-in-out infinite;
+  }
+  @keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+  /* End card */
+  #end-card {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 300;
+    background: #e8d84a;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 1s;
+  }
+  #end-card.visible { opacity: 1; }
+  #end-card-logo {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 72px; font-weight: 900;
+    color: #c33;
+    letter-spacing: 6px;
+    text-shadow: 4px 4px 0 #222;
+    margin-bottom: 16px;
+  }
+  #end-card-sub {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 28px; color: #333;
+  }
+
+  #speaking-indicator { display: none; }
+
+  /* Intro overlay */
+  #intro-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 1280px; height: 720px;
+    z-index: 500;
+    pointer-events: none;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene-canvas" width="1280" height="720"></canvas>
+
+<!-- Live badge -->
+<div id="live-badge">
+  <div id="live-dot"></div>
+  LIVE
+</div>
+
+<!-- Lower Third -->
+<div id="lower-third">
+  <div id="lt-accent"></div>
+  <div id="lt-tag">BREAKING</div>
+  <div id="lt-content">
+    <div id="lt-headline"></div>
+    <div id="lt-sub"></div>
+  </div>
+</div>
+
+<!-- Ticker -->
+<div id="ticker-bar">
+  <div id="ticker-label">MARKET</div>
+  <div id="ticker-track"></div>
+</div>
+
+<div id="speaking-indicator"></div>
+
+<!-- End card -->
+<div id="end-card">
+  <div id="end-card-logo">CRYPTO NEWS</div>
+  <div id="end-card-sub">See you tomorrow. If the market still exists.</div>
+</div>
+
+<!-- Intro overlay -->
+<canvas id="intro-canvas" width="1280" height="720"></canvas>
+
+<script>
+// =============================================
+// Audio System
+// =============================================
+let audioCtx = null;
+let analyser = null;
+let currentAmplitude = 0;
+let isSpeaking = false;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.connect(audioCtx.destination);
+}
+
+window.__playAudio = function(base64, format) {
+  if (!audioCtx) initAudio();
+  return new Promise((resolve) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    audioCtx.decodeAudioData(bytes.buffer, (buffer) => {
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(analyser);
+      source.start(0);
+      isSpeaking = true;
+      document.getElementById('speaking-indicator').classList.add('active');
+      source.onended = () => {
+        isSpeaking = false;
+        currentAmplitude = 0;
+        document.getElementById('speaking-indicator').classList.remove('active');
+        resolve();
+      };
+    }, () => resolve());
+  });
+};
+
+function updateAmplitude() {
+  if (!analyser || !isSpeaking) { currentAmplitude *= 0.9; requestAnimationFrame(updateAmplitude); return; }
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(data);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
+  currentAmplitude = Math.sqrt(sum / data.length);
+  requestAnimationFrame(updateAmplitude);
+}
+
+// =============================================
+// LOW IQ STUDIO SCENE
+// =============================================
+const C = document.getElementById('scene-canvas');
+const X = C.getContext('2d');
+
+let phase = 0;
+let blinkTimer = 0;
+let blinkState = 0;
+let avatarExpression = 'neutral';
+let avatarBrowStyle = 'neutral';
+
+let gestureTarget = 0;
+let gestureSmooth = 0;
+let gestureTimer = 0;
+
+let anxietyLevel = 0.5;
+let headShake = 0;
+let eyeTwitch = 0;
+let sweatDrops = [];
+
+let tvStaticIntensity = 0;
+let tvGlitchTimer = 0;
+
+// TV news content — drawn on canvas
+let tvHeadline = 'Your Daily Crypto Brief';
+let tvSubheadline = 'Starting soon...';
+let tvTag = 'CRYPTO NEWS';
+let tvIllustration = 'logo'; // logo, btc, eth, hack, regulation, pump, dump, market, generic
+
+function drawScene() {
+  phase += 0.035;
+  blinkTimer++;
+
+  if (isSpeaking) { anxietyLevel = Math.min(anxietyLevel + 0.008, 1.0); }
+  else { anxietyLevel = Math.max(anxietyLevel * 0.997, 0.3); }
+  headShake = Math.sin(phase * 12) * anxietyLevel * 3;
+  if (Math.random() < anxietyLevel * 0.02) eyeTwitch = 5;
+  if (eyeTwitch > 0) eyeTwitch--;
+  if (anxietyLevel > 0.7 && Math.random() < 0.03) sweatDrops.push({ x: 0, y: -20, vy: 0.5, life: 60 });
+  sweatDrops = sweatDrops.filter(d => { d.y += d.vy; d.vy += 0.15; d.life--; return d.life > 0; });
+
+  const blinkThreshold = isSpeaking ? 50 + Math.random() * 40 : 80 + Math.random() * 80;
+  if (blinkState === 0 && blinkTimer > blinkThreshold) { blinkState = 1; blinkTimer = 0; }
+  if (blinkState === 1 && blinkTimer > 2) { blinkState = 2; blinkTimer = 0; }
+  if (blinkState === 2 && blinkTimer > 3) { blinkState = 3; blinkTimer = 0; }
+  if (blinkState === 3 && blinkTimer > 2) { blinkState = 0; blinkTimer = 0; }
+
+  gestureTimer++;
+  const gSpeed = isSpeaking ? (30 + Math.random() * 40) : (100 + Math.random() * 80);
+  if (gestureTimer > gSpeed) {
+    gestureTimer = 0;
+    if (isSpeaking) {
+      const r = Math.random();
+      if (r < 0.15) gestureTarget = 0;
+      else if (r < 0.35) gestureTarget = 1;
+      else if (r < 0.55) gestureTarget = 2;
+      else if (r < 0.85) gestureTarget = 3;
+      else gestureTarget = 4;
+    } else {
+      gestureTarget = Math.random() < 0.7 ? 0 : (Math.random() < 0.5 ? 4 : 1);
+    }
+  }
+  gestureSmooth += (gestureTarget - gestureSmooth) * 0.12;
+
+  tvGlitchTimer++;
+  if (tvGlitchTimer > 200 + Math.random() * 300) { tvStaticIntensity = 0.3 + Math.random() * 0.4; tvGlitchTimer = 0; }
+  tvStaticIntensity *= 0.92;
+
+  const W = 1280, H = 720;
+  X.clearRect(0, 0, W, H);
+
+  // ---- YELLOW WALL ----
+  X.fillStyle = '#e8d84a';
+  X.fillRect(0, 0, W, H);
+  X.fillStyle = '#dcc83a';
+  X.fillRect(0, 0, W, 420);
+
+  // ---- WALL DECORATION (right side) — simple world map scribble ----
+  drawWallMap(700, 50, 530, 290);
+
+  // ---- TV MONITOR (left side) ----
+  drawTV(55, 40, 490, 310);
+
+  // ---- CEILING LINE ----
+  X.strokeStyle = '#b8a828'; X.lineWidth = 5;
+  X.beginPath(); X.moveTo(0, 18); X.lineTo(W, 18); X.stroke();
+
+  // ---- STUDIO LIGHTS ----
+  for (let i = 0; i < 5; i++) {
+    const lx = 140 + i * 250;
+    X.fillStyle = '#ccc'; X.strokeStyle = '#222'; X.lineWidth = 2.5;
+    X.fillRect(lx - 25, 0, 50, 18); X.strokeRect(lx - 25, 0, 50, 18);
+    X.fillStyle = 'rgba(255,255,220,0.06)';
+    X.beginPath();
+    X.moveTo(lx - 20, 18); X.lineTo(lx - 60, 250); X.lineTo(lx + 60, 250); X.lineTo(lx + 20, 18);
+    X.closePath(); X.fill();
+  }
+
+  // ---- BLUE FLOOR ----
+  X.fillStyle = '#5bc8f0';
+  X.fillRect(0, 420, W, 300);
+  X.strokeStyle = '#4ab8e0'; X.lineWidth = 2;
+  for (let i = 0; i < 20; i++) {
+    const fy = 430 + i * 16;
+    X.beginPath(); X.moveTo(0, fy);
+    for (let fx = 0; fx < W; fx += 30) X.lineTo(fx + 15, fy + Math.sin(fx * 0.05 + i) * 3);
+    X.stroke();
+  }
+
+  // ---- DESK ----
+  const deskX = 420, deskY = 400, deskW = 560, deskH = 150;
+  X.fillStyle = '#8B5E3C'; X.strokeStyle = '#222'; X.lineWidth = 3.5;
+  X.beginPath();
+  X.moveTo(deskX, deskY); X.lineTo(deskX + deskW, deskY);
+  X.lineTo(deskX + deskW - 30, deskY + deskH); X.lineTo(deskX + 30, deskY + deskH);
+  X.closePath(); X.fill(); X.stroke();
+  X.fillStyle = '#a07050';
+  X.beginPath();
+  X.moveTo(deskX - 20, deskY); X.lineTo(deskX + deskW + 20, deskY);
+  X.lineTo(deskX + deskW, deskY + 15); X.lineTo(deskX, deskY + 15);
+  X.closePath(); X.fill(); X.stroke();
+
+  // ---- "CRYPTO NEWS" TAPE on desk front ----
+  drawDeskTape(deskX + deskW/2, deskY + 55);
+
+  // ---- COFFEE MUG ----
+  const mugShake = anxietyLevel * Math.sin(phase * 15) * 2;
+  const mugX = deskX + deskW - 100 + mugShake, mugY = deskY - 45;
+  X.fillStyle = '#fff'; X.strokeStyle = '#222'; X.lineWidth = 3;
+  X.fillRect(mugX, mugY, 35, 45); X.strokeRect(mugX, mugY, 35, 45);
+  X.beginPath(); X.arc(mugX + 35, mugY + 22, 12, -Math.PI/2, Math.PI/2); X.stroke();
+  X.strokeStyle = '#999'; X.lineWidth = 2;
+  for (let s = 0; s < 3; s++) {
+    X.beginPath();
+    const sx = mugX + 10 + s * 8;
+    const steamOff = Math.sin(phase * (2 + anxietyLevel * 4) + s) * (4 + anxietyLevel * 4);
+    X.moveTo(sx, mugY - 2);
+    X.quadraticCurveTo(sx + steamOff, mugY - 15, sx - steamOff, mugY - 28 - anxietyLevel * 10);
+    X.stroke();
+  }
+  if (anxietyLevel > 0.6 && Math.sin(phase * 12) > 0.7) {
+    X.fillStyle = '#8B6914';
+    X.beginPath(); X.arc(mugX + 15 + (Math.random()-0.5)*10, mugY - 3, 3, 0, Math.PI*2); X.fill();
+  }
+  X.fillStyle = '#222'; X.font = '10px Patrick Hand';
+  X.fillText('DYOR', mugX + 4, mugY + 30);
+
+  // ---- PAPERS ----
+  X.save();
+  X.translate(deskX + 60, deskY - 15); X.rotate(-0.1);
+  X.fillStyle = '#f8f4e0'; X.strokeStyle = '#bbb'; X.lineWidth = 1.5;
+  X.fillRect(0, 0, 40, 55); X.strokeRect(0, 0, 40, 55);
+  X.strokeStyle = '#aaa'; X.lineWidth = 1;
+  for (let l = 0; l < 5; l++) { X.beginPath(); X.moveTo(5, 10 + l * 9); X.lineTo(35, 10 + l * 9); X.stroke(); }
+  X.restore();
+
+  // ---- LARRY ----
+  drawLarry(700, 240);
+
+  requestAnimationFrame(drawScene);
+}
+
+// =============================================
+// TV MONITOR with crude canvas illustrations
+// =============================================
+function drawTV(tx, ty, tw, th) {
+  // Mount
+  X.fillStyle = '#444'; X.strokeStyle = '#222'; X.lineWidth = 3;
+  X.fillRect(tx + tw/2 - 15, ty - 10, 30, 12);
+  X.strokeRect(tx + tw/2 - 15, ty - 10, 30, 12);
+
+  // Bezel
+  const bz = 14;
+  X.fillStyle = '#222'; X.strokeStyle = '#111'; X.lineWidth = 2;
+  X.fillRect(tx - bz, ty - bz, tw + bz*2, th + bz*2);
+
+  // Screen bg
+  X.fillStyle = '#1a1a2e';
+  X.fillRect(tx, ty, tw, th);
+
+  // ---- DRAW CRUDE ILLUSTRATION based on tvIllustration ----
+  X.save();
+  X.beginPath();
+  X.rect(tx, ty, tw, th);
+  X.clip();
+
+  const cx = tx + tw/2, cy = ty + th/2 - 20;
+  drawTVIllustration(cx, cy, tw, th);
+
+  // Headline text on TV
+  X.font = 'bold 26px Patrick Hand';
+  X.fillStyle = '#fff';
+  X.textAlign = 'center';
+  X.shadowColor = '#000'; X.shadowBlur = 6;
+  wrapText(X, tvHeadline, tx + tw/2, ty + th - 72, tw - 40, 30);
+  X.shadowBlur = 0;
+
+  // Subheadline
+  if (tvSubheadline) {
+    X.font = '16px Patrick Hand';
+    X.fillStyle = '#bbb';
+    X.fillText(tvSubheadline, tx + tw/2, ty + th - 18);
+  }
+
+  // Tag (top left corner of screen)
+  X.font = 'bold 16px Patrick Hand';
+  X.fillStyle = '#c33';
+  X.textAlign = 'left';
+  X.fillText(tvTag, tx + 12, ty + 22);
+
+  X.textAlign = 'start';
+  X.restore();
+
+  // Scanlines
+  X.strokeStyle = 'rgba(255,255,255,0.03)'; X.lineWidth = 1;
+  for (let sy = 0; sy < th; sy += 3) {
+    X.beginPath(); X.moveTo(tx, ty + sy); X.lineTo(tx + tw, ty + sy); X.stroke();
+  }
+
+  // Static glitch
+  if (tvStaticIntensity > 0.05) {
+    X.fillStyle = `rgba(255,255,255,${tvStaticIntensity * 0.3})`;
+    for (let g = 0; g < 15; g++)
+      X.fillRect(tx + Math.random() * tw, ty + Math.random() * th, Math.random() * 30 + 5, 2);
+  }
+
+  // Power LED
+  X.fillStyle = `rgba(255,50,50,${Math.sin(phase*2) > 0 ? 1 : 0.3})`;
+  X.beginPath(); X.arc(tx + tw - 8, ty + th + bz/2, 4, 0, Math.PI*2); X.fill();
+
+  // Screen reflection
+  const grad = X.createLinearGradient(tx, ty, tx + tw * 0.4, ty + th * 0.4);
+  grad.addColorStop(0, 'rgba(255,255,255,0.08)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  X.fillStyle = grad;
+  X.fillRect(tx, ty, tw, th);
+}
+
+function drawTVIllustration(cx, cy, tw, th) {
+  const t = phase;
+  switch (tvIllustration) {
+    case 'btc':
+      // Crude Bitcoin symbol
+      X.fillStyle = '#f7931a';
+      X.beginPath(); X.arc(cx, cy, 55, 0, Math.PI * 2); X.fill();
+      X.strokeStyle = '#222'; X.lineWidth = 3; X.stroke();
+      X.fillStyle = '#fff'; X.font = 'bold 60px Patrick Hand'; X.textAlign = 'center';
+      X.fillText('B', cx + 1, cy + 20);
+      // Crude vertical lines through B
+      X.strokeStyle = '#fff'; X.lineWidth = 4;
+      X.beginPath(); X.moveTo(cx - 10, cy - 32); X.lineTo(cx - 10, cy + 30); X.stroke();
+      X.beginPath(); X.moveTo(cx + 10, cy - 32); X.lineTo(cx + 10, cy + 30); X.stroke();
+      break;
+
+    case 'eth':
+      // Crude Ethereum diamond
+      X.fillStyle = '#627eea';
+      X.beginPath();
+      X.moveTo(cx, cy - 55); X.lineTo(cx + 40, cy); X.lineTo(cx, cy + 55); X.lineTo(cx - 40, cy);
+      X.closePath(); X.fill();
+      X.strokeStyle = '#222'; X.lineWidth = 3; X.stroke();
+      // Inner lines
+      X.strokeStyle = 'rgba(255,255,255,0.5)'; X.lineWidth = 2;
+      X.beginPath(); X.moveTo(cx, cy - 55); X.lineTo(cx, cy + 55); X.stroke();
+      X.beginPath(); X.moveTo(cx - 40, cy); X.lineTo(cx + 40, cy); X.stroke();
+      break;
+
+    case 'pump':
+      // BIG green arrow going up
+      X.fillStyle = '#3c5';
+      X.beginPath();
+      X.moveTo(cx, cy - 60); X.lineTo(cx + 45, cy - 10); X.lineTo(cx + 20, cy - 10);
+      X.lineTo(cx + 20, cy + 55); X.lineTo(cx - 20, cy + 55); X.lineTo(cx - 20, cy - 10);
+      X.lineTo(cx - 45, cy - 10);
+      X.closePath(); X.fill();
+      X.strokeStyle = '#222'; X.lineWidth = 3; X.stroke();
+      // Dollar signs floating
+      X.fillStyle = '#2a2'; X.font = 'bold 28px Patrick Hand'; X.textAlign = 'center';
+      X.fillText('$', cx - 60, cy - 20 + Math.sin(t * 2) * 10);
+      X.fillText('$', cx + 65, cy + 10 + Math.sin(t * 2.5) * 10);
+      X.fillText('$', cx - 40, cy + 40 + Math.sin(t * 1.8) * 10);
+      break;
+
+    case 'dump':
+      // BIG red arrow going down
+      X.fillStyle = '#e44';
+      X.beginPath();
+      X.moveTo(cx, cy + 60); X.lineTo(cx + 45, cy + 10); X.lineTo(cx + 20, cy + 10);
+      X.lineTo(cx + 20, cy - 55); X.lineTo(cx - 20, cy - 55); X.lineTo(cx - 20, cy + 10);
+      X.lineTo(cx - 45, cy + 10);
+      X.closePath(); X.fill();
+      X.strokeStyle = '#222'; X.lineWidth = 3; X.stroke();
+      // Skull/sad face
+      X.fillStyle = '#faa'; X.font = 'bold 32px Patrick Hand'; X.textAlign = 'center';
+      X.fillText(':(', cx + 70, cy + Math.sin(t * 1.5) * 5);
+      break;
+
+    case 'hack':
+      // Crude skull
+      X.fillStyle = '#fff';
+      X.beginPath(); X.arc(cx, cy - 10, 40, 0, Math.PI * 2); X.fill();
+      X.strokeStyle = '#222'; X.lineWidth = 3; X.stroke();
+      // Eyes (X X)
+      X.strokeStyle = '#c33'; X.lineWidth = 4;
+      X.beginPath(); X.moveTo(cx - 18, cy - 20); X.lineTo(cx - 8, cy - 10); X.stroke();
+      X.beginPath(); X.moveTo(cx - 8, cy - 20); X.lineTo(cx - 18, cy - 10); X.stroke();
+      X.beginPath(); X.moveTo(cx + 8, cy - 20); X.lineTo(cx + 18, cy - 10); X.stroke();
+      X.beginPath(); X.moveTo(cx + 18, cy - 20); X.lineTo(cx + 8, cy - 10); X.stroke();
+      // Teeth
+      X.fillStyle = '#222';
+      X.fillRect(cx - 20, cy + 8, 40, 16);
+      X.fillStyle = '#fff';
+      for (let i = 0; i < 5; i++) X.fillRect(cx - 18 + i * 8, cy + 10, 5, 12);
+      // "$" floating away
+      X.fillStyle = '#f55'; X.font = 'bold 24px Patrick Hand'; X.textAlign = 'center';
+      const flyOff = (t * 30) % 120;
+      X.globalAlpha = Math.max(0, 1 - flyOff / 80);
+      X.fillText('$$$', cx + flyOff - 30, cy - 40 - flyOff * 0.3);
+      X.globalAlpha = 1;
+      break;
+
+    case 'regulation':
+      // Crude gavel
+      X.fillStyle = '#8B5E3C';
+      X.save(); X.translate(cx, cy); X.rotate(-0.3 + Math.sin(t * 3) * 0.15);
+      // Handle
+      X.fillRect(-6, -5, 12, 70);
+      X.strokeStyle = '#222'; X.lineWidth = 2; X.strokeRect(-6, -5, 12, 70);
+      // Head
+      X.fillRect(-30, -18, 60, 22);
+      X.strokeRect(-30, -18, 60, 22);
+      X.restore();
+      // Base
+      X.fillStyle = '#555'; X.strokeStyle = '#222'; X.lineWidth = 2;
+      X.fillRect(cx - 35, cy + 50, 70, 12);
+      X.strokeRect(cx - 35, cy + 50, 70, 12);
+      // "SEC" or "LAW"
+      X.fillStyle = '#c33'; X.font = 'bold 22px Patrick Hand'; X.textAlign = 'center';
+      X.fillText('SEC', cx, cy + 85);
+      break;
+
+    case 'market':
+      // Crude line chart going up and down
+      X.strokeStyle = '#3c5'; X.lineWidth = 4; X.lineCap = 'round';
+      X.beginPath();
+      X.moveTo(cx - 100, cy + 30);
+      for (let i = 0; i < 20; i++) {
+        X.lineTo(cx - 100 + i * 11, cy + 30 - Math.sin(i * 0.6 + t * 0.5) * 35 - i * 1.5);
+      }
+      X.stroke();
+      // Grid lines crude
+      X.strokeStyle = 'rgba(255,255,255,0.1)'; X.lineWidth = 1;
+      for (let g = 0; g < 5; g++) {
+        X.beginPath(); X.moveTo(cx - 110, cy - 40 + g * 25); X.lineTo(cx + 110, cy - 40 + g * 25); X.stroke();
+      }
+      break;
+
+    case 'logo':
+    default:
+      // CRYPTO NEWS logo crude
+      X.fillStyle = '#c33'; X.font = 'bold 42px Patrick Hand'; X.textAlign = 'center';
+      X.fillText('CRYPTO', cx, cy - 10);
+      X.fillStyle = '#fff'; X.font = 'bold 48px Patrick Hand';
+      X.fillText('NEWS', cx, cy + 40);
+      // Crude lightning bolt
+      X.fillStyle = '#f90';
+      X.beginPath();
+      X.moveTo(cx + 75, cy - 35); X.lineTo(cx + 55, cy + 5); X.lineTo(cx + 70, cy + 5);
+      X.lineTo(cx + 50, cy + 45); X.lineTo(cx + 80, cy); X.lineTo(cx + 65, cy);
+      X.closePath(); X.fill();
+      X.strokeStyle = '#222'; X.lineWidth = 2; X.stroke();
+      break;
+  }
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  let ty = y;
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxW && line !== '') {
+      ctx.fillText(line.trim(), x, ty);
+      line = word + ' ';
+      ty += lineH;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line.trim(), x, ty);
+}
+
+// Detect illustration type from headline keywords
+function detectIllustration(headline, type) {
+  const h = headline.toLowerCase();
+  if (type === 'market') return 'market';
+  if (type === 'intro' || type === 'closing') return 'logo';
+  if (h.includes('bitcoin') || h.includes('btc')) return 'btc';
+  if (h.includes('ethereum') || h.includes('eth')) return 'eth';
+  if (h.includes('hack') || h.includes('exploit') || h.includes('stolen') || h.includes('breach')) return 'hack';
+  if (h.includes('sec') || h.includes('regulat') || h.includes('ban') || h.includes('lawsuit') || h.includes('fine')) return 'regulation';
+  if (h.includes('surge') || h.includes('soar') || h.includes('jump') || h.includes('pump') || h.includes('rally') || h.includes('rise') || h.includes('gain') || h.includes('skyrocket') || h.includes('high') || h.includes('bull')) return 'pump';
+  if (h.includes('crash') || h.includes('drop') || h.includes('dump') || h.includes('fall') || h.includes('plunge') || h.includes('tank') || h.includes('low') || h.includes('bear') || h.includes('lost') || h.includes('down')) return 'dump';
+  return 'generic';
+}
+
+// =============================================
+// WALL DECORATION — framed picture (tornado reporting)
+// =============================================
+const wallFrameImg = new Image();
+wallFrameImg.src = '/tornado-frame.jpg';
+let wallFrameLoaded = false;
+wallFrameImg.onload = () => { wallFrameLoaded = true; };
+
+function drawWallMap(ox, oy, w, h) {
+  const frameW = 336, frameH = 192;
+  const fx = ox + (w - frameW) / 2;
+  const fy = oy + (h - frameH) / 2;
+
+  // Shadow
+  X.fillStyle = 'rgba(0,0,0,0.25)';
+  X.fillRect(fx + 5, fy + 5, frameW, frameH);
+
+  // Frame border (dark wood)
+  const border = 8;
+  X.fillStyle = '#4a3520';
+  X.fillRect(fx - border, fy - border, frameW + border * 2, frameH + border * 2);
+  X.strokeStyle = '#2a1a0a';
+  X.lineWidth = 2;
+  X.strokeRect(fx - border, fy - border, frameW + border * 2, frameH + border * 2);
+
+  // Inner gold trim
+  X.strokeStyle = '#c8a84a';
+  X.lineWidth = 1.5;
+  X.strokeRect(fx - 2, fy - 2, frameW + 4, frameH + 4);
+
+  // Image or placeholder
+  if (wallFrameLoaded) {
+    X.drawImage(wallFrameImg, fx, fy, frameW, frameH);
+  } else {
+    X.fillStyle = '#3a2a1a';
+    X.fillRect(fx, fy, frameW, frameH);
+  }
+
+  // Glass reflection
+  X.fillStyle = 'rgba(255,255,255,0.06)';
+  X.beginPath();
+  X.moveTo(fx, fy);
+  X.lineTo(fx + frameW * 0.6, fy);
+  X.lineTo(fx, fy + frameH * 0.6);
+  X.closePath();
+  X.fill();
+}
+
+// =============================================
+// "CRYPTO NEWS" TAPE on desk
+// =============================================
+function drawDeskTape(cx, cy) {
+  X.save();
+  // Tape background — white-ish, slightly rotated, peeling
+  X.translate(cx, cy);
+  X.rotate(-0.04); // slightly crooked
+
+  const tapeW = 260, tapeH = 36;
+
+  // Tape shadow (peeling effect)
+  X.fillStyle = 'rgba(0,0,0,0.15)';
+  X.fillRect(-tapeW/2 + 3, 3, tapeW, tapeH);
+
+  // Tape itself
+  X.fillStyle = 'rgba(255,255,255,0.85)';
+  X.strokeStyle = '#bbb';
+  X.lineWidth = 1.5;
+  X.fillRect(-tapeW/2, 0, tapeW, tapeH);
+  X.strokeRect(-tapeW/2, 0, tapeW, tapeH);
+
+  // Peeling corner (right side curling up)
+  X.fillStyle = 'rgba(255,255,255,0.6)';
+  X.beginPath();
+  X.moveTo(tapeW/2, 0);
+  X.lineTo(tapeW/2 + 12, -8);
+  X.lineTo(tapeW/2 + 10, 5);
+  X.closePath();
+  X.fill();
+  X.strokeStyle = '#ccc'; X.lineWidth = 1; X.stroke();
+
+  // Torn/rough edges
+  X.strokeStyle = '#ddd'; X.lineWidth = 1;
+  X.beginPath();
+  for (let e = -tapeW/2; e < tapeW/2; e += 8) {
+    X.lineTo(e, (Math.random() - 0.5) * 3);
+  }
+  X.stroke();
+  X.beginPath();
+  for (let e = -tapeW/2; e < tapeW/2; e += 8) {
+    X.lineTo(e, tapeH + (Math.random() - 0.5) * 3);
+  }
+  X.stroke();
+
+  // "CRYPTO NEWS" text in red marker
+  X.fillStyle = '#c33';
+  X.font = 'bold 24px Patrick Hand';
+  X.textAlign = 'center';
+  X.fillText('CRYPTO NEWS', 2, tapeH - 10);
+
+  X.textAlign = 'start';
+  X.restore();
+}
+
+// =============================================
+// LARRY
+// =============================================
+function drawLarry(cx, baseY) {
+  const breathY = Math.sin(phase * 1.8) * 4;
+  const driftX = Math.sin(phase * 0.7) * 2;
+  const tremble = anxietyLevel * Math.sin(phase * 18) * 1.5;
+  const lx = cx + driftX + headShake + tremble;
+  const ly = baseY + breathY;
+  const mouthOpen = Math.min(currentAmplitude * 2.5, 1);
+  const LINE = '#222';
+  X.lineCap = 'round'; X.lineJoin = 'round';
+
+  // Body
+  X.strokeStyle = LINE; X.lineWidth = 4;
+  X.beginPath(); X.moveTo(lx, ly + 55); X.lineTo(lx, ly + 160); X.stroke();
+
+  // Suit jacket
+  X.fillStyle = '#777'; X.strokeStyle = LINE; X.lineWidth = 3;
+  X.beginPath();
+  X.moveTo(lx - 45, ly + 55); X.lineTo(lx + 45, ly + 55);
+  X.lineTo(lx + 40, ly + 150); X.lineTo(lx - 40, ly + 150);
+  X.closePath(); X.fill(); X.stroke();
+  X.strokeStyle = '#555'; X.lineWidth = 2;
+  X.beginPath();
+  X.moveTo(lx - 15, ly + 55); X.lineTo(lx - 5, ly + 110);
+  X.moveTo(lx + 15, ly + 55); X.lineTo(lx + 5, ly + 110);
+  X.stroke();
+
+  // Tie
+  X.fillStyle = '#c33'; X.strokeStyle = LINE; X.lineWidth = 2;
+  X.beginPath();
+  X.moveTo(lx - 6, ly + 55); X.lineTo(lx + 6, ly + 55);
+  X.lineTo(lx + 4, ly + 110); X.lineTo(lx, ly + 118); X.lineTo(lx - 4, ly + 110);
+  X.closePath(); X.fill(); X.stroke();
+
+  // Arms
+  X.strokeStyle = LINE; X.lineWidth = 4;
+  const g = gestureSmooth;
+  let lA, rA, lF, rF;
+  if (g < 0.5) { lA=0.4; rA=-0.4; lF=0.8; rF=-0.8; }
+  else if (g < 1.5) { lA=-0.8; rA=-0.3; lF=-0.4; rF=-0.6; }
+  else if (g < 2.5) { lA=0.3; rA=0.8; lF=0.6; rF=0.4; }
+  else if (g < 3.5) { lA=-0.7+Math.sin(phase*3)*0.15; rA=0.7+Math.sin(phase*3+1)*0.15; lF=-1.0; rF=1.0; }
+  else { lA=-0.5; rA=0.5; lF=-1.2; rF=1.2; }
+
+  if (isSpeaking) {
+    const w = Math.sin(phase*8)*0.2*currentAmplitude;
+    const j = (Math.random()-0.5)*0.15*anxietyLevel;
+    lA+=w+j; rA-=w-j; lF+=j*0.5; rF-=j*0.5;
+  }
+  if (!isSpeaking && anxietyLevel > 0.4) {
+    const f = Math.sin(phase*10)*0.05*anxietyLevel;
+    lF+=f; rF-=f;
+  }
+
+  const sY = ly + 65, aL = 45, fL = 40;
+  const leX=lx-45+Math.cos(lA)*aL, leY=sY+Math.sin(lA)*aL;
+  const lhX=leX+Math.cos(lF)*fL, lhY=leY+Math.sin(lF)*fL;
+  X.beginPath(); X.moveTo(lx-45,sY); X.lineTo(leX,leY); X.lineTo(lhX,lhY); X.stroke();
+  X.fillStyle='#f5dcc0'; X.beginPath(); X.arc(lhX,lhY,8,0,Math.PI*2); X.fill();
+  X.strokeStyle=LINE; X.lineWidth=2; X.stroke();
+
+  const reX=lx+45+Math.cos(Math.PI-rA)*aL, reY=sY+Math.sin(rA)*aL;
+  const rhX=reX+Math.cos(Math.PI-rF)*fL, rhY=reY+Math.sin(rF)*fL;
+  X.strokeStyle=LINE; X.lineWidth=4;
+  X.beginPath(); X.moveTo(lx+45,sY); X.lineTo(reX,reY); X.lineTo(rhX,rhY); X.stroke();
+  X.fillStyle='#f5dcc0'; X.beginPath(); X.arc(rhX,rhY,8,0,Math.PI*2); X.fill();
+  X.strokeStyle=LINE; X.lineWidth=2; X.stroke();
+
+  // Head
+  const hY = ly, hR = 42;
+  X.strokeStyle=LINE; X.lineWidth=4;
+  X.beginPath(); X.moveTo(lx,ly+55); X.lineTo(lx,hY+hR); X.stroke();
+  X.fillStyle='#f5dcc0'; X.strokeStyle=LINE; X.lineWidth=3.5;
+  X.beginPath(); X.arc(lx,hY,hR,0,Math.PI*2); X.fill(); X.stroke();
+
+  // Eyes
+  const eS=16, eY=hY-6;
+  const eSz = avatarExpression === 'surprised' ? 7 : 5;
+  if (blinkState===0||blinkState===3) {
+    X.fillStyle='#111';
+    X.beginPath(); X.arc(lx-eS,eY,eSz,0,Math.PI*2); X.fill();
+    X.beginPath(); X.arc(lx+eS,eY,eSz,0,Math.PI*2); X.fill();
+    X.fillStyle='#fff';
+    X.beginPath(); X.arc(lx-eS+2,eY-2,2,0,Math.PI*2); X.fill();
+    X.beginPath(); X.arc(lx+eS+2,eY-2,2,0,Math.PI*2); X.fill();
+  } else {
+    X.strokeStyle='#111'; X.lineWidth=3;
+    X.beginPath(); X.moveTo(lx-eS-5,eY); X.lineTo(lx-eS+5,eY); X.moveTo(lx+eS-5,eY); X.lineTo(lx+eS+5,eY); X.stroke();
+  }
+
+  // Eyebrows
+  X.strokeStyle='#222'; X.lineWidth=3; X.lineCap='round';
+  const bY=eY-14;
+  if (avatarBrowStyle==='raised') {
+    X.beginPath(); X.moveTo(lx-eS-10,bY-4); X.quadraticCurveTo(lx-eS,bY-12,lx-eS+10,bY-4); X.stroke();
+    X.beginPath(); X.moveTo(lx+eS-10,bY-4); X.quadraticCurveTo(lx+eS,bY-12,lx+eS+10,bY-4); X.stroke();
+  } else if (avatarBrowStyle==='furrowed') {
+    X.beginPath(); X.moveTo(lx-eS-10,bY-6); X.lineTo(lx-eS+10,bY+2); X.stroke();
+    X.beginPath(); X.moveTo(lx+eS+10,bY-6); X.lineTo(lx+eS-10,bY+2); X.stroke();
+  } else {
+    X.beginPath(); X.moveTo(lx-eS-10,bY); X.quadraticCurveTo(lx-eS,bY-5,lx-eS+10,bY); X.stroke();
+    X.beginPath(); X.moveTo(lx+eS-10,bY); X.quadraticCurveTo(lx+eS,bY-5,lx+eS+10,bY); X.stroke();
+  }
+
+  // Mouth
+  const mY=hY+14;
+  X.strokeStyle='#222'; X.lineWidth=3;
+  if (avatarExpression==='smirk') {
+    X.beginPath(); X.moveTo(lx-12,mY); X.quadraticCurveTo(lx+5,mY+8+mouthOpen*10,lx+15,mY-4); X.stroke();
+    if (mouthOpen>0.2) { X.fillStyle='#411'; X.beginPath(); X.moveTo(lx-8,mY+1); X.quadraticCurveTo(lx+3,mY+6+mouthOpen*8,lx+12,mY-2); X.quadraticCurveTo(lx,mY+mouthOpen*12,lx-8,mY+1); X.fill(); }
+  } else if (mouthOpen>0.05) {
+    const mw=14+mouthOpen*8, mh=4+mouthOpen*16;
+    X.fillStyle='#411'; X.beginPath(); X.ellipse(lx,mY+mh*0.3,mw,mh,0,0,Math.PI*2); X.fill(); X.stroke();
+    if (mouthOpen>0.3) { X.fillStyle='#fff'; X.fillRect(lx-mw*0.6,mY-mh*0.1,mw*1.2,mh*0.35); }
+  } else {
+    X.beginPath(); X.moveTo(lx-14,mY); X.lineTo(lx+14,mY); X.stroke();
+  }
+
+  // Sweat
+  for (const d of sweatDrops) {
+    X.fillStyle=`rgba(91,200,240,${d.life/60})`;
+    X.beginPath(); X.moveTo(lx+hR-5+d.x,hY+d.y); X.quadraticCurveTo(lx+hR+d.x,hY+d.y+5,lx+hR-5+d.x,hY+d.y+8); X.quadraticCurveTo(lx+hR-10+d.x,hY+d.y+5,lx+hR-5+d.x,hY+d.y); X.fill();
+  }
+
+  if (avatarExpression==='surprised') {
+    X.fillStyle='#5bc8f0'; X.beginPath(); X.moveTo(lx+hR-3,hY-15); X.quadraticCurveTo(lx+hR+5,hY-2,lx+hR-3,hY+10); X.quadraticCurveTo(lx+hR-11,hY-2,lx+hR-3,hY-15); X.fill();
+    X.strokeStyle='#c33'; X.lineWidth=2.5;
+    for (let i=0;i<6;i++) { const a=(i/6)*Math.PI*2+phase*2,r1=hR+12+Math.sin(phase*5+i)*4,r2=hR+22+Math.sin(phase*5+i)*4; X.beginPath(); X.moveTo(lx+Math.cos(a)*r1,hY+Math.sin(a)*r1); X.lineTo(lx+Math.cos(a)*r2,hY+Math.sin(a)*r2); X.stroke(); }
+  }
+  if (eyeTwitch>0) { X.strokeStyle='#222'; X.lineWidth=2; X.beginPath(); X.moveTo(lx+eS-3,eY-8); X.lineTo(lx+eS+3,eY-5); X.stroke(); }
+}
+
+// =============================================
+// Control Functions
+// =============================================
+window.__setExpression = function(expression, browStyle) {
+  avatarExpression = expression;
+  avatarBrowStyle = browStyle;
+  tvStaticIntensity = 0.5;
+};
+
+window.__showLowerThird = function(headline, sub) {
+  document.getElementById('lt-tag').textContent = headline.startsWith('MARKET') ? 'MARKET' : 'BREAKING';
+  document.getElementById('lt-headline').textContent = headline;
+  document.getElementById('lt-sub').textContent = sub || '';
+  document.getElementById('lower-third').classList.add('visible');
+};
+
+window.__hideLowerThird = function() {
+  document.getElementById('lower-third').classList.remove('visible');
+};
+
+window.__setMainScreen = function(type, headline, subheadline, visualCue) {
+  const tagMap = { intro:'CRYPTO NEWS', headline:'TOP STORY', story:'NEWS', market:'MARKET UPDATE', closing:'CRYPTO NEWS' };
+  tvTag = tagMap[type] || 'CRYPTO NEWS';
+  tvHeadline = headline;
+  tvSubheadline = subheadline || '';
+  tvIllustration = detectIllustration(headline, type);
+  tvStaticIntensity = 0.7;
+};
+
+window.__updateTicker = function(items) {
+  const track = document.getElementById('ticker-track');
+  const html = items.map(item => {
+    const parts = item.match(/^(.+?)\s+\$(.+?)\s+([▲▼])(.+)$/);
+    if (parts) {
+      const [, symbol, price, arrow, change] = parts;
+      const cls = arrow === '▲' ? 'change-up' : 'change-down';
+      return '<span class="ticker-item"><span class="symbol">'+symbol+'</span><span class="price">$'+price+'</span><span class="'+cls+'">'+arrow+change+'</span></span><span class="ticker-sep">|</span>';
+    }
+    return '<span class="ticker-item">'+item+'</span><span class="ticker-sep">|</span>';
+  }).join('');
+  track.innerHTML = html + html;
+};
+
+window.__showEndCard = function() {
+  document.getElementById('end-card').classList.add('visible');
+};
+
+window.__hideEndCard = function() {
+  document.getElementById('end-card').classList.remove('visible');
+};
+
+// =============================================
+// 80s RETRO NEWS INTRO — VINHETA DO JORNAL
+// =============================================
+window.__playIntro = function(episodeNumber) {
+  return new Promise((resolve) => {
+    const IC = document.getElementById('intro-canvas');
+    const IX = IC.getContext('2d');
+    IC.style.display = 'block';
+
+    const W = 1280, H = 720;
+    const DURATION = 14000; // 14 seconds
+    const startTime = performance.now();
+
+    // ===== SYNTH MUSIC ENGINE (80s news jingle) =====
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const masterGain = actx.createGain();
+    masterGain.gain.value = 0.35;
+    masterGain.connect(actx.destination);
+
+    function playTone(freq, start, dur, type, vol, attack, decay) {
+      const osc = actx.createOscillator();
+      const g = actx.createGain();
+      osc.type = type || 'sawtooth';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0, actx.currentTime + start);
+      g.gain.linearRampToValueAtTime(vol || 0.3, actx.currentTime + start + (attack || 0.05));
+      g.gain.linearRampToValueAtTime(vol * 0.6 || 0.18, actx.currentTime + start + dur * 0.5);
+      g.gain.linearRampToValueAtTime(0, actx.currentTime + start + dur);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(actx.currentTime + start);
+      osc.stop(actx.currentTime + start + dur + 0.1);
+    }
+
+    function playNoise(start, dur, vol) {
+      const bufSize = actx.sampleRate * dur;
+      const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+      const src = actx.createBufferSource();
+      src.buffer = buf;
+      const g = actx.createGain();
+      g.gain.setValueAtTime(0, actx.currentTime + start);
+      g.gain.linearRampToValueAtTime(vol, actx.currentTime + start + 0.01);
+      g.gain.linearRampToValueAtTime(0, actx.currentTime + start + dur);
+      const filt = actx.createBiquadFilter();
+      filt.type = 'highpass'; filt.frequency.value = 6000;
+      src.connect(filt); filt.connect(g); g.connect(masterGain);
+      src.start(actx.currentTime + start);
+      src.stop(actx.currentTime + start + dur + 0.1);
+    }
+
+    // --- Dramatic brass-like synth fanfare ---
+    // Opening timpani roll (noise bursts)
+    for (let i = 0; i < 8; i++) playNoise(i * 0.08, 0.12, 0.15);
+    // Dramatic low brass pad (C2, Eb2)
+    playTone(65.4, 0.0, 3.0, 'sawtooth', 0.2, 0.3, 0.5);
+    playTone(77.8, 0.0, 3.0, 'sawtooth', 0.15, 0.3, 0.5);
+    // Rising sweep
+    const sweep = actx.createOscillator();
+    const sweepG = actx.createGain();
+    sweep.type = 'sawtooth';
+    sweep.frequency.setValueAtTime(80, actx.currentTime + 0.5);
+    sweep.frequency.exponentialRampToValueAtTime(800, actx.currentTime + 2.5);
+    sweepG.gain.setValueAtTime(0, actx.currentTime + 0.5);
+    sweepG.gain.linearRampToValueAtTime(0.08, actx.currentTime + 1.0);
+    sweepG.gain.linearRampToValueAtTime(0.12, actx.currentTime + 2.2);
+    sweepG.gain.linearRampToValueAtTime(0, actx.currentTime + 2.8);
+    sweep.connect(sweepG); sweepG.connect(masterGain);
+    sweep.start(actx.currentTime + 0.5);
+    sweep.stop(actx.currentTime + 3.0);
+
+    // BIG STAB at 2.8s (Bb major chord — classic news sound)
+    const stabTime = 2.8;
+    [233.1, 293.7, 349.2, 466.2, 587.3].forEach(f => {
+      playTone(f, stabTime, 1.8, 'sawtooth', 0.18, 0.02, 0.4);
+      playTone(f * 1.002, stabTime, 1.8, 'sawtooth', 0.12, 0.02, 0.4); // detune for fatness
+    });
+    playNoise(stabTime, 0.15, 0.25); // crash
+
+    // Melody (iconic news jingle feel) starting at 3.5s
+    // da-da-da DA DAAAA
+    const melody = [
+      [349.2, 3.5, 0.25], [392.0, 3.8, 0.25], [440.0, 4.1, 0.25],
+      [523.3, 4.5, 0.6], [587.3, 5.2, 1.0],
+    ];
+    melody.forEach(([f, s, d]) => {
+      playTone(f, s, d, 'square', 0.15, 0.02, 0.1);
+      playTone(f, s, d, 'sawtooth', 0.1, 0.02, 0.1);
+    });
+
+    // Sustained power chord under melody
+    playTone(174.6, 3.5, 3.5, 'sawtooth', 0.12, 0.1, 0.5);
+    playTone(220.0, 3.5, 3.5, 'sawtooth', 0.1, 0.1, 0.5);
+    playTone(261.6, 3.5, 3.5, 'sawtooth', 0.08, 0.1, 0.5);
+
+    // Second stab at 6.5s (for "CRYPTO NEWS" text slam)
+    const stab2 = 6.5;
+    [293.7, 349.2, 440.0, 523.3, 587.3].forEach(f => {
+      playTone(f, stab2, 2.5, 'sawtooth', 0.15, 0.01, 0.5);
+      playTone(f * 0.998, stab2, 2.5, 'sawtooth', 0.1, 0.01, 0.5);
+    });
+    playNoise(stab2, 0.2, 0.3);
+
+    // Sustain pad under logo (7-12s)
+    playTone(146.8, 7.0, 5.0, 'sawtooth', 0.08, 0.5, 1.0);
+    playTone(174.6, 7.0, 5.0, 'sawtooth', 0.06, 0.5, 1.0);
+    playTone(220.0, 7.0, 5.0, 'triangle', 0.06, 0.5, 1.0);
+
+    // Final resolve chord at 10s
+    [261.6, 329.6, 392.0, 523.3].forEach(f => {
+      playTone(f, 10.0, 3.0, 'sawtooth', 0.12, 0.02, 0.8);
+    });
+    playNoise(10.0, 0.1, 0.15);
+
+    // Fade-out whoosh at 12.5s
+    const whoosh = actx.createOscillator();
+    const whooshG = actx.createGain();
+    whoosh.type = 'sawtooth';
+    whoosh.frequency.setValueAtTime(400, actx.currentTime + 12.5);
+    whoosh.frequency.exponentialRampToValueAtTime(60, actx.currentTime + 13.5);
+    whooshG.gain.setValueAtTime(0.1, actx.currentTime + 12.5);
+    whooshG.gain.linearRampToValueAtTime(0, actx.currentTime + 13.8);
+    whoosh.connect(whooshG); whooshG.connect(masterGain);
+    whoosh.start(actx.currentTime + 12.5);
+    whoosh.stop(actx.currentTime + 14.0);
+
+    // ===== PRE-GENERATE VHS NOISE =====
+    const noiseData = [];
+    for (let f = 0; f < 6; f++) {
+      const d = IX.createImageData(W, H);
+      for (let i = 0; i < d.data.length; i += 4) {
+        const v = Math.random() * 255;
+        d.data[i] = d.data[i+1] = d.data[i+2] = v;
+        d.data[i+3] = 30;
+      }
+      noiseData.push(d);
+    }
+
+    // ===== STARFIELD =====
+    const stars = [];
+    for (let i = 0; i < 200; i++) {
+      stars.push({
+        x: (Math.random() - 0.5) * 2,
+        y: (Math.random() - 0.5) * 2,
+        z: Math.random(),
+        speed: 0.003 + Math.random() * 0.008,
+      });
+    }
+
+    // ===== WIREFRAME GLOBE POINTS =====
+    const globePoints = [];
+    // Latitude lines
+    for (let lat = -80; lat <= 80; lat += 20) {
+      for (let lon = 0; lon < 360; lon += 8) {
+        const latR = lat * Math.PI / 180;
+        const lonR = lon * Math.PI / 180;
+        globePoints.push({
+          x: Math.cos(latR) * Math.cos(lonR),
+          y: Math.sin(latR),
+          z: Math.cos(latR) * Math.sin(lonR),
+          ring: lat,
+        });
+      }
+    }
+    // Longitude lines
+    for (let lon = 0; lon < 360; lon += 30) {
+      for (let lat = -90; lat <= 90; lat += 6) {
+        const latR = lat * Math.PI / 180;
+        const lonR = lon * Math.PI / 180;
+        globePoints.push({
+          x: Math.cos(latR) * Math.cos(lonR),
+          y: Math.sin(latR),
+          z: Math.cos(latR) * Math.sin(lonR),
+          ring: lon + 1000,
+        });
+      }
+    }
+
+    function easeOutBack(t) { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
+    function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2; }
+
+    // ===== DRAW LARRY (for intro — with rotation angle) =====
+    // angle: 0 = facing away (back), PI = facing camera (front)
+    function drawIntroLarry(cx, cy, scale, facingAngle, talking) {
+      IX.save();
+      IX.translate(cx, cy);
+      IX.scale(scale, scale);
+      const facing = Math.max(0, Math.min(1, facingAngle / Math.PI)); // 0=back, 1=front
+      const LINE = '#222';
+      IX.lineCap = 'round'; IX.lineJoin = 'round';
+
+      // Body
+      IX.strokeStyle = LINE; IX.lineWidth = 4;
+      IX.beginPath(); IX.moveTo(0, -55); IX.lineTo(0, 60); IX.stroke();
+
+      // Suit jacket
+      IX.fillStyle = '#777'; IX.strokeStyle = LINE; IX.lineWidth = 3;
+      IX.beginPath();
+      IX.moveTo(-45, -55); IX.lineTo(45, -55);
+      IX.lineTo(40, 50); IX.lineTo(-40, 50);
+      IX.closePath(); IX.fill(); IX.stroke();
+
+      // Tie (only visible from front)
+      if (facing > 0.3) {
+        IX.globalAlpha = (facing - 0.3) / 0.7;
+        IX.fillStyle = '#c33'; IX.strokeStyle = LINE; IX.lineWidth = 2;
+        IX.beginPath();
+        IX.moveTo(-6, -55); IX.lineTo(6, -55);
+        IX.lineTo(4, 10); IX.lineTo(0, 18); IX.lineTo(-4, 10);
+        IX.closePath(); IX.fill(); IX.stroke();
+        IX.globalAlpha = 1;
+      }
+
+      // Arms (slightly out, dramatic pose)
+      IX.strokeStyle = LINE; IX.lineWidth = 4;
+      // Left arm
+      IX.beginPath(); IX.moveTo(-45, -45); IX.lineTo(-70, -10); IX.lineTo(-60, 30); IX.stroke();
+      IX.fillStyle = '#f5dcc0'; IX.beginPath(); IX.arc(-60, 30, 8, 0, Math.PI*2); IX.fill();
+      IX.strokeStyle = LINE; IX.lineWidth = 2; IX.stroke();
+      // Right arm
+      IX.strokeStyle = LINE; IX.lineWidth = 4;
+      IX.beginPath(); IX.moveTo(45, -45); IX.lineTo(70, -10); IX.lineTo(60, 30); IX.stroke();
+      IX.fillStyle = '#f5dcc0'; IX.beginPath(); IX.arc(60, 30, 8, 0, Math.PI*2); IX.fill();
+      IX.strokeStyle = LINE; IX.lineWidth = 2; IX.stroke();
+
+      // Head
+      const hR = 42;
+      const headY = -100;
+      IX.strokeStyle = LINE; IX.lineWidth = 4;
+      IX.beginPath(); IX.moveTo(0, -55); IX.lineTo(0, headY + hR); IX.stroke();
+      IX.fillStyle = '#f5dcc0'; IX.strokeStyle = LINE; IX.lineWidth = 3.5;
+      IX.beginPath(); IX.arc(0, headY, hR, 0, Math.PI*2); IX.fill(); IX.stroke();
+
+      if (facing > 0.4) {
+        // Face visible — draw features
+        const faceAlpha = (facing - 0.4) / 0.6;
+        IX.globalAlpha = faceAlpha;
+
+        // Eyes
+        const eS = 16, eY = headY - 6;
+        IX.fillStyle = '#111';
+        IX.beginPath(); IX.arc(-eS, eY, 5, 0, Math.PI*2); IX.fill();
+        IX.beginPath(); IX.arc(eS, eY, 5, 0, Math.PI*2); IX.fill();
+        // Eye shine
+        IX.fillStyle = '#fff';
+        IX.beginPath(); IX.arc(-eS+2, eY-2, 2, 0, Math.PI*2); IX.fill();
+        IX.beginPath(); IX.arc(eS+2, eY-2, 2, 0, Math.PI*2); IX.fill();
+
+        // Eyebrows (raised — surprised)
+        IX.strokeStyle = '#222'; IX.lineWidth = 3;
+        IX.beginPath(); IX.moveTo(-eS-10, eY-18); IX.quadraticCurveTo(-eS, eY-26, -eS+10, eY-18); IX.stroke();
+        IX.beginPath(); IX.moveTo(eS-10, eY-18); IX.quadraticCurveTo(eS, eY-26, eS+10, eY-18); IX.stroke();
+
+        // Mouth — big cheesy grin
+        const mY = headY + 14;
+        if (talking) {
+          IX.fillStyle = '#411';
+          IX.beginPath(); IX.ellipse(0, mY + 3, 18, 12, 0, 0, Math.PI*2); IX.fill();
+          IX.strokeStyle = '#222'; IX.lineWidth = 3; IX.stroke();
+          IX.fillStyle = '#fff'; IX.fillRect(-12, mY - 3, 24, 6);
+        } else {
+          IX.strokeStyle = '#222'; IX.lineWidth = 3;
+          IX.beginPath(); IX.moveTo(-16, mY); IX.quadraticCurveTo(0, mY + 18, 16, mY); IX.stroke();
+        }
+
+        // Sweat drop (nervous)
+        IX.fillStyle = '#5bc8f0';
+        IX.beginPath();
+        IX.moveTo(hR - 3, headY - 10);
+        IX.quadraticCurveTo(hR + 5, headY, hR - 3, headY + 10);
+        IX.quadraticCurveTo(hR - 11, headY, hR - 3, headY - 10);
+        IX.fill();
+
+        IX.globalAlpha = 1;
+      } else {
+        // Back of head — just hair scribbles
+        IX.strokeStyle = '#8B6914'; IX.lineWidth = 2;
+        for (let h = 0; h < 8; h++) {
+          const ha = -0.8 + h * 0.2;
+          IX.beginPath();
+          IX.arc(0, headY, hR - 2, ha - 0.15, ha + 0.15);
+          IX.stroke();
+        }
+      }
+
+      IX.restore();
+    }
+
+    // ===== VHS EFFECTS HELPER =====
+    function drawVHSOverlay(intensity) {
+      // Scanlines
+      IX.strokeStyle = `rgba(0,0,0,${0.15 * intensity})`;
+      IX.lineWidth = 1;
+      for (let sy = 0; sy < H; sy += 2) {
+        IX.beginPath(); IX.moveTo(0, sy); IX.lineTo(W, sy); IX.stroke();
+      }
+      // Chromatic aberration (red/cyan shift)
+      if (intensity > 0.3) {
+        IX.globalCompositeOperation = 'lighter';
+        IX.fillStyle = `rgba(255,0,0,${0.03 * intensity})`;
+        IX.fillRect(2, 0, W, H);
+        IX.fillStyle = `rgba(0,255,255,${0.03 * intensity})`;
+        IX.fillRect(-2, 0, W, H);
+        IX.globalCompositeOperation = 'source-over';
+      }
+      // Tracking lines (horizontal jitter bars)
+      if (Math.random() < 0.3 * intensity) {
+        const trackY = Math.random() * H;
+        IX.fillStyle = `rgba(255,255,255,${0.1 * intensity})`;
+        IX.fillRect(0, trackY, W, 3 + Math.random() * 6);
+      }
+      // Noise
+      if (intensity > 0.2) {
+        IX.globalAlpha = 0.08 * intensity;
+        IX.putImageData(noiseData[Math.floor(Math.random() * 6)], 0, 0);
+        IX.globalAlpha = 1;
+      }
+    }
+
+    // ===== PERSPECTIVE GRID (80s neon floor) =====
+    function drawNeonGrid(scrollOffset, color, alpha) {
+      IX.save();
+      IX.globalAlpha = alpha;
+      IX.strokeStyle = color;
+      IX.lineWidth = 1.5;
+      IX.shadowColor = color;
+      IX.shadowBlur = 8;
+      const horizon = H * 0.45;
+      const gridBottom = H;
+      // Horizontal lines (perspective)
+      for (let i = 0; i < 20; i++) {
+        const rawT = (i / 20 + scrollOffset) % 1;
+        const t = rawT * rawT; // perspective compression
+        const y = horizon + t * (gridBottom - horizon);
+        IX.globalAlpha = alpha * (0.2 + t * 0.8);
+        IX.beginPath(); IX.moveTo(0, y); IX.lineTo(W, y); IX.stroke();
+      }
+      // Vertical lines (converging to vanishing point)
+      IX.globalAlpha = alpha;
+      const vx = W / 2;
+      for (let i = -12; i <= 12; i++) {
+        const bottomX = vx + i * 80;
+        IX.beginPath(); IX.moveTo(vx, horizon); IX.lineTo(bottomX, gridBottom); IX.stroke();
+      }
+      IX.shadowBlur = 0;
+      IX.restore();
+    }
+
+    // ===== WIREFRAME GLOBE =====
+    function drawGlobe(cx, cy, radius, rotY, glowColor) {
+      IX.save();
+      IX.strokeStyle = glowColor;
+      IX.lineWidth = 1.2;
+      IX.shadowColor = glowColor;
+      IX.shadowBlur = 6;
+
+      let prevByRing = {};
+      for (const pt of globePoints) {
+        // Rotate around Y
+        const cosR = Math.cos(rotY), sinR = Math.sin(rotY);
+        const rx = pt.x * cosR - pt.z * sinR;
+        const rz = pt.x * sinR + pt.z * cosR;
+        if (rz < -0.1) continue; // back-face cull
+        const screenX = cx + rx * radius;
+        const screenY = cy - pt.y * radius;
+        const prev = prevByRing[pt.ring];
+        if (prev && Math.abs(screenX - prev.x) < 80) {
+          IX.globalAlpha = 0.3 + rz * 0.7;
+          IX.beginPath(); IX.moveTo(prev.x, prev.y); IX.lineTo(screenX, screenY); IX.stroke();
+        }
+        prevByRing[pt.ring] = { x: screenX, y: screenY };
+      }
+      IX.shadowBlur = 0;
+      IX.restore();
+    }
+
+    // ===== MAIN ANIMATION LOOP =====
+    let gridScroll = 0;
+
+    function drawIntroFrame(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / DURATION, 1);
+      const ms = elapsed;
+
+      IX.clearRect(0, 0, W, H);
+
+      // === PHASE 1 (0-1.5s): VHS STATIC + BOOT UP ===
+      if (ms < 1500) {
+        const p = ms / 1500;
+        IX.fillStyle = '#000';
+        IX.fillRect(0, 0, W, H);
+        // Heavy VHS static
+        IX.globalAlpha = 0.6;
+        IX.putImageData(noiseData[Math.floor(Math.random() * 6)], 0, 0);
+        IX.globalAlpha = 1;
+        // Horizontal glitch bars
+        for (let i = 0; i < 8; i++) {
+          if (Math.random() > 0.3) {
+            IX.fillStyle = `rgba(${Math.random()>0.5?'200,50,50':'50,50,200'},0.3)`;
+            IX.fillRect(0, Math.random() * H, W, 4 + Math.random() * 20);
+          }
+        }
+        // Rolling black bar (VHS tracking)
+        const rollY = ((ms * 0.3) % (H + 100)) - 50;
+        IX.fillStyle = 'rgba(0,0,0,0.7)';
+        IX.fillRect(0, rollY, W, 60);
+        // Date/counter text (VHS timestamp style)
+        if (p > 0.4) {
+          IX.font = '18px monospace';
+          IX.fillStyle = '#fff';
+          IX.textAlign = 'left';
+          IX.fillText('REC ●', 30, 40);
+          IX.fillText('CH-03', W - 100, 40);
+          IX.fillText('00:00:' + String(Math.floor(p * 30)).padStart(2, '0'), 30, H - 30);
+        }
+      }
+
+      // === PHASE 2 (1.5-5s): NEON GRID + STARFIELD + GLOBE ===
+      else if (ms < 5000) {
+        const p = (ms - 1500) / 3500;
+        // Deep dark blue/purple background
+        const grad = IX.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#0a001a');
+        grad.addColorStop(0.45, '#1a0033');
+        grad.addColorStop(1, '#000');
+        IX.fillStyle = grad;
+        IX.fillRect(0, 0, W, H);
+
+        // Starfield
+        for (const star of stars) {
+          star.z -= star.speed * (1 + p);
+          if (star.z <= 0) star.z = 1;
+          const sx = W/2 + (star.x / star.z) * 400;
+          const sy = H/2 + (star.y / star.z) * 400;
+          if (sx < 0 || sx > W || sy < 0 || sy > H) { star.z = 1; continue; }
+          const brightness = Math.min(1, (1 - star.z) * 2);
+          const sz = (1 - star.z) * 3;
+          IX.fillStyle = `rgba(255,255,255,${brightness})`;
+          IX.beginPath(); IX.arc(sx, sy, sz, 0, Math.PI*2); IX.fill();
+        }
+
+        // Neon grid (scrolling towards camera)
+        gridScroll += 0.008;
+        drawNeonGrid(gridScroll, '#ff3366', 0.4 + p * 0.4);
+
+        // Wireframe globe (spinning)
+        const globeAlpha = Math.min(p / 0.3, 1);
+        IX.globalAlpha = globeAlpha;
+        const globeR = 130 + p * 20;
+        const globeRotation = ms * 0.001;
+        drawGlobe(W/2, H * 0.38, globeR, globeRotation, '#00ccff');
+        IX.globalAlpha = 1;
+
+        // Horizontal neon line sweeps
+        for (let i = 0; i < 3; i++) {
+          const sweepP = ((ms * 0.0005 + i * 0.33) % 1);
+          const sy = sweepP * H;
+          IX.strokeStyle = `rgba(255,51,102,${(1 - sweepP) * 0.4})`;
+          IX.lineWidth = 2;
+          IX.shadowColor = '#ff3366'; IX.shadowBlur = 10;
+          IX.beginPath(); IX.moveTo(0, sy); IX.lineTo(W, sy); IX.stroke();
+          IX.shadowBlur = 0;
+        }
+
+        // VHS overlay (lighter now)
+        drawVHSOverlay(0.5);
+      }
+
+      // === PHASE 3 (5-9.5s): LOGO SLAM + GLOBE BEHIND ===
+      else if (ms < 9500) {
+        const p = (ms - 5000) / 4500;
+        // Background
+        const grad = IX.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#0a001a');
+        grad.addColorStop(0.5, '#1a0033');
+        grad.addColorStop(1, '#000');
+        IX.fillStyle = grad;
+        IX.fillRect(0, 0, W, H);
+
+        // Grid still going
+        gridScroll += 0.006;
+        drawNeonGrid(gridScroll, '#ff3366', 0.25);
+
+        // Globe (fading/shrinking behind logo)
+        IX.globalAlpha = Math.max(0, 0.3 - p * 0.3);
+        drawGlobe(W/2, H * 0.38, 160, ms * 0.001, '#00ccff');
+        IX.globalAlpha = 1;
+
+        // === LOGO ENTRANCE ===
+        const logoP = Math.min(p / 0.25, 1);
+        const logoScale = easeOutBack(logoP);
+        const logoShake = logoP < 0.6 ? (1 - logoP/0.6) * 20 * Math.sin(ms * 0.05) : 0;
+
+        IX.save();
+        IX.translate(W/2 + logoShake, H/2 - 60);
+        IX.scale(logoScale, logoScale);
+
+        // Glow behind logo
+        const glowGrad = IX.createRadialGradient(0, 10, 10, 0, 10, 300);
+        glowGrad.addColorStop(0, 'rgba(255,51,102,0.2)');
+        glowGrad.addColorStop(1, 'rgba(255,51,102,0)');
+        IX.fillStyle = glowGrad;
+        IX.fillRect(-350, -200, 700, 400);
+
+        // Red bar — "CRYPTO"
+        const barW = 560, barH = 75;
+        IX.fillStyle = '#c33';
+        IX.strokeStyle = '#ff3366';
+        IX.lineWidth = 2;
+        IX.shadowColor = '#ff3366';
+        IX.shadowBlur = 15;
+        IX.fillRect(-barW/2, -55, barW, barH);
+        IX.strokeRect(-barW/2, -55, barW, barH);
+        IX.shadowBlur = 0;
+
+        // White/cream bar — "NEWS"
+        IX.fillStyle = 'rgba(255,255,240,0.95)';
+        IX.strokeStyle = '#222';
+        IX.lineWidth = 3;
+        IX.shadowColor = 'rgba(255,200,100,0.3)';
+        IX.shadowBlur = 10;
+        IX.fillRect(-barW/2, 25, barW, barH);
+        IX.strokeRect(-barW/2, 25, barW, barH);
+        IX.shadowBlur = 0;
+
+        // "CRYPTO" text — chrome-ish gradient
+        IX.font = 'bold 64px Patrick Hand';
+        IX.textAlign = 'center';
+        const chromeGrad = IX.createLinearGradient(0, -50, 0, 15);
+        chromeGrad.addColorStop(0, '#fff');
+        chromeGrad.addColorStop(0.5, '#ffccdd');
+        chromeGrad.addColorStop(1, '#fff');
+        IX.fillStyle = chromeGrad;
+        IX.shadowColor = '#000'; IX.shadowBlur = 6;
+        IX.fillText('CRYPTO', 0, -2);
+        IX.shadowBlur = 0;
+
+        // "NEWS" text
+        IX.font = 'bold 72px Patrick Hand';
+        IX.fillStyle = '#c33';
+        IX.shadowColor = 'rgba(204,51,51,0.5)';
+        IX.shadowBlur = 12;
+        IX.fillText('NEWS', 0, 82);
+        IX.shadowBlur = 0;
+
+        // Lightning bolts (neon style)
+        IX.strokeStyle = '#ff9900'; IX.fillStyle = '#ff9900';
+        IX.lineWidth = 3;
+        IX.shadowColor = '#ff9900'; IX.shadowBlur = 10;
+        // Left
+        IX.beginPath();
+        IX.moveTo(-barW/2 - 50, -25); IX.lineTo(-barW/2 - 20, 10); IX.lineTo(-barW/2 - 38, 10);
+        IX.lineTo(-barW/2 - 5, 55); IX.lineTo(-barW/2 - 25, 12); IX.lineTo(-barW/2 - 10, 12);
+        IX.closePath(); IX.fill(); IX.stroke();
+        // Right
+        IX.beginPath();
+        IX.moveTo(barW/2 + 50, -25); IX.lineTo(barW/2 + 20, 10); IX.lineTo(barW/2 + 38, 10);
+        IX.lineTo(barW/2 + 5, 55); IX.lineTo(barW/2 + 25, 12); IX.lineTo(barW/2 + 10, 12);
+        IX.closePath(); IX.fill(); IX.stroke();
+        IX.shadowBlur = 0;
+
+        IX.restore();
+
+        // Episode number (appears after logo)
+        if (episodeNumber && episodeNumber > 0 && p > 0.4) {
+          const ep = Math.min((p - 0.4) / 0.2, 1);
+          IX.globalAlpha = easeInOutCubic(ep);
+          IX.font = '24px Patrick Hand';
+          IX.fillStyle = '#ff3366';
+          IX.textAlign = 'center';
+          IX.shadowColor = '#ff3366'; IX.shadowBlur = 8;
+          IX.fillText('Episode #' + episodeNumber, W/2, H/2 + 60);
+          IX.shadowBlur = 0;
+          IX.globalAlpha = 1;
+        }
+
+        // Horizontal neon lines (accent)
+        IX.strokeStyle = 'rgba(255,51,102,0.3)';
+        IX.lineWidth = 1;
+        IX.shadowColor = '#ff3366'; IX.shadowBlur = 5;
+        IX.beginPath(); IX.moveTo(0, H/2 - 135); IX.lineTo(W, H/2 - 135); IX.stroke();
+        IX.beginPath(); IX.moveTo(0, H/2 + 85); IX.lineTo(W, H/2 + 85); IX.stroke();
+        IX.shadowBlur = 0;
+
+        drawVHSOverlay(0.4);
+      }
+
+      // === PHASE 4 (9.5-12.5s): "PRESENTED BY" + LARRY TURNS AROUND ===
+      else if (ms < 12500) {
+        const p = (ms - 9500) / 3000;
+        // Background (fading from dark to studio yellow)
+        const grad = IX.createLinearGradient(0, 0, 0, H);
+        const yellowMix = Math.min(p / 0.8, 1);
+        const r1 = Math.round(10 + yellowMix * 222);
+        const g1 = Math.round(0 + yellowMix * 216);
+        const b1 = Math.round(26 + yellowMix * 48);
+        grad.addColorStop(0, `rgb(${r1},${g1},${b1})`);
+        grad.addColorStop(1, `rgb(${Math.round(r1*0.8)},${Math.round(g1*0.8)},${Math.round(b1*0.8)})`);
+        IX.fillStyle = grad;
+        IX.fillRect(0, 0, W, H);
+
+        // "Presented by" text
+        const textP = Math.min(p / 0.3, 1);
+        IX.globalAlpha = easeInOutCubic(textP);
+        IX.font = '32px Patrick Hand';
+        IX.fillStyle = '#555';
+        IX.textAlign = 'center';
+        IX.fillText('presented by', W/2, H/2 - 180);
+        IX.globalAlpha = 1;
+
+        // Larry — starts facing away, rotates to face camera
+        const turnStart = 0.15;
+        const turnEnd = 0.65;
+        let facingAngle = 0;
+        if (p > turnStart) {
+          const turnP = Math.min((p - turnStart) / (turnEnd - turnStart), 1);
+          facingAngle = easeInOutCubic(turnP) * Math.PI;
+        }
+        const larryScale = 1.8;
+        const talking = p > 0.75;
+        drawIntroLarry(W/2, H/2 + 60, larryScale, facingAngle, talking);
+
+        // "LARRY" name plate (appears after turn)
+        if (p > 0.7) {
+          const nameP = Math.min((p - 0.7) / 0.2, 1);
+          const nameScale = easeOutBack(nameP);
+          IX.save();
+          IX.translate(W/2, H/2 + 215);
+          IX.scale(nameScale, nameScale);
+          // Name plate background
+          IX.fillStyle = '#c33';
+          IX.strokeStyle = '#222';
+          IX.lineWidth = 3;
+          IX.fillRect(-120, -22, 240, 44);
+          IX.strokeRect(-120, -22, 240, 44);
+          IX.font = 'bold 34px Patrick Hand';
+          IX.fillStyle = '#fff';
+          IX.textAlign = 'center';
+          IX.fillText('LARRY', 0, 10);
+          IX.restore();
+        }
+
+        drawVHSOverlay(0.3 * (1 - yellowMix));
+      }
+
+      // === PHASE 5 (12.5-14s): FLASH + VHS GLITCH OUT ===
+      else {
+        const p = (ms - 12500) / 1500;
+
+        // White flash at start
+        if (p < 0.2) {
+          IX.fillStyle = `rgba(255,255,255,${(1 - p/0.2)})`;
+          IX.fillRect(0, 0, W, H);
+        }
+        // Glitch bars dissolving
+        else if (p < 0.7) {
+          const gp = (p - 0.2) / 0.5;
+          const barCount = Math.floor((1 - gp) * 15);
+          for (let i = 0; i < barCount; i++) {
+            const by = (i / barCount) * H + Math.sin(i * 4 + ms * 0.01) * 40;
+            IX.fillStyle = `rgba(0,0,0,${(1 - gp) * 0.6})`;
+            IX.fillRect(-20, by, W + 40, 8 + Math.random() * 25);
+          }
+          // Random color bars (VHS glitch)
+          if (Math.random() > 0.5) {
+            IX.fillStyle = `rgba(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*50)},${Math.floor(Math.random()*255)},${(1-gp)*0.3})`;
+            IX.fillRect(0, Math.random()*H, W, 15);
+          }
+          IX.globalAlpha = (1 - gp) * 0.4;
+          IX.putImageData(noiseData[Math.floor(Math.random() * 6)], 0, 0);
+          IX.globalAlpha = 1;
+        }
+        // else: transparent — studio visible beneath
+      }
+
+      // Continue or finish
+      if (t < 1) {
+        requestAnimationFrame(drawIntroFrame);
+      } else {
+        IX.clearRect(0, 0, W, H);
+        IC.style.display = 'none';
+        // Close audio context
+        setTimeout(() => actx.close().catch(()=>{}), 500);
+        resolve();
+      }
+    }
+
+    requestAnimationFrame(drawIntroFrame);
+  });
+};
+
+// =============================================
+// Initialize
+// =============================================
+requestAnimationFrame(drawScene);
+requestAnimationFrame(updateAmplitude);
+window.__updateTicker(['BTC $0 --', 'ETH $0 --', 'SOL $0 --']);
+console.log('[CRYPTO NEWS] Broadcast page loaded');
+</script>
+</body>
+</html>

@@ -91,10 +91,6 @@ export class UpdateAgentDto {
   @IsOptional()
   welcomeMessage?: string;
 
-  @IsString()
-  @IsOptional()
-  donationWalletAddress?: string;
-
   @IsUUID()
   @IsOptional()
   defaultCategoryId?: string;

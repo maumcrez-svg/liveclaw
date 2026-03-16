@@ -81,6 +81,17 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     await this.sub.unsubscribe(channel);
   }
 
+  async publishAlert(streamId: string, alert: object): Promise<void> {
+    const json = JSON.stringify(alert);
+    await this.pub.publish(`alerts:${streamId}`, json);
+  }
+
+  async subscribeAlerts(streamId: string, handler: (message: string) => void): Promise<void> {
+    const channel = `alerts:${streamId}`;
+    this.messageHandlers.set(channel, handler);
+    await this.sub.subscribe(channel);
+  }
+
   // Viewer count via Redis
   async addViewer(streamId: string, clientId: string): Promise<number> {
     await this.pub.sadd(`viewers:${streamId}`, clientId);

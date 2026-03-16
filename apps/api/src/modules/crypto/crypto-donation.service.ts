@@ -4,21 +4,31 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { CryptoDonationEntity } from './crypto-donation.entity';
 import { CryptoWalletService } from './crypto-wallet.service';
+import { EthPriceService } from './eth-price.service';
 
 @Injectable()
 export class CryptoDonationService {
   private readonly logger = new Logger(CryptoDonationService.name);
+  private chainVerificationService: any = null;
 
   constructor(
     @InjectRepository(CryptoDonationEntity)
     private readonly donationRepo: Repository<CryptoDonationEntity>,
     private readonly walletService: CryptoWalletService,
+    private readonly ethPriceService: EthPriceService,
   ) {}
+
+  /** Lazy inject to avoid circular dependency */
+  setChainVerificationService(service: any): void {
+    this.chainVerificationService = service;
+  }
 
   async initiateDonation(
     agentId: string,
@@ -39,13 +49,17 @@ export class CryptoDonationService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
+    // Convert USD amount to ETH
+    const ethAmount = this.ethPriceService.usdToEth(amount);
+
     const donation = this.donationRepo.create({
       agentId,
       viewerUserId,
       streamId: streamId || null,
       network,
       token,
-      amount,
+      amount: ethAmount ?? amount,
+      amountUsd: amount,
       recipientAddress: wallet.address,
       message: message || null,
       status: 'initiated',
@@ -99,6 +113,16 @@ export class CryptoDonationService {
     this.logger.log(
       `Tx hash submitted for donation ${donationId}: ${txHash}`,
     );
+
+    // Fire-and-forget immediate verification
+    if (this.chainVerificationService) {
+      this.chainVerificationService
+        .verifyImmediately(donationId)
+        .catch((err: any) =>
+          this.logger.warn(`Immediate verify failed: ${err}`),
+        );
+    }
+
     return saved;
   }
 

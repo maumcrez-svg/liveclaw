@@ -44,6 +44,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private clientStreams: Map<string, string> = new Map();
 
+  /** Cache streamId → agentId to avoid repeated DB lookups */
+  private streamAgentMap: Map<string, string> = new Map();
+
   /** In-memory rate limit tracker. Key: `{agentId}:{userId}` */
   private rateLimitMap: Map<string, RateLimitEntry> = new Map();
 
@@ -71,7 +74,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       (client.handshake.query?.token as string | undefined);
 
     if (!token) {
-      client.disconnect();
+      // Allow unauthenticated connections for viewer count subscriptions only.
+      // They can subscribe_counts but cannot join_stream or send_message.
+      client.data.anonymous = true;
       return;
     }
 
@@ -131,7 +136,41 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const count = await this.chatService.removeViewer(streamId, client.id);
       this.server.to(streamId).emit('viewer_count', { streamId, count });
       this.clientStreams.delete(client.id);
+
+      const agentId = await this.resolveAgentId(streamId);
+      if (agentId) this.broadcastViewerUpdate(streamId, agentId, count);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Global viewer counts — any client can subscribe to get real-time updates
+  // ---------------------------------------------------------------------------
+
+  @SubscribeMessage('subscribe_counts')
+  async handleSubscribeCounts(@ConnectedSocket() client: Socket) {
+    client.join('counts');
+    return { event: 'subscribed_counts' };
+  }
+
+  /** Broadcast a viewer count update to the global counts room */
+  private broadcastViewerUpdate(streamId: string, agentId: string, count: number) {
+    this.server.to('counts').emit('viewer_count_update', { streamId, agentId, count });
+  }
+
+  /** Resolve agentId from streamId, with cache */
+  private async resolveAgentId(streamId: string): Promise<string | null> {
+    const cached = this.streamAgentMap.get(streamId);
+    if (cached) return cached;
+    try {
+      const stream = await this.agentRepo.manager
+        .getRepository('StreamEntity')
+        .findOne({ where: { id: streamId }, select: ['id', 'agentId'] });
+      if (stream) {
+        this.streamAgentMap.set(streamId, (stream as any).agentId);
+        return (stream as any).agentId;
+      }
+    } catch {}
+    return null;
   }
 
   // ---------------------------------------------------------------------------
@@ -143,10 +182,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { streamId: string },
   ) {
+    if (client.data.anonymous) {
+      return { event: 'error', data: { message: 'Authentication required' } };
+    }
     const prevStream = this.clientStreams.get(client.id);
     if (prevStream) {
       client.leave(prevStream);
-      await this.chatService.removeViewer(prevStream, client.id);
+      const prevCount = await this.chatService.removeViewer(prevStream, client.id);
+      const prevAgentId = await this.resolveAgentId(prevStream);
+      if (prevAgentId) this.broadcastViewerUpdate(prevStream, prevAgentId, prevCount);
     }
 
     client.join(data.streamId);
@@ -156,8 +200,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });
 
+    // Broadcast to global counts subscribers
+    const agentId = await this.resolveAgentId(data.streamId);
+    if (agentId) this.broadcastViewerUpdate(data.streamId, agentId, count);
+
     await this.chatService.subscribe(data.streamId, (message) => {
       this.server.to(data.streamId).emit('new_message', JSON.parse(message));
+    });
+
+    await this.chatService.subscribeAlerts(data.streamId, (alertJson) => {
+      this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
     });
 
     return {
@@ -177,6 +229,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });
+
+    const agentId = await this.resolveAgentId(data.streamId);
+    if (agentId) this.broadcastViewerUpdate(data.streamId, agentId, count);
   }
 
   // ---------------------------------------------------------------------------

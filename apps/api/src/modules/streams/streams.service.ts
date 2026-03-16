@@ -50,9 +50,12 @@ export class StreamsService {
   }
 
   async startStream(agentId: string, title?: string): Promise<StreamEntity> {
+    const agent = await this.agentsService.findById(agentId);
     const stream = this.streamRepo.create({
       agentId,
-      title: title || 'Untitled Stream',
+      title: title || agent?.name || 'Untitled Stream',
+      categoryId: agent?.defaultCategoryId ?? null,
+      tags: agent?.defaultTags ?? [],
       isLive: true,
     });
     await this.agentsService.updateStatus(agentId, 'live');

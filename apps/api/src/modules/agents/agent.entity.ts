@@ -59,9 +59,6 @@ export class AgentEntity {
   @Column({ name: 'welcome_message', type: 'text', nullable: true })
   welcomeMessage: string | null;
 
-  @Column({ name: 'donation_wallet_address', type: 'varchar', nullable: true })
-  donationWalletAddress: string | null;
-
   @Column({ name: 'default_tags', type: 'text', array: true, default: '{}' })
   defaultTags: string[];
 

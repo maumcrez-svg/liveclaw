@@ -104,10 +104,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
     } catch (err: any) {
       const isNetwork = err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch');
-      const msg = isNetwork
+      err.message = isNetwork
         ? 'Cannot reach server. Check your connection.'
         : err.message || 'Login failed';
-      toast.error(msg);
       throw err;
     }
     saveUser(authResponseToUserData(res));
@@ -122,10 +121,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
     } catch (err: any) {
       const isNetwork = err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch');
-      const msg = isNetwork
+      err.message = isNetwork
         ? 'Cannot reach server. Check your connection.'
         : err.message || 'Registration failed';
-      toast.error(msg);
       throw err;
     }
     saveUser(authResponseToUserData(res));

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { StreamPlayer } from '@/components/player/StreamPlayer';
 import { ChatPanel } from '@/components/chat/ChatPanel';
@@ -34,10 +33,6 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
   const [stream, setStream] = useState<any>(null);
   const [pastStreams, setPastStreams] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-
   // Alert system — hooks called unconditionally to satisfy Rules of Hooks.
   // useStreamAlerts is a no-op when streamId is null.
   const { currentAlert, phase, enqueue, dismiss } = useAlertQueue();
@@ -49,22 +44,6 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastAlert]);
 
-  // Handle payment success/cancel query params
-  useEffect(() => {
-    const payment = searchParams.get('payment');
-    const type = searchParams.get('type');
-
-    if (payment === 'success' && type === 'donation') {
-      toast.success('Donation sent! Thank you.');
-      router.replace(pathname);
-    } else if (payment === 'success' && type === 'subscription') {
-      toast.success('Subscribed!');
-      router.replace(pathname);
-    } else if (payment === 'canceled') {
-      toast('Payment canceled');
-      router.replace(pathname);
-    }
-  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     async function loadAgent() {
