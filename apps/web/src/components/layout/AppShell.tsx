@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Hide footer on stream/channel pages (top-level /[agentSlug] routes)
   // Stream pages use full-height layout
-  const isStreamPage = /^\/[^/]+$/.test(pathname) && pathname !== '/' && !['browse', 'following', 'dashboard'].includes(pathname.slice(1));
+  const isStreamPage = /^\/[^/]+$/.test(pathname) && pathname !== '/' && !['browse', 'following', 'dashboard', 'docs', 'settings', 'admin', 'privacy', 'terms'].includes(pathname.slice(1));
 
   return (
     <LiveViewerCountsProvider>
