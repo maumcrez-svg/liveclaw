@@ -37,7 +37,7 @@ export class AuthController {
 
   @Get('wallet-nonce')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  walletNonce(): { nonce: string; message: string } {
+  async walletNonce(): Promise<{ nonce: string; message: string }> {
     return this.authService.generateNonce();
   }
 
@@ -61,5 +61,24 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   async becomeCreator(@CurrentUser() user: JwtPayload): Promise<AuthResponse> {
     return this.authService.becomeCreator(user.sub);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async refreshToken(
+    @Body('refresh_token') refreshToken: string,
+  ): Promise<AuthResponse> {
+    return this.authService.refreshAccessToken(refreshToken);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
+  async logout(
+    @CurrentUser() user: JwtPayload,
+    @Body('refresh_token') refreshToken?: string,
+  ): Promise<void> {
+    return this.authService.logout(user.sub, refreshToken);
   }
 }

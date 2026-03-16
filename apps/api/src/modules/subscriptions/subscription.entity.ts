@@ -45,6 +45,9 @@ export class SubscriptionEntity {
   @Column({ name: 'canceled_at', type: 'timestamp', nullable: true })
   canceledAt: Date | null;
 
+  @Column({ name: 'donation_id', type: 'uuid', nullable: true })
+  donationId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

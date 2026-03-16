@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MinLength, MaxLength, Matches, IsUrl } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength, Matches, IsUrl, ValidateIf } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -8,8 +8,9 @@ export class CreateUserDto {
   @IsOptional()
   walletAddress?: string;
 
-  @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.avatarUrl !== null)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   avatarUrl?: string;
 }
 
@@ -24,6 +25,7 @@ export class UpdateProfileDto {
   username?: string;
 
   @IsOptional()
-  @IsString()
+  @ValidateIf((o) => o.avatarUrl !== null)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   avatarUrl?: string | null;
 }

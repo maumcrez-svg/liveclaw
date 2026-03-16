@@ -11,6 +11,7 @@ import {
 import { CryptoDonationService } from './crypto-donation.service';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { OwnerGuard } from '../../common/owner.guard';
+import { InitiateDonationDto, SubmitTxDto } from './crypto-donation.dto';
 
 @Controller('crypto/donations')
 export class CryptoDonationController {
@@ -19,15 +20,7 @@ export class CryptoDonationController {
   @Post('initiate')
   @UseGuards(JwtAuthGuard)
   async initiateDonation(
-    @Body()
-    body: {
-      agentId: string;
-      amount: number;
-      network?: string;
-      token?: string;
-      message?: string;
-      streamId?: string;
-    },
+    @Body() body: InitiateDonationDto,
     @Req() req: any,
   ) {
     const donation = await this.donationService.initiateDonation(
@@ -54,7 +47,7 @@ export class CryptoDonationController {
   @UseGuards(JwtAuthGuard)
   async submitTxHash(
     @Param('id') id: string,
-    @Body() body: { txHash: string; senderAddress?: string },
+    @Body() body: SubmitTxDto,
     @Req() req: any,
   ) {
     return this.donationService.submitTxHash(
@@ -78,6 +71,7 @@ export class CryptoDonationController {
   }
 
   @Get('stream/:streamId')
+  @UseGuards(JwtAuthGuard)
   async getByStream(@Param('streamId') streamId: string) {
     return this.donationService.getByStream(streamId);
   }

@@ -98,7 +98,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     }
     async function fetchFollows() {
       try {
-        const res = await fetch(`${API_URL}/follows/user/${user!.id}`);
+        const res = await fetch(`${API_URL}/follows/user/${user!.id}`, {
+          headers: { Authorization: `Bearer ${user!.token}` },
+        });
         if (res.ok) {
           const follows = await res.json();
           setFollowedAgentIds(new Set(follows.map((f: any) => f.agentId)));

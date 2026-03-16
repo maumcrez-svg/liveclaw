@@ -13,22 +13,7 @@ import {
 import { ModerationService } from './moderation.service';
 import { JwtAuthGuard } from '../../auth/auth.guard';
 import { OwnerGuard } from '../../../common/owner.guard';
-
-class BanUserDto {
-  userId: string;
-  reason?: string;
-  durationSeconds?: number;
-}
-
-class TimeoutUserDto {
-  userId: string;
-  seconds: number;
-  reason?: string;
-}
-
-class SlowModeDto {
-  seconds: number;
-}
+import { BanUserDto, TimeoutUserDto, SlowModeDto } from './moderation.dto';
 
 @Controller('moderation')
 @UseGuards(JwtAuthGuard, OwnerGuard)

@@ -25,6 +25,7 @@ export class RuntimeController {
 
   @Get(':agentId/logs')
   getLogs(@Param('agentId') agentId: string, @Query('tail') tail?: string) {
-    return this.runtimeService.getAgentLogs(agentId, tail ? parseInt(tail, 10) : 100);
+    const tailNum = Math.min(Math.max(1, parseInt(tail ?? '', 10) || 100), 2000);
+    return this.runtimeService.getAgentLogs(agentId, tailNum);
   }
 }

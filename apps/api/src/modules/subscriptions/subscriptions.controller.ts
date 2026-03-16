@@ -9,6 +9,7 @@ import {
   Body,
   Req,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CryptoSubscribeService } from './crypto-subscribe.service';
@@ -50,25 +51,34 @@ export class SubscriptionsController {
     );
   }
 
-  @Delete(':userId/:agentId')
+  @Delete(':agentId')
   @UseGuards(JwtAuthGuard)
   unsubscribe(
-    @Param('userId') userId: string,
     @Param('agentId') agentId: string,
+    @Req() req: any,
   ) {
-    return this.subscriptionsService.unsubscribe(userId, agentId);
+    return this.subscriptionsService.unsubscribe(req.user.sub, agentId);
   }
 
   @Get('user/:userId')
-  getUserSubscriptions(@Param('userId') userId: string) {
+  @UseGuards(JwtAuthGuard)
+  getUserSubscriptions(@Param('userId') userId: string, @Req() req: any) {
+    if (req.user.sub !== userId && req.user.role !== 'admin') {
+      throw new ForbiddenException('You can only view your own subscriptions');
+    }
     return this.subscriptionsService.getUserSubscriptions(userId);
   }
 
   @Get('check')
+  @UseGuards(JwtAuthGuard)
   checkSubscription(
     @Query('userId') userId: string,
     @Query('agentId') agentId: string,
+    @Req() req: any,
   ) {
+    if (req.user.sub !== userId && req.user.role !== 'admin') {
+      throw new ForbiddenException('You can only check your own subscription status');
+    }
     return this.subscriptionsService.getActiveSubscription(userId, agentId);
   }
 

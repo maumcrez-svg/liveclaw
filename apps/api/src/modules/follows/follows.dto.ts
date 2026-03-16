@@ -1,9 +1,6 @@
-import { IsString } from 'class-validator';
+import { IsUUID } from 'class-validator';
 
 export class FollowDto {
-  @IsString()
-  userId: string;
-
-  @IsString()
+  @IsUUID()
   agentId: string;
 }

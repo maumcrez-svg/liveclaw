@@ -7,12 +7,7 @@ import { AgentsService } from '../agents/agents.service';
 import { ChatService } from '../chat/chat.service';
 import { UsersService } from '../users/users.service';
 import { StreamEntity } from '../streams/stream.entity';
-
-const TIER_PRICES: Record<string, number> = {
-  tier_1: 4.99,
-  tier_2: 9.99,
-  tier_3: 24.99,
-};
+import { TIER_PRICES_ETH } from '../../common/pricing.constants';
 
 @Injectable()
 export class SubscriptionsService {
@@ -104,7 +99,7 @@ export class SubscriptionsService {
 
     let mrr = 0;
     for (const sub of activeSubs) {
-      mrr += TIER_PRICES[sub.tier] || 0;
+      mrr += TIER_PRICES_ETH[sub.tier] || 0;
     }
 
     const recent = await this.subRepo

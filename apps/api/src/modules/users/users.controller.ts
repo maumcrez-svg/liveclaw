@@ -18,6 +18,8 @@ export class UsersController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   findOrCreate(@Body() dto: CreateUserDto) {
     return this.usersService.findOrCreate(dto.username);
   }
@@ -29,12 +31,12 @@ export class UsersController {
     @Body(new ValidationPipe({ whitelist: true })) dto: UpdateProfileDto,
   ): Promise<AuthResponse> {
     const updated = await this.usersService.updateProfile(user.sub, dto);
-    return this.authService.buildAuthResponse(updated);
+    return await this.authService.buildAuthResponse(updated);
   }
 
   @Get(':id')
   findById(@Param('id') id: string) {
-    return this.usersService.findById(id);
+    return this.usersService.findByIdPublic(id);
   }
 
   @Patch(':id/role')

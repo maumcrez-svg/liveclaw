@@ -7,7 +7,9 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Inject, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Optional, forwardRef, Logger } from '@nestjs/common';
+import Redis from 'ioredis';
+import { REDIS_CLIENT } from '../../common/redis.provider';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,12 +25,8 @@ import { AgentEntity } from '../agents/agent.entity';
 
 /** Maximum messages a user may send in the rate-limit window. */
 const RATE_LIMIT_MAX_MESSAGES = 5;
-/** Window length in milliseconds for the in-memory rate limit. */
+/** Window length in milliseconds for the rate limit. */
 const RATE_LIMIT_WINDOW_MS = 10_000;
-
-interface RateLimitEntry {
-  timestamps: number[];
-}
 
 @WebSocketGateway({
   cors: {
@@ -39,6 +37,8 @@ interface RateLimitEntry {
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(ChatGateway.name);
+
   @WebSocketServer()
   server: Server;
 
@@ -46,9 +46,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   /** Cache streamId → agentId to avoid repeated DB lookups */
   private streamAgentMap: Map<string, string> = new Map();
-
-  /** In-memory rate limit tracker. Key: `{agentId}:{userId}` */
-  private rateLimitMap: Map<string, RateLimitEntry> = new Map();
 
   constructor(
     private readonly chatService: ChatService,
@@ -62,6 +59,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly emotesService: EmotesService,
     @Optional() @Inject(forwardRef(() => ModerationService))
     private readonly moderationService: ModerationService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -99,7 +97,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.data.role = 'agent';
         client.data.agentId = agent.id;
         client.data.isAgent = true;
-        console.log(`Agent connected: ${client.id} (agent: ${agent.slug})`);
+        this.logger.log(`Agent connected: ${client.id} (agent: ${agent.slug})`);
         return;
       } catch {
         client.disconnect();
@@ -121,7 +119,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.data.username = payload.username;
       client.data.role = payload.role;
 
-      console.log(
+      this.logger.log(
         `Client connected: ${client.id} (user: ${payload.username})`,
       );
     } catch {
@@ -249,6 +247,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId: string = client.data.userId as string;
     const username: string = client.data.username as string;
 
+    // Validate message content
+    if (!data.content || typeof data.content !== 'string' || data.content.trim().length === 0 || data.content.length > 500) {
+      client.emit('error', { message: 'Message must be 1-500 characters' });
+      return;
+    }
+
     // ------------------------------------------------------------------
     // 1. Ban / timeout check
     // ------------------------------------------------------------------
@@ -297,27 +301,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // ------------------------------------------------------------------
-    // 3. In-memory rate limiting (RATE_LIMIT_MAX_MESSAGES per RATE_LIMIT_WINDOW_MS)
+    // 3. Redis-based rate limiting (RATE_LIMIT_MAX_MESSAGES per RATE_LIMIT_WINDOW_MS)
     // ------------------------------------------------------------------
-    const rateLimitKey = `${data.agentId ?? 'global'}:${userId}`;
-    const entry = this.rateLimitMap.get(rateLimitKey) ?? { timestamps: [] };
-    const windowStart = Date.now() - RATE_LIMIT_WINDOW_MS;
+    const rateLimitKey = `rate:${data.agentId ?? 'global'}:${userId}`;
+    const now = Date.now();
+    const windowStart = now - RATE_LIMIT_WINDOW_MS;
+    const msgId = `${now}:${Math.random().toString(36).slice(2, 6)}`;
 
-    // Evict timestamps outside the current window
-    entry.timestamps = entry.timestamps.filter((ts) => ts > windowStart);
+    const pipeline = this.redis.pipeline();
+    pipeline.zremrangebyscore(rateLimitKey, 0, windowStart);
+    pipeline.zadd(rateLimitKey, now, msgId);
+    pipeline.zcard(rateLimitKey);
+    pipeline.expire(rateLimitKey, Math.ceil(RATE_LIMIT_WINDOW_MS / 1000) + 1);
+    const results = await pipeline.exec();
 
-    if (entry.timestamps.length >= RATE_LIMIT_MAX_MESSAGES) {
+    const count = results?.[2]?.[1] as number;
+    if (count > RATE_LIMIT_MAX_MESSAGES) {
       client.emit('rate_limited', {
-        message: `Too many messages. Max ${RATE_LIMIT_MAX_MESSAGES} per ${
-          RATE_LIMIT_WINDOW_MS / 1000
-        }s.`,
+        message: `Too many messages. Max ${RATE_LIMIT_MAX_MESSAGES} per ${RATE_LIMIT_WINDOW_MS / 1000}s.`,
       });
-      this.rateLimitMap.set(rateLimitKey, entry);
       return;
     }
-
-    entry.timestamps.push(Date.now());
-    this.rateLimitMap.set(rateLimitKey, entry);
 
     // ------------------------------------------------------------------
     // 4. Optional enhancements: subscription badge + emote resolution

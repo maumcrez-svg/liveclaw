@@ -140,11 +140,11 @@ export class ChainVerificationService {
     donation: CryptoDonationEntity,
   ): Promise<void> {
     try {
-      // Check if subscription already activated
+      // Check if already has active subscription
       const existing = await this.subRepo.findOne({
-        where: { id: donation.subscriptionId! },
+        where: { userId: donation.viewerUserId!, agentId: donation.agentId, isActive: true },
       });
-      if (existing) return; // Already created
+      if (existing) return;
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
@@ -156,8 +156,18 @@ export class ChainVerificationService {
         startedAt: new Date(),
         expiresAt,
         isActive: true,
+        donationId: donation.id,
       });
-      await this.subRepo.save(sub);
+
+      try {
+        await this.subRepo.save(sub);
+      } catch (err: any) {
+        if (err.code === '23505') {
+          this.logger.warn(`Duplicate subscription prevented for donation ${donation.id}`);
+          return;
+        }
+        throw err;
+      }
 
       // Increment subscriber count
       await this.agentRepo

@@ -11,6 +11,7 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(6)
+  @MaxLength(72)
   password: string;
 }
 
@@ -19,6 +20,7 @@ export class LoginDto {
   username: string;
 
   @IsString()
+  @MaxLength(72)
   password: string;
 }
 

@@ -19,7 +19,9 @@ export function FollowButton({ agentId, followerCount: initialCount }: FollowBut
 
   useEffect(() => {
     if (!user) return;
-    fetch(`${API_URL}/follows/check?userId=${user.id}&agentId=${agentId}`)
+    fetch(`${API_URL}/follows/check?userId=${user.id}&agentId=${agentId}`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
       .then((r) => r.json())
       .then((data) => setFollowing(data.following))
       .catch(() => {});
@@ -40,7 +42,7 @@ export function FollowButton({ agentId, followerCount: initialCount }: FollowBut
         await fetch(`${API_URL}/follows`, {
           method: 'DELETE',
           headers,
-          body: JSON.stringify({ userId: user.id, agentId }),
+          body: JSON.stringify({ agentId }),
         });
         setFollowing(false);
         setCount((c) => Math.max(0, c - 1));
@@ -49,7 +51,7 @@ export function FollowButton({ agentId, followerCount: initialCount }: FollowBut
         await fetch(`${API_URL}/follows`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ userId: user.id, agentId }),
+          body: JSON.stringify({ agentId }),
         });
         setFollowing(true);
         setCount((c) => c + 1);

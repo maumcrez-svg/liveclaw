@@ -25,6 +25,15 @@ export class UsersService {
     return user;
   }
 
+  async findByIdPublic(id: string): Promise<Partial<UserEntity>> {
+    const user = await this.userRepo.findOne({
+      where: { id },
+      select: ['id', 'username', 'role', 'avatarUrl', 'createdAt'],
+    });
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+    return user;
+  }
+
   async findByUsername(username: string): Promise<UserEntity | null> {
     return this.userRepo.findOne({ where: { username } });
   }

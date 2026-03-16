@@ -126,8 +126,16 @@ export class CryptoDonationService {
     return saved;
   }
 
+  private sanitizeDonation(donation: CryptoDonationEntity): CryptoDonationEntity {
+    if (donation.viewerUser) {
+      const { passwordHash, walletAddress, isBanned, bannedAt, ...safe } = donation.viewerUser as any;
+      donation.viewerUser = safe as any;
+    }
+    return donation;
+  }
+
   async getByAgent(agentId: string): Promise<CryptoDonationEntity[]> {
-    return this.donationRepo.find({
+    const donations = await this.donationRepo.find({
       where: {
         agentId,
         status: In(['confirmed', 'pending', 'confirming']),
@@ -135,10 +143,11 @@ export class CryptoDonationService {
       order: { createdAt: 'DESC' },
       relations: ['viewerUser'],
     });
+    return donations.map((d) => this.sanitizeDonation(d));
   }
 
   async getByStream(streamId: string): Promise<CryptoDonationEntity[]> {
-    return this.donationRepo.find({
+    const donations = await this.donationRepo.find({
       where: {
         streamId,
         status: 'confirmed',
@@ -146,6 +155,7 @@ export class CryptoDonationService {
       order: { createdAt: 'DESC' },
       relations: ['viewerUser'],
     });
+    return donations.map((d) => this.sanitizeDonation(d));
   }
 
   async getSummary(agentId: string): Promise<{
@@ -188,7 +198,7 @@ export class CryptoDonationService {
       totalConfirmed: parseFloat(confirmedResult.total),
       totalPending: parseFloat(pendingResult.total),
       count,
-      recentDonations,
+      recentDonations: recentDonations.map((d) => this.sanitizeDonation(d)),
     };
   }
 }

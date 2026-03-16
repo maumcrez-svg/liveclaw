@@ -16,6 +16,7 @@ interface AuthResponseUser {
 
 interface AuthApiResponse {
   access_token: string;
+  refresh_token: string;
   user: AuthResponseUser;
 }
 
@@ -23,6 +24,7 @@ interface UserData {
   id: string;
   username: string;
   token: string;
+  refresh_token: string;
   role: string;
   avatarUrl?: string | null;
   walletAddress?: string | null;
@@ -33,8 +35,6 @@ type WalletProvider = 'metamask' | 'phantom';
 interface UserContextValue {
   user: UserData | null;
   isLoggedIn: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string) => Promise<void>;
   loginWithWallet: (provider: WalletProvider) => Promise<void>;
   logout: () => void;
   becomeCreator: () => Promise<void>;
@@ -52,6 +52,7 @@ function authResponseToUserData(res: AuthApiResponse): UserData {
     id: res.user.id,
     username: res.user.username,
     token: res.access_token,
+    refresh_token: res.refresh_token,
     role: res.user.role,
     avatarUrl: res.user.avatarUrl,
     walletAddress: res.user.walletAddress,
@@ -95,40 +96,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    let res: AuthApiResponse;
-    try {
-      res = await api<AuthApiResponse>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ username, password }),
-      });
-    } catch (err: any) {
-      const isNetwork = err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch');
-      err.message = isNetwork
-        ? 'Cannot reach server. Check your connection.'
-        : err.message || 'Login failed';
-      throw err;
-    }
-    saveUser(authResponseToUserData(res));
-  }, [saveUser]);
-
-  const register = useCallback(async (username: string, password: string) => {
-    let res: AuthApiResponse;
-    try {
-      res = await api<AuthApiResponse>('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ username, password }),
-      });
-    } catch (err: any) {
-      const isNetwork = err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch');
-      err.message = isNetwork
-        ? 'Cannot reach server. Check your connection.'
-        : err.message || 'Registration failed';
-      throw err;
-    }
-    saveUser(authResponseToUserData(res));
-  }, [saveUser]);
-
   const loginWithWallet = useCallback(async (provider: WalletProvider) => {
     // Resolve the EIP-1193 provider
     const w = window as any;
@@ -141,7 +108,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return;
       }
     } else {
-      // MetaMask — prefer MetaMask's own provider over injected generic
+      // MetaMask -- prefer MetaMask's own provider over injected generic
       ethereum = w.ethereum?.isMetaMask ? w.ethereum : w.ethereum;
       if (!ethereum) {
         toast.error('MetaMask not found. Install it at metamask.io');
@@ -161,7 +128,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           toast.error('Connection rejected');
           return;
         }
-        toast.error(`${providerName}: could not connect — ${e.message || 'unknown error'}`);
+        toast.error(`${providerName}: could not connect -- ${e.message || 'unknown error'}`);
         return;
       }
 
@@ -195,7 +162,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           toast.error('Signature rejected');
           return;
         }
-        toast.error(`${providerName}: signing failed — ${e.message || 'unknown error'}`);
+        toast.error(`${providerName}: signing failed -- ${e.message || 'unknown error'}`);
         return;
       }
 
@@ -213,7 +180,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         } else if (e.status === 401) {
           toast.error('Signature verification failed. Try again.');
         } else if (e.status === 400) {
-          toast.error(e.message || 'Invalid request. Nonce may have expired — try again.');
+          toast.error(e.message || 'Invalid request. Nonce may have expired -- try again.');
         } else {
           toast.error(e.message || 'Login failed');
         }
@@ -248,7 +215,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const handleForcedLogout = () => {
       setUser(null);
       setShowLoginModal(true);
-      toast.error('Session expired. Please log in again.');
+      toast.error('Session expired. Please connect your wallet again.');
     };
     window.addEventListener('liveclaw:logout', handleForcedLogout);
     return () => window.removeEventListener('liveclaw:logout', handleForcedLogout);
@@ -270,10 +237,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserContext.Provider
-      value={{ user, isLoggedIn: !!user, login, register, loginWithWallet, logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal, isAdmin, isCreator }}
+      value={{ user, isLoggedIn: !!user, loginWithWallet, logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal, isAdmin, isCreator }}
     >
       {children}
-      {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
+      {showLoginModal && <WalletConnectModal onClose={() => setShowLoginModal(false)} />}
     </UserContext.Provider>
   );
 }
@@ -284,158 +251,98 @@ export function useUser() {
   return ctx;
 }
 
-function LoginModal({ onClose }: { onClose: () => void }) {
-  const { login, register, loginWithWallet } = useUser();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [walletLoading, setWalletLoading] = useState(false);
+/* ------------------------------------------------------------------ */
+/*  Wallet-only login modal                                           */
+/* ------------------------------------------------------------------ */
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = username.trim();
-    if (!trimmed || !password) return;
-
-    if (mode === 'register') {
-      if (trimmed.length < 3 || trimmed.length > 20) {
-        setError('Username must be 3-20 characters');
-        return;
-      }
-      if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-        setError('Only letters, numbers, and underscores');
-        return;
-      }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        return;
-      }
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      if (mode === 'login') {
-        await login(trimmed, password);
-      } else {
-        await register(trimmed, password);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function WalletConnectModal({ onClose }: { onClose: () => void }) {
+  const { loginWithWallet } = useUser();
   const [activeWallet, setActiveWallet] = useState<WalletProvider | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleWalletLogin = async (provider: WalletProvider) => {
+  const handleConnect = async (provider: WalletProvider) => {
     setActiveWallet(provider);
-    setWalletLoading(true);
-    setError('');
+    setLoading(true);
     try {
       await loginWithWallet(provider);
-    } catch (err: any) {
+    } catch {
       // Error already toasted in loginWithWallet
     } finally {
-      setWalletLoading(false);
+      setLoading(false);
       setActiveWallet(null);
     }
   };
 
+  const hasEthereum = typeof window !== 'undefined' && !!(window as any).ethereum;
+  const hasPhantom = typeof window !== 'undefined' && !!(window as any).phantom?.ethereum;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-claw-surface border border-claw-border rounded-lg p-6 w-[360px]">
-        <div className="flex flex-col items-center mb-4">
+        <div className="flex flex-col items-center mb-5">
           <img src="/logo.png" alt="LiveClaw" className="w-14 h-14 mb-3" />
-          <h2 className="text-lg font-bold">
-            {mode === 'login' ? 'Log In to LiveClaw' : 'Join LiveClaw'}
-          </h2>
+          <h2 className="text-lg font-bold">Connect Wallet</h2>
+          <p className="text-xs text-claw-text-muted mt-1 text-center">
+            Connect your Ethereum wallet to sign in or create an account.
+          </p>
         </div>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username"
-            className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text placeholder:text-claw-text-muted focus:outline-none focus:border-claw-accent mb-2"
-            autoFocus
-            maxLength={20}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-sm text-claw-text placeholder:text-claw-text-muted focus:outline-none focus:border-claw-accent mb-2"
-          />
-          {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
-          <div className="flex gap-2 mt-3">
+
+        {!hasEthereum && !hasPhantom ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-claw-text-muted mb-3">
+              No wallet detected. Please install a wallet extension to continue.
+            </p>
+            <a
+              href="https://metamask.io/download/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-[#f6851b] text-white text-sm font-semibold rounded hover:bg-[#e2761b] transition-colors"
+            >
+              Install MetaMask
+            </a>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm border border-claw-border rounded hover:bg-claw-card transition-colors"
+              onClick={() => handleConnect('metamask')}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#f6851b] text-white text-sm font-semibold rounded hover:bg-[#e2761b] disabled:opacity-50 transition-colors"
             >
-              Cancel
+              <svg className="w-5 h-5" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M32.9582 1L19.8241 10.7183L22.2665 4.99099L32.9582 1Z" fill="#E17726" stroke="#E17726" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2.66296 1L15.6886 10.809L13.3546 4.99099L2.66296 1Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M28.2295 23.5334L24.7346 28.872L32.2271 30.932L34.3803 23.6526L28.2295 23.5334Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M1.27271 23.6526L3.39385 30.932L10.8864 28.872L7.39148 23.5334L1.27271 23.6526Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10.4706 14.5149L8.39185 17.4768L15.7788 17.8114L15.543 9.86279L10.4706 14.5149Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M25.1505 14.5149L19.9995 9.77246L19.8241 17.8114L27.2293 17.4768L25.1505 14.5149Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10.8864 28.8721L15.3574 26.7106L11.4776 23.6982L10.8864 28.8721Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20.2637 26.7106L24.7346 28.8721L24.1435 23.6982L20.2637 26.7106Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {loading && activeWallet === 'metamask' ? 'Connecting...' : 'MetaMask'}
             </button>
             <button
-              type="submit"
-              disabled={loading || !username.trim() || !password}
-              className="flex-1 px-4 py-2 bg-claw-accent text-white text-sm font-semibold rounded hover:bg-claw-accent-hover disabled:opacity-50 transition-colors"
+              type="button"
+              onClick={() => handleConnect('phantom')}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#ab9ff2] text-white text-sm font-semibold rounded hover:bg-[#9580e6] disabled:opacity-50 transition-colors"
             >
-              {loading ? '...' : mode === 'login' ? 'Log In' : 'Sign Up'}
+              <svg className="w-5 h-5" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="64" cy="64" r="64" fill="transparent"/>
+                <path d="M110.6 55.1C109.1 43.7 104.7 33.5 97.4 25.5C89.3 16.7 78.2 11.1 66 10C65.3 9.9 64.7 9.9 64 9.9C51 9.9 38.9 15.1 30 24.4C21.7 33.1 17 44.3 16.5 56.3C16 68.4 20.3 79.9 28.5 88.9C37 98.2 48.7 103.8 61.3 104.3C61.8 104.3 62.3 104.3 62.8 104.3C67.5 104.3 72.2 103.4 76.6 101.5C77.6 101.1 78.2 100.1 78.1 99C78 97.9 77.3 97 76.3 96.7C71.8 95.3 68.8 91.2 68.8 86.5C68.8 80.3 73.8 75.3 80 75.3C80.8 75.3 81.6 75.4 82.4 75.5C82.5 75.5 82.6 75.6 82.7 75.6C95.7 78.5 105 87.3 107.7 86C110.8 84.5 112.3 68.3 110.6 55.1ZM42.4 68.8C38.2 68.8 34.7 65.3 34.7 61.1C34.7 56.9 38.2 53.4 42.4 53.4C46.6 53.4 50.1 56.9 50.1 61.1C50.1 65.4 46.6 68.8 42.4 68.8ZM69.6 57.5C65.4 57.5 61.9 54 61.9 49.8C61.9 45.6 65.4 42.1 69.6 42.1C73.8 42.1 77.3 45.6 77.3 49.8C77.3 54 73.8 57.5 69.6 57.5Z" fill="white"/>
+              </svg>
+              {loading && activeWallet === 'phantom' ? 'Connecting...' : 'Phantom'}
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
-            className="w-full text-center text-xs text-claw-text-muted hover:text-claw-accent mt-3"
-          >
-            {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
-          </button>
-        </form>
+        )}
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-claw-border" />
-          <span className="text-xs text-claw-text-muted">or</span>
-          <div className="flex-1 h-px bg-claw-border" />
-        </div>
-
-        {/* Wallet login buttons */}
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => handleWalletLogin('metamask')}
-            disabled={walletLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#f6851b] text-white text-sm font-semibold rounded hover:bg-[#e2761b] disabled:opacity-50 transition-colors"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M32.9582 1L19.8241 10.7183L22.2665 4.99099L32.9582 1Z" fill="#E17726" stroke="#E17726" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2.66296 1L15.6886 10.809L13.3546 4.99099L2.66296 1Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M28.2295 23.5334L24.7346 28.872L32.2271 30.932L34.3803 23.6526L28.2295 23.5334Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M1.27271 23.6526L3.39385 30.932L10.8864 28.872L7.39148 23.5334L1.27271 23.6526Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10.4706 14.5149L8.39185 17.4768L15.7788 17.8114L15.543 9.86279L10.4706 14.5149Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M25.1505 14.5149L19.9995 9.77246L19.8241 17.8114L27.2293 17.4768L25.1505 14.5149Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10.8864 28.8721L15.3574 26.7106L11.4776 23.6982L10.8864 28.8721Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20.2637 26.7106L24.7346 28.8721L24.1435 23.6982L20.2637 26.7106Z" fill="#E27625" stroke="#E27625" strokeWidth="0.25" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            {walletLoading && activeWallet === 'metamask' ? 'Connecting...' : 'MetaMask'}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleWalletLogin('phantom')}
-            disabled={walletLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#ab9ff2] text-white text-sm font-semibold rounded hover:bg-[#9580e6] disabled:opacity-50 transition-colors"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="64" cy="64" r="64" fill="transparent"/>
-              <path d="M110.6 55.1C109.1 43.7 104.7 33.5 97.4 25.5C89.3 16.7 78.2 11.1 66 10C65.3 9.9 64.7 9.9 64 9.9C51 9.9 38.9 15.1 30 24.4C21.7 33.1 17 44.3 16.5 56.3C16 68.4 20.3 79.9 28.5 88.9C37 98.2 48.7 103.8 61.3 104.3C61.8 104.3 62.3 104.3 62.8 104.3C67.5 104.3 72.2 103.4 76.6 101.5C77.6 101.1 78.2 100.1 78.1 99C78 97.9 77.3 97 76.3 96.7C71.8 95.3 68.8 91.2 68.8 86.5C68.8 80.3 73.8 75.3 80 75.3C80.8 75.3 81.6 75.4 82.4 75.5C82.5 75.5 82.6 75.6 82.7 75.6C95.7 78.5 105 87.3 107.7 86C110.8 84.5 112.3 68.3 110.6 55.1ZM42.4 68.8C38.2 68.8 34.7 65.3 34.7 61.1C34.7 56.9 38.2 53.4 42.4 53.4C46.6 53.4 50.1 56.9 50.1 61.1C50.1 65.4 46.6 68.8 42.4 68.8ZM69.6 57.5C65.4 57.5 61.9 54 61.9 49.8C61.9 45.6 65.4 42.1 69.6 42.1C73.8 42.1 77.3 45.6 77.3 49.8C77.3 54 73.8 57.5 69.6 57.5Z" fill="white"/>
-            </svg>
-            {walletLoading && activeWallet === 'phantom' ? 'Connecting...' : 'Phantom'}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full mt-4 px-4 py-2 text-sm border border-claw-border rounded hover:bg-claw-card transition-colors text-center"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

@@ -62,14 +62,16 @@ export class AdminService {
       qb.orderBy('u.created_at', 'DESC');
     }
 
+    qb.select([
+      'u.id', 'u.username', 'u.role', 'u.avatarUrl', 'u.walletAddress',
+      'u.isBanned', 'u.bannedAt', 'u.createdAt',
+    ]);
+
     const total = await qb.getCount();
     const data = await qb
       .skip((opts.page - 1) * opts.limit)
       .take(opts.limit)
       .getMany();
-
-    // Strip password hashes
-    data.forEach((u) => { u.passwordHash = null as any; });
 
     return {
       data,
@@ -92,13 +94,16 @@ export class AdminService {
       .where('u.username ILIKE :q', { q: `%${query}%` })
       .orderBy('u.created_at', 'DESC');
 
+    qb.select([
+      'u.id', 'u.username', 'u.role', 'u.avatarUrl', 'u.walletAddress',
+      'u.isBanned', 'u.bannedAt', 'u.createdAt',
+    ]);
+
     const total = await qb.getCount();
     const data = await qb
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();
-
-    data.forEach((u) => { u.passwordHash = null as any; });
 
     return {
       data,
@@ -115,8 +120,8 @@ export class AdminService {
     user.isBanned = true;
     user.bannedAt = new Date();
     const saved = await this.userRepo.save(user);
-    saved.passwordHash = null as any;
-    return saved;
+    const { passwordHash, ...safeUser } = saved;
+    return safeUser as UserEntity;
   }
 
   async unbanUser(id: string): Promise<UserEntity> {
@@ -125,8 +130,8 @@ export class AdminService {
     user.isBanned = false;
     user.bannedAt = null;
     const saved = await this.userRepo.save(user);
-    saved.passwordHash = null as any;
-    return saved;
+    const { passwordHash, ...safeUser } = saved;
+    return safeUser as UserEntity;
   }
 
   async changeUserRole(id: string, role: string): Promise<UserEntity> {
@@ -141,8 +146,8 @@ export class AdminService {
     }
     user.role = role;
     const saved = await this.userRepo.save(user);
-    saved.passwordHash = null as any;
-    return saved;
+    const { passwordHash, ...safeUser } = saved;
+    return safeUser as UserEntity;
   }
 
   // ── Global Stats ──

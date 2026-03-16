@@ -3,14 +3,18 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { verifyMessage } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
+import Redis from 'ioredis';
 import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto, WalletLoginDto } from './auth.dto';
 import { UserEntity } from '../users/user.entity';
+import { REDIS_CLIENT } from '../../common/redis.provider';
+import { RefreshTokenService } from './refresh-token.service';
 
 export interface JwtPayload {
   sub: string;
@@ -20,6 +24,7 @@ export interface JwtPayload {
 
 export interface AuthResponse {
   access_token: string;
+  refresh_token: string;
   user: {
     id: string;
     username: string;
@@ -29,27 +34,18 @@ export interface AuthResponse {
   };
 }
 
-// Nonce store with 5-minute expiry
-const nonceStore = new Map<string, { expiresAt: number }>();
-
-function cleanExpiredNonces() {
-  const now = Date.now();
-  for (const [nonce, data] of nonceStore) {
-    if (data.expiresAt < now) nonceStore.delete(nonce);
-  }
-}
-
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
-  generateNonce(): { nonce: string; message: string } {
-    cleanExpiredNonces();
+  async generateNonce(): Promise<{ nonce: string; message: string }> {
     const nonce = uuidv4();
-    nonceStore.set(nonce, { expiresAt: Date.now() + 5 * 60 * 1000 });
+    await this.redis.set(`nonce:${nonce}`, '1', 'EX', 300, 'NX');
     const message = `Sign in to LiveClaw\nNonce: ${nonce}`;
     return { nonce, message };
   }
@@ -68,7 +64,7 @@ export class AuthService {
       'viewer',
     );
 
-    return this.buildAuthResponse(user);
+    return await this.buildAuthResponse(user);
   }
 
   async login(dto: LoginDto): Promise<AuthResponse> {
@@ -87,7 +83,7 @@ export class AuthService {
       throw new UnauthorizedException('Your account has been suspended');
     }
 
-    return this.buildAuthResponse(user);
+    return await this.buildAuthResponse(user);
   }
 
   async walletLogin(dto: WalletLoginDto): Promise<AuthResponse> {
@@ -98,18 +94,10 @@ export class AuthService {
     }
 
     const nonce = nonceMatch[1];
-    const stored = nonceStore.get(nonce);
-    if (!stored) {
+    const existed = await this.redis.getdel(`nonce:${nonce}`);
+    if (!existed) {
       throw new BadRequestException('Invalid or expired nonce');
     }
-
-    if (stored.expiresAt < Date.now()) {
-      nonceStore.delete(nonce);
-      throw new BadRequestException('Nonce has expired');
-    }
-
-    // Consume the nonce
-    nonceStore.delete(nonce);
 
     // Verify signature
     let recoveredAddress: string;
@@ -130,7 +118,7 @@ export class AuthService {
       if (user.isBanned) {
         throw new UnauthorizedException('Your account has been suspended');
       }
-      return this.buildAuthResponse(user);
+      return await this.buildAuthResponse(user);
     }
 
     // Auto-create user with address-derived username
@@ -145,7 +133,7 @@ export class AuthService {
     }
 
     user = await this.usersService.createWithWallet(username, dto.address, 'viewer');
-    return this.buildAuthResponse(user);
+    return await this.buildAuthResponse(user);
   }
 
   async validateUser(userId: string): Promise<UserEntity> {
@@ -168,7 +156,7 @@ export class AuthService {
     }
 
     const updated = await this.usersService.updateRole(user.id, 'creator');
-    return this.buildAuthResponse(updated);
+    return await this.buildAuthResponse(updated);
   }
 
   async getFullUser(userId: string): Promise<AuthResponse['user']> {
@@ -182,15 +170,18 @@ export class AuthService {
     };
   }
 
-  buildAuthResponse(user: UserEntity): AuthResponse {
+  async buildAuthResponse(user: UserEntity): Promise<AuthResponse> {
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
       role: user.role,
     };
 
+    const refreshToken = await this.refreshTokenService.generateRefreshToken(user.id);
+
     return {
       access_token: this.jwtService.sign(payload),
+      refresh_token: refreshToken,
       user: {
         id: user.id,
         username: user.username,
@@ -199,5 +190,23 @@ export class AuthService {
         walletAddress: user.walletAddress,
       },
     };
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+    const userId = await this.refreshTokenService.consumeRefreshToken(refreshToken);
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+    const user = await this.usersService.findById(userId);
+    if (user.isBanned) {
+      throw new UnauthorizedException('Your account has been suspended');
+    }
+    return this.buildAuthResponse(user);
+  }
+
+  async logout(userId: string, refreshToken?: string): Promise<void> {
+    if (refreshToken) {
+      await this.refreshTokenService.consumeRefreshToken(refreshToken);
+    }
   }
 }

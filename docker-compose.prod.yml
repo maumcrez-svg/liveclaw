@@ -13,6 +13,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     volumes:
       - redisdata:/data
     restart: unless-stopped
@@ -43,6 +44,7 @@ services:
       DATABASE_NAME: liveclaw
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
       MEDIAMTX_API_URL: http://mediamtx:9997
       MEDIAMTX_RTMP_URL: rtmp://mediamtx:1935
       MEDIAMTX_HLS_URL: http://mediamtx:8888

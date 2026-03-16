@@ -44,12 +44,12 @@ export class EthPriceService {
   }
 
   usdToEth(usd: number): number | null {
-    if (!this.cachedPrice) return null;
+    if (!this.cachedPrice || Date.now() - this.lastUpdated > 300_000) return null;
     return usd / this.cachedPrice;
   }
 
   ethToUsd(eth: number): number | null {
-    if (!this.cachedPrice) return null;
+    if (!this.cachedPrice || Date.now() - this.lastUpdated > 300_000) return null;
     return eth * this.cachedPrice;
   }
 }

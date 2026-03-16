@@ -6,9 +6,9 @@ import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
 
 const TIERS = [
-  { id: 'tier_1', name: 'Tier 1', price: 4.99, color: 'text-blue-400', icon: '\u2605' },
-  { id: 'tier_2', name: 'Tier 2', price: 9.99, color: 'text-purple-400', icon: '\u2605\u2605' },
-  { id: 'tier_3', name: 'Tier 3', price: 24.99, color: 'text-yellow-400', icon: '\u2666' },
+  { id: 'tier_1', name: 'Tier 1', price: 0.002, color: 'text-blue-400', icon: '\u2605' },
+  { id: 'tier_2', name: 'Tier 2', price: 0.005, color: 'text-purple-400', icon: '\u2605\u2605' },
+  { id: 'tier_3', name: 'Tier 3', price: 0.01, color: 'text-yellow-400', icon: '\u2666' },
 ];
 
 interface SubscribeButtonProps {
@@ -64,7 +64,9 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/subscriptions/check?userId=${user.id}&agentId=${agentId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/subscriptions/check?userId=${user.id}&agentId=${agentId}`, {
+      headers: { Authorization: `Bearer ${(user as any).token}` },
+    })
       .then((r) => r.json())
       .then((data) => setCurrentTier(data?.tier || null))
       .catch(() => {});
@@ -79,7 +81,7 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
         paymentId: string;
         recipientAddress: string;
         ethAmount: number;
-        usdAmount: number;
+        ethPrice: number;
         tier: string;
         expiresAt: string;
       }>('/subscriptions/initiate', {
@@ -117,7 +119,7 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
     if (!user) return;
     setLoading(true);
     try {
-      await api(`/subscriptions/${user.id}/${agentId}`, { method: 'DELETE' });
+      await api(`/subscriptions/${agentId}`, { method: 'DELETE' });
       setCurrentTier(null);
       closeModal();
       toast('Unsubscribed');
@@ -204,7 +206,7 @@ export function SubscribeButton({ agentId, agentName }: SubscribeButtonProps) {
                           )}
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-claw-text-muted">${tier.price}/mo</span>
+                      <span className="text-sm font-medium text-claw-text-muted">{tier.price} ETH/mo</span>
                     </button>
                   ))}
                 </div>

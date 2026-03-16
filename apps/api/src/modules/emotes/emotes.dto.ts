@@ -1,13 +1,15 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsUrl, MaxLength, Matches } from 'class-validator';
 
 export class CreateEmoteDto {
-  @IsString()
+  @IsUUID()
   agentId: string;
 
   @IsString()
+  @MaxLength(32)
+  @Matches(/^[a-zA-Z0-9_]+$/, { message: 'Emote name may only contain letters, numbers, and underscores' })
   name: string;
 
-  @IsString()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   imageUrl: string;
 
   @IsString()

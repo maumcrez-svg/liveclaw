@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 
 /**
@@ -40,9 +41,16 @@ export class WebhookSecretGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<Request>();
-    const headerSecret = request.headers['x-webhook-secret'];
+    const headerSecret = request.headers['x-webhook-secret'] as string | undefined;
 
-    if (!headerSecret || headerSecret !== secret) {
+    if (!headerSecret) {
+      throw new ForbiddenException('Invalid or missing webhook secret');
+    }
+
+    const secretBuf = Buffer.from(secret);
+    const headerBuf = Buffer.from(headerSecret);
+
+    if (secretBuf.length !== headerBuf.length || !timingSafeEqual(secretBuf, headerBuf)) {
       throw new ForbiddenException('Invalid or missing webhook secret');
     }
 

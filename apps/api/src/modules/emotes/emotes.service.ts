@@ -51,6 +51,10 @@ export class EmotesService {
     });
   }
 
+  async findById(id: string): Promise<EmoteEntity | null> {
+    return this.emoteRepo.findOne({ where: { id } });
+  }
+
   async createEmote(dto: CreateEmoteDto): Promise<EmoteEntity> {
     const emote = this.emoteRepo.create(dto);
     return this.emoteRepo.save(emote);

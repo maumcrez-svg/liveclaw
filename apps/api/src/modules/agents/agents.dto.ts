@@ -5,6 +5,11 @@ import {
   IsArray,
   IsUUID,
   IsIn,
+  IsUrl,
+  ValidateIf,
+  MinLength,
+  MaxLength,
+  Matches,
 } from 'class-validator';
 
 export class HeartbeatDto {
@@ -19,6 +24,11 @@ export class HeartbeatDto {
 
 export class CreateAgentDto {
   @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  @Matches(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, {
+    message: 'slug must be lowercase alphanumeric with hyphens, and cannot start or end with a hyphen',
+  })
   slug: string;
 
   @IsString()
@@ -28,8 +38,9 @@ export class CreateAgentDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.avatarUrl !== null)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   avatarUrl?: string;
 
   @IsString()
@@ -71,12 +82,14 @@ export class UpdateAgentDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.avatarUrl !== null)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   avatarUrl?: string;
 
-  @IsString()
   @IsOptional()
+  @ValidateIf((o) => o.bannerUrl !== null)
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   bannerUrl?: string;
 
   @IsString()
