@@ -84,12 +84,18 @@ function parseSimpleYaml(text: string): any {
 }
 
 function yamlToJson(yamlPath: string): any {
-  // Read the YAML file as text and do basic parsing
   const text = readFileSync(yamlPath, 'utf-8');
   const lines = text.split('\n');
 
   const result: any = {};
-  const stack: Array<{ indent: number; obj: any; key: string }> = [{ indent: -1, obj: result, key: '' }];
+  // Stack: { indent, parentObj, parentKey, container }
+  // parentObj[parentKey] === container (so we can replace {} with [] for lists)
+  const stack: Array<{
+    indent: number;
+    parentObj: any;
+    parentKey: string;
+    container: any;
+  }> = [{ indent: -1, parentObj: null, parentKey: '', container: result }];
 
   for (const rawLine of lines) {
     const line = rawLine.replace(/\r$/, '');
@@ -98,30 +104,47 @@ function yamlToJson(yamlPath: string): any {
     const indent = line.search(/\S/);
     const content = line.trim();
 
-    // Pop stack to find parent
+    // Pop stack to find parent at correct depth
     while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
       stack.pop();
     }
-    const parent = stack[stack.length - 1].obj;
+    const top = stack[stack.length - 1];
+    const container = top.container;
 
-    // List item
+    // List item — convert parent container to array if needed
     if (content.startsWith('- ')) {
       const value = content.slice(2).trim();
-      const parentKey = stack[stack.length - 1].key;
-      if (!Array.isArray(parent[parentKey])) {
-        parent[parentKey] = [];
+      // If the current container is an empty object {}, convert it to an array
+      // on the parent. This handles: `flaws:\n  - item`
+      let arr: any[];
+      if (
+        top.parentObj &&
+        !Array.isArray(container) &&
+        typeof container === 'object' &&
+        Object.keys(container).length === 0
+      ) {
+        arr = [];
+        top.parentObj[top.parentKey] = arr;
+        top.container = arr;
+      } else if (Array.isArray(container)) {
+        arr = container;
+      } else {
+        // Fallback — shouldn't happen in well-formed YAML
+        arr = [];
+        top.container = arr;
       }
-      // Check if it's a key: value inside a list item
+
+      // Key: value inside a list item
       if (value.includes(': ') && !value.startsWith('"') && !value.startsWith("'")) {
         const obj: any = {};
-        const parts = value.split(': ');
-        const k = parts[0].trim();
-        const v = parts.slice(1).join(': ').trim().replace(/^["']|["']$/g, '');
+        const colonIdx = value.indexOf(': ');
+        const k = value.slice(0, colonIdx).trim();
+        const v = value.slice(colonIdx + 2).trim().replace(/^["']|["']$/g, '');
         obj[k] = v;
-        parent[parentKey].push(obj);
-        stack.push({ indent, obj, key: k });
+        arr.push(obj);
+        stack.push({ indent, parentObj: null, parentKey: '', container: obj });
       } else {
-        parent[parentKey].push(value.replace(/^["']|["']$/g, ''));
+        arr.push(value.replace(/^["']|["']$/g, ''));
       }
       continue;
     }
@@ -133,26 +156,36 @@ function yamlToJson(yamlPath: string): any {
       const rawValue = content.slice(colonIdx + 2).trim();
 
       if (rawValue === '' || rawValue === '|' || rawValue === '>') {
-        // Object or block — create nested
-        parent[key] = {};
-        stack.push({ indent, obj: parent, key });
+        // Nested object (may become array when list items found)
+        container[key] = {};
+        stack.push({
+          indent,
+          parentObj: container,
+          parentKey: key,
+          container: container[key],
+        });
       } else {
         // Scalar value
         let value: any = rawValue.replace(/^["']|["']$/g, '');
         if (value === 'true') value = true;
         else if (value === 'false') value = false;
         else if (/^\d+$/.test(value)) value = parseInt(value, 10);
-        parent[key] = value;
-        stack.push({ indent, obj: parent, key });
+        else if (/^\d+\.\d+$/.test(value)) value = parseFloat(value);
+        container[key] = value;
       }
       continue;
     }
 
-    // Key only (next level will be value)
+    // Key only (next level will be value — could be object or list)
     if (content.endsWith(':')) {
       const key = content.slice(0, -1).trim();
-      parent[key] = {};
-      stack.push({ indent, obj: parent, key });
+      container[key] = {};
+      stack.push({
+        indent,
+        parentObj: container,
+        parentKey: key,
+        container: container[key],
+      });
     }
   }
 
