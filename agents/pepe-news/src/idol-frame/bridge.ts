@@ -328,12 +328,12 @@ WRITING RULES:
 ${writingLines}
 
 ${episodeLines ? `EPISODE RULES:\n${episodeLines}\n` : ''}
-- The intro MUST use this opening style for THIS episode (do NOT reuse from previous episodes):
+- The intro MUST be a BRAND NEW original opening. Here are examples of Larry's style for reference (DO NOT copy these — invent something new):
   "${selectedOpening}"
-  Adapt it naturally to today's news — don't copy it word-for-word, use it as inspiration.
-- The closing MUST use this style for THIS episode:
+  Create a completely fresh opening that references today's specific news, Larry's current mood, or something unexpected. Every episode must start differently.
+- The closing MUST be a BRAND NEW original sign-off. Style reference (DO NOT copy):
   "${selectedClosing}"
-  Again, adapt it — make it feel fresh and specific to what just happened in the show.
+  Invent a fresh closing that reacts to what just happened in THIS episode. Reference a specific story from today.
 
 SEGMENT TYPES:
 ${segmentLines}

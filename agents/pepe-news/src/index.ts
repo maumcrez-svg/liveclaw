@@ -219,6 +219,22 @@ async function main(): Promise<void> {
       // 24/7 continuous streaming: accumulate news → generate → replay loop
       const { page } = await launchBroadcastPage();
 
+      // Heartbeat — mark agent as live and keep alive every 60s
+      const sendHeartbeat = async () => {
+        try {
+          await fetch(`${config.api.baseUrl}/agents/${config.api.agentId}/heartbeat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${config.api.apiKey}`,
+            },
+            body: JSON.stringify({ status: 'live' }),
+          });
+        } catch {}
+      };
+      await sendHeartbeat();
+      setInterval(sendHeartbeat, 60_000);
+
       // Start chat
       onChatMessage(async (msg) => {
         console.log(`[Chat] ${msg.username}: ${msg.content}`);
