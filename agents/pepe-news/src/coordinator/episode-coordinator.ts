@@ -150,8 +150,9 @@ export class EpisodeCoordinator {
     saveEpisodeNumber(num);
 
     // Idol Frame: update continuity memory so Larry remembers this episode
+    // Uses LLM to extract real opinions (async, non-blocking)
     try {
-      this.idolFrame.updateContinuity({
+      await this.idolFrame.updateContinuityAsync({
         episodeNumber: num,
         segments: script.segments.map(s => ({
           narration: s.narration,

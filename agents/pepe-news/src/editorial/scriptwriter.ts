@@ -3,6 +3,7 @@ import path from 'path';
 import type { RawArticle, EpisodePlan, EpisodeScript } from '../models/types';
 import { chatCompletionJson } from '../brain/llm-client';
 import { SCRIPTWRITER_SYSTEM } from './prompts-idol-frame';
+import { planArcLLM, planArcHeuristic, formatArcForPrompt } from './arc-planner';
 
 export async function writeScript(
   plan: EpisodePlan,
@@ -41,6 +42,17 @@ export async function writeScript(
 
   const episodeLabel = episodeNumber ? `\nEPISODE NUMBER: ${episodeNumber}\nCRITICAL: Larry MUST say "Episode ${episodeNumber}" in the intro. Do NOT invent a different number. The exact number is ${episodeNumber}.\n` : '';
 
+  // Plan emotional arc before writing the script
+  console.log('[ScriptWriter] Planning emotional arc...');
+  let arc;
+  try {
+    arc = await planArcLLM(plan, articles.map(a => ({ id: a.id, title: a.title })));
+  } catch {
+    arc = planArcHeuristic(plan);
+  }
+  const arcDirective = formatArcForPrompt(arc, plan.stories);
+  console.log(`[ScriptWriter] Arc planned: "${arc.shape}"`);
+
   const userPrompt = `Today: ${plan.date}${episodeLabel}
 
 HEADLINE (main story):
@@ -61,13 +73,16 @@ ETH: $${plan.marketSnapshot.ethPrice.toLocaleString()} (${plan.marketSnapshot.et
 Top movers: ${plan.marketSnapshot.topMovers.map((m) => `${m.name} (${m.symbol}): ${m.change > 0 ? '+' : ''}${m.change.toFixed(1)}%`).join(', ')}
 
 TICKER ITEMS: ${JSON.stringify(tickerItems)}
+${arcDirective}
 
-Write the full PEPE NEWS episode script. Include:
-1. Intro segment with catchphrase + headline teaser
-2. Headline segment (main story, most detail)
-3. One segment per selected story
-4. Market in a minute segment
-5. Closing segment with sign-off
+Write the full PEPE NEWS episode script following the EMOTIONAL ARC PLAN above. Include:
+1. Intro segment — follow the intro directive
+2. Headline segment (main story, most detail) — follow its assigned beat
+3. One segment per selected story — follow each story's assigned beat, energy, pacing, and transition
+4. Market in a minute segment — rapid fire auctioneer mode
+5. Closing segment — follow the closing directive
+
+The emotional arc is MANDATORY. Each segment's energy and pacing must match its assigned beat.
 
 Return valid JSON.`;
 

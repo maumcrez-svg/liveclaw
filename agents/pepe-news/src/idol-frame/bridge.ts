@@ -6,6 +6,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
+import { chatCompletionJson, chatCompletion } from '../brain/llm-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -53,9 +54,13 @@ interface EpisodeContinuity {
   episode_count: number;
   recent_opinions: Array<{ topic: string; stance: string; episode: number }>;
   recurring_bits: string[];
+  active_bits: Array<{ bit: string; first_seen: number; last_seen: number; uses: number; suggestion: string }>;
   stories_covered: Array<{ title: string; episode: number }>;
   callbacks: Array<{ setup: string; available: boolean; episode: number }>;
   audience_patterns: string[];
+  personality_summary: string;  // LLM-synthesized long-term identity portrait
+  stance_evolution: Array<{ topic: string; arc: string; current: string }>;  // tracked opinion shifts
+  last_synthesis_episode: number;  // when personality_summary was last updated
   last_updated: string;
 }
 
@@ -211,9 +216,13 @@ function getDefaultContinuity(entityId: string): EpisodeContinuity {
     episode_count: 0,
     recent_opinions: [],
     recurring_bits: [],
+    active_bits: [],
     stories_covered: [],
     callbacks: [],
     audience_patterns: [],
+    personality_summary: '',
+    stance_evolution: [],
+    last_synthesis_episode: 0,
     last_updated: new Date().toISOString(),
   };
 }
@@ -221,7 +230,10 @@ function getDefaultContinuity(entityId: string): EpisodeContinuity {
 function loadContinuity(path: string, entityId: string): EpisodeContinuity {
   if (!existsSync(path)) return getDefaultContinuity(entityId);
   try {
-    return JSON.parse(readFileSync(path, 'utf-8'));
+    const raw = JSON.parse(readFileSync(path, 'utf-8'));
+    // Migrate old continuity files missing new fields
+    const defaults = getDefaultContinuity(entityId);
+    return { ...defaults, ...raw };
   } catch {
     return getDefaultContinuity(entityId);
   }
@@ -392,6 +404,31 @@ ${expressionLines}`;
       }
     }
 
+    // PERSONALITY SUMMARY — long-term identity portrait
+    if (continuity.personality_summary) {
+      continuityLines.push(`\n${e.name.toUpperCase()}'S EVOLVED IDENTITY (synthesized from ${continuity.last_synthesis_episode} episodes):`);
+      continuityLines.push(continuity.personality_summary);
+    }
+
+    // STANCE EVOLUTION — tracked opinion shifts over time
+    if (continuity.stance_evolution.length > 0) {
+      continuityLines.push(`\nTRACKED STANCE EVOLUTION (${e.name}'s opinions have shifted on these topics):`);
+      for (const stance of continuity.stance_evolution) {
+        continuityLines.push(`- "${stance.topic}": ${stance.arc} → Currently: ${stance.current}`);
+      }
+      continuityLines.push(`Use this to maintain consistency or acknowledge evolution naturally.`);
+    }
+
+    // ACTIVE BITS — running gags with creative suggestions
+    if (continuity.active_bits.length > 0) {
+      continuityLines.push(`\nACTIVE RUNNING BITS (consider continuing or evolving these):`);
+      for (const bit of continuity.active_bits.slice(0, 8)) {
+        const freshness = bit.uses >= 3 ? '(well-established)' : '(emerging)';
+        continuityLines.push(`- "${bit.bit}" ${freshness} — Suggestion: ${bit.suggestion}`);
+      }
+      continuityLines.push(`Don't force these — use them only when they fit the story naturally. Evolve them, don't repeat them verbatim.`);
+    }
+
     prompt += '\n' + continuityLines.join('\n');
   }
 
@@ -440,11 +477,11 @@ const ASSISTANT_PHRASES = [
   'as an ai', 'as a language model', 'i cannot', 'i\'m unable to',
 ];
 
-function validateSegment(narration: string, entity: EntityManifest): ValidationResult {
+// Fast heuristic check — always runs, catches obvious failures
+function validateSegmentHeuristic(narration: string, entity: EntityManifest): ValidationResult {
   const violations: Array<{ rule: string; description: string; severity: 'warning' | 'rejection' }> = [];
   const lower = narration.toLowerCase();
 
-  // Check for assistant mode collapse
   const assistantHits = ASSISTANT_PHRASES.filter(p => lower.includes(p));
   if (assistantHits.length > 0) {
     violations.push({
@@ -454,29 +491,16 @@ function validateSegment(narration: string, entity: EntityManifest): ValidationR
     });
   }
 
-  // Check for calm/measured delivery (Larry should NEVER be calm)
   const calmMarkers = ['in conclusion', 'to summarize', 'let us consider', 'it is worth noting', 'one might argue'];
-  const calmHits = calmMarkers.filter(p => lower.includes(p));
-  if (calmHits.length >= 2) {
-    violations.push({
-      rule: 'lost_anxious_edge',
-      description: 'Output sounds too calm and measured for Larry',
-      severity: 'warning',
-    });
+  if (calmMarkers.filter(p => lower.includes(p)).length >= 2) {
+    violations.push({ rule: 'lost_anxious_edge', description: 'Output sounds too calm and measured', severity: 'warning' });
   }
 
-  // Check for emotional reaction markers (Larry should have these)
   const anxietyMarkers = ['...', '—', '!', '?!', 'okay', 'listen', 'oh', 'wait', 'what', 'seriously'];
-  const anxietyHits = anxietyMarkers.filter(p => narration.includes(p));
-  if (anxietyHits.length === 0) {
-    violations.push({
-      rule: 'no_emotional_reaction',
-      description: 'Larry is delivering news without any emotional reaction',
-      severity: 'warning',
-    });
+  if (anxietyMarkers.filter(p => narration.includes(p)).length === 0) {
+    violations.push({ rule: 'no_emotional_reaction', description: 'Delivering news without emotional reaction', severity: 'warning' });
   }
 
-  // Check taboo zones
   for (const taboo of entity.identity_core.taboo_zones) {
     if (taboo.includes('financial_promises') || taboo.includes('financial_advisor')) {
       const advisorPhrases = ['you should buy', 'you should sell', 'guaranteed returns', 'i recommend investing'];
@@ -485,24 +509,280 @@ function validateSegment(narration: string, entity: EntityManifest): ValidationR
       for (const neg of negations) sanitized = sanitized.replaceAll(neg, '');
       const hits = advisorPhrases.filter(p => sanitized.includes(p));
       if (hits.length > 0) {
-        violations.push({
-          rule: 'taboo_zone_violation',
-          description: `Financial advisory language detected: ${hits.join(', ')}`,
-          severity: 'rejection',
-        });
+        violations.push({ rule: 'taboo_zone_violation', description: `Financial advisory language: ${hits.join(', ')}`, severity: 'rejection' });
       }
     }
   }
 
+  return { passed: !violations.some(v => v.severity === 'rejection'), violations };
+}
+
+// Deep LLM validation — catches subtle drift that heuristics miss
+async function validateSegmentLLM(
+  narration: string,
+  entity: EntityManifest,
+): Promise<ValidationResult> {
+  const name = entity.entity.name;
+  const notes = (entity.identity_core.character_notes || []).join('; ');
+  const flaws = entity.identity_core.flaws.map((f: string) => f.replace(/_/g, ' ')).join(', ');
+  const taboos = entity.identity_core.taboo_zones.map((t: string) => t.replace(/_/g, ' ')).join(', ');
+
+  const system = `You are an identity consistency judge for a character named ${name}.
+
+${name}'s core traits: ${notes}
+${name}'s flaws: ${flaws}
+${name} must NEVER: ${taboos}
+
+Rate this text on a scale of 1-10 for how well it sounds like ${name} (not a generic AI assistant).
+If below 6, explain what's wrong in one sentence.
+
+Respond with JSON: {"score": number, "issue": "string or null"}`;
+
+  try {
+    const result = await chatCompletionJson<{ score: number; issue: string | null }>(
+      system,
+      `Text to evaluate:\n\n${narration}`,
+      'gpt-4o-mini',
+    );
+
+    const violations: Array<{ rule: string; description: string; severity: 'warning' | 'rejection' }> = [];
+
+    if (result.score < 4) {
+      violations.push({
+        rule: 'llm_identity_collapse',
+        description: result.issue || `Identity score ${result.score}/10 — severe drift`,
+        severity: 'rejection',
+      });
+    } else if (result.score < 6) {
+      violations.push({
+        rule: 'llm_identity_drift',
+        description: result.issue || `Identity score ${result.score}/10 — mild drift`,
+        severity: 'warning',
+      });
+    }
+
+    console.log(`[Idol Frame] LLM validation: ${result.score}/10${result.issue ? ` — ${result.issue}` : ''}`);
+    return { passed: !violations.some(v => v.severity === 'rejection'), violations };
+  } catch (err) {
+    console.error('[Idol Frame] LLM validation failed, skipping:', err);
+    return { passed: true, violations: [] };
+  }
+}
+
+// Combined validator: heuristic (fast, always) + LLM (deep, async)
+function validateSegment(narration: string, entity: EntityManifest): ValidationResult {
+  return validateSegmentHeuristic(narration, entity);
+}
+
+async function validateSegmentDeep(narration: string, entity: EntityManifest): Promise<ValidationResult> {
+  const heuristic = validateSegmentHeuristic(narration, entity);
+  if (!heuristic.passed) return heuristic; // fast rejection, no need for LLM
+
+  const llm = await validateSegmentLLM(narration, entity);
   return {
-    passed: !violations.some(v => v.severity === 'rejection'),
-    violations,
+    passed: heuristic.passed && llm.passed,
+    violations: [...heuristic.violations, ...llm.violations],
   };
 }
 
 // ---------------------------------------------------------------------------
 // Continuity Updater
 // ---------------------------------------------------------------------------
+
+// LLM-powered opinion extraction — runs once per episode, extracts real stances
+async function extractOpinionsLLM(
+  segments: EpisodeData['segments'],
+  entityName: string,
+  episodeNumber: number,
+): Promise<Array<{ topic: string; stance: string; episode: number }>> {
+  const storySegments = segments
+    .filter(s => s.type === 'story' || s.type === 'headline')
+    .map(s => `[${s.headline || 'untitled'}]: ${s.narration}`)
+    .join('\n\n');
+
+  if (!storySegments.trim()) return [];
+
+  const system = `Extract ${entityName}'s real opinions from these news segments. Only extract genuine editorial stances — NOT reactions like "oh no" or "this is crazy".
+
+Return JSON: {"opinions": [{"topic": "short topic name", "stance": "what ${entityName} actually thinks, in one sentence"}]}
+
+Rules:
+- Max 5 opinions per episode
+- Skip segments where ${entityName} just reports facts without taking a stance
+- "stance" should be a real position, not a reaction (bad: "this is insane", good: "this regulation will kill DeFi innovation")
+- Keep topic names short (3-6 words)`;
+
+  try {
+    const result = await chatCompletionJson<{ opinions: Array<{ topic: string; stance: string }> }>(
+      system,
+      storySegments,
+      'gpt-4o-mini',
+    );
+
+    const opinions = (result.opinions || []).slice(0, 5).map(o => ({
+      topic: o.topic.slice(0, 80),
+      stance: o.stance.slice(0, 150),
+      episode: episodeNumber,
+    }));
+
+    console.log(`[Idol Frame] LLM extracted ${opinions.length} opinions from ep ${episodeNumber}`);
+    return opinions;
+  } catch (err) {
+    console.error('[Idol Frame] LLM opinion extraction failed, falling back to regex:', err);
+    return extractOpinionsRegex(segments, episodeNumber);
+  }
+}
+
+// Regex fallback for opinion extraction
+function extractOpinionsRegex(
+  segments: EpisodeData['segments'],
+  episodeNumber: number,
+): Array<{ topic: string; stance: string; episode: number }> {
+  const opinions: Array<{ topic: string; stance: string; episode: number }> = [];
+  const OPINION_MARKERS = /\b(should|need to|will collapse|won't survive|clearly|obviously|ridiculous|suspicious|bullish|bearish|scam|brilliant|insane|dangerous|overvalued|undervalued|doomed|promising|revolutionary|disaster|reckless|genius)\b/i;
+  const GENERIC_FILLERS = /^(this is|okay|oh boy|oh man|oh no|listen|look|I mean|well|so|hold on|wait|what|wow)/i;
+
+  for (const seg of segments) {
+    if (seg.type !== 'story' && seg.type !== 'headline') continue;
+    const topic = seg.headline || 'unknown';
+    const sentences = seg.narration.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const opinion = sentences.find(s => {
+      const t = s.trim();
+      if (!OPINION_MARKERS.test(t)) return false;
+      if (GENERIC_FILLERS.test(t) && t.length < 50) return false;
+      return true;
+    });
+    if (opinion) {
+      opinions.push({ topic: topic.slice(0, 80), stance: opinion.trim().slice(0, 120), episode: episodeNumber });
+    }
+  }
+  return opinions.slice(0, 5);
+}
+
+// ---------------------------------------------------------------------------
+// Long-term memory synthesis — runs every 10 episodes
+// Compresses recent_opinions + stance history into a personality portrait
+// ---------------------------------------------------------------------------
+
+const SYNTHESIS_INTERVAL = 10; // episodes between synthesis runs
+
+async function synthesizePersonality(
+  continuity: EpisodeContinuity,
+  entityName: string,
+): Promise<{ summary: string; stanceEvolution: Array<{ topic: string; arc: string; current: string }> }> {
+  const opinions = continuity.recent_opinions
+    .map(o => `Ep ${o.episode} — "${o.topic}": ${o.stance}`)
+    .join('\n');
+
+  const previousSummary = continuity.personality_summary
+    ? `\nPrevious personality summary:\n${continuity.personality_summary}`
+    : '';
+
+  const previousStances = continuity.stance_evolution.length > 0
+    ? `\nPrevious tracked stances:\n${continuity.stance_evolution.map(s => `"${s.topic}": ${s.arc} → currently ${s.current}`).join('\n')}`
+    : '';
+
+  const system = `You synthesize a long-term personality portrait for ${entityName}, a crypto news anchor.
+
+Given his recent opinions across episodes, produce:
+1. A "personality_summary" (3-5 sentences): What does ${entityName} consistently believe? What's his editorial identity beyond just "sarcastic"? What topics does he care most about? How has he evolved?
+2. A "stance_evolution" array: Track topics where his opinion shifted over time. Each entry has "topic", "arc" (how it changed), and "current" (where he stands now).
+
+Only track stances that appeared in 2+ episodes or showed a clear shift.
+${previousSummary}
+${previousStances}
+
+Respond with JSON:
+{
+  "personality_summary": "string",
+  "stance_evolution": [{"topic": "string", "arc": "string", "current": "string"}]
+}`;
+
+  try {
+    const result = await chatCompletionJson<{
+      personality_summary: string;
+      stance_evolution: Array<{ topic: string; arc: string; current: string }>;
+    }>(system, `Recent opinions (last ${continuity.recent_opinions.length} tracked):\n${opinions}`, 'gpt-4o-mini');
+
+    console.log(`[Idol Frame] Personality synthesis complete: ${result.stance_evolution.length} tracked stances`);
+    return { summary: result.personality_summary, stanceEvolution: result.stance_evolution };
+  } catch (err) {
+    console.error('[Idol Frame] Personality synthesis failed:', err);
+    return { summary: continuity.personality_summary, stanceEvolution: continuity.stance_evolution };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Active recurring bits — detects emerging patterns and suggests continuations
+// ---------------------------------------------------------------------------
+
+async function detectActiveBits(
+  continuity: EpisodeContinuity,
+  episode: EpisodeData,
+  entityName: string,
+): Promise<Array<{ bit: string; first_seen: number; last_seen: number; uses: number; suggestion: string }>> {
+  const allNarration = episode.segments.map(s => s.narration).join('\n');
+  const existingBits = continuity.active_bits.map(b => b.bit).join(', ') || 'none yet';
+
+  const system = `You track recurring bits and running gags for ${entityName}, a crypto news anchor.
+
+Existing tracked bits: ${existingBits}
+
+Analyze this episode's narration. Look for:
+1. New patterns that could become running gags (metaphors, comparisons, catchphrases, recurring references)
+2. Existing bits that appeared again (should increment usage count)
+
+For each bit found, provide a "suggestion" — a creative direction for how ${entityName} could evolve or continue this bit in future episodes. Be specific and in-character.
+
+Respond with JSON:
+{
+  "bits": [
+    {"bit": "short name of the bit/gag", "is_new": true/false, "suggestion": "how to evolve this in future episodes"}
+  ]
+}
+
+Rules:
+- Max 3 new bits per episode
+- A "bit" is a repeating pattern, NOT a one-time joke
+- Suggestions should be specific: "compare the next hack to a specific heist movie" not "keep using movie references"`;
+
+  try {
+    const result = await chatCompletionJson<{
+      bits: Array<{ bit: string; is_new: boolean; suggestion: string }>;
+    }>(system, `Episode ${episode.episodeNumber} narration:\n${allNarration}`, 'gpt-4o-mini');
+
+    const updatedBits = [...continuity.active_bits];
+
+    for (const detected of (result.bits || []).slice(0, 5)) {
+      const existing = updatedBits.find(b => b.bit.toLowerCase() === detected.bit.toLowerCase());
+      if (existing) {
+        existing.last_seen = episode.episodeNumber;
+        existing.uses += 1;
+        existing.suggestion = detected.suggestion; // update suggestion
+      } else if (detected.is_new) {
+        updatedBits.push({
+          bit: detected.bit.slice(0, 80),
+          first_seen: episode.episodeNumber,
+          last_seen: episode.episodeNumber,
+          uses: 1,
+          suggestion: detected.suggestion.slice(0, 200),
+        });
+      }
+    }
+
+    // Cap at 15, keep most-used and most-recent
+    if (updatedBits.length > 15) {
+      updatedBits.sort((a, b) => (b.uses * 10 + b.last_seen) - (a.uses * 10 + a.last_seen));
+      updatedBits.length = 15;
+    }
+
+    console.log(`[Idol Frame] Active bits: ${updatedBits.length} tracked (${result.bits?.filter(b => b.is_new).length || 0} new this ep)`);
+    return updatedBits;
+  } catch (err) {
+    console.error('[Idol Frame] Active bits detection failed:', err);
+    return continuity.active_bits;
+  }
+}
 
 function updateContinuityFromEpisode(
   continuity: EpisodeContinuity,
@@ -511,42 +791,8 @@ function updateContinuityFromEpisode(
   const updated = { ...continuity };
   updated.episode_count = episode.episodeNumber;
 
-  // Extract REAL opinions — skip generic filler like "this is bad"
-  const GENERIC_FILLERS = /^(this is|okay|oh boy|oh man|oh no|oh my|listen|look|I mean|I can't|I just|well|so|hold on|wait|what|wow|no no|are you)/i;
-  const OPINION_MARKERS = /\b(should|need to|going to|will collapse|won't survive|never|always|clearly|obviously|ridiculous|suspicious|bullish|bearish|scam|brilliant|insane|dangerous|overvalued|undervalued|doomed|promising|dead|bankrupt|monopoly|predatory|revolutionary|game.?changer|disaster|reckless|genius)\b/i;
-
-  for (const seg of episode.segments) {
-    if (seg.type === 'story' || seg.type === 'headline') {
-      const topic = seg.headline || 'unknown';
-      const sentences = seg.narration.split(/[.!?]+/).filter(s => s.trim().length > 20);
-
-      // Find a sentence with a real opinion, not just a reaction
-      const opinion = sentences.find(s => {
-        const trimmed = s.trim();
-        // Must contain an opinion marker
-        if (!OPINION_MARKERS.test(trimmed)) return false;
-        // Must NOT be just a generic filler
-        if (GENERIC_FILLERS.test(trimmed) && trimmed.length < 50) return false;
-        return true;
-      });
-
-      if (opinion) {
-        // Dedupe — don't save if we already have an opinion on a very similar topic
-        const topicLower = topic.toLowerCase();
-        const isDuplicate = updated.recent_opinions.some(
-          o => o.topic.toLowerCase().includes(topicLower.slice(0, 30)) ||
-               topicLower.includes(o.topic.toLowerCase().slice(0, 30))
-        );
-        if (!isDuplicate) {
-          updated.recent_opinions.push({
-            topic: topic.slice(0, 80),
-            stance: opinion.trim().slice(0, 120),
-            episode: episode.episodeNumber,
-          });
-        }
-      }
-    }
-  }
+  // Opinions are now extracted async via LLM in updateContinuityAsync
+  // This sync version only handles stories + bits (non-LLM parts)
 
   // Add stories covered
   for (const article of episode.articles) {
@@ -598,7 +844,9 @@ export interface IdolFrameBridge {
   getVoiceInstructions(): string;
   getContinuityContext(): string;
   updateContinuity(episode: EpisodeData): void;
+  updateContinuityAsync(episode: EpisodeData): Promise<void>;
   validateSegment(narration: string): ValidationResult;
+  validateSegmentDeep(narration: string): Promise<ValidationResult>;
   getEntity(): EntityManifest;
   getContinuityState(): EpisodeContinuity;
 }
@@ -643,11 +891,51 @@ export function createBridge(entityPath?: string): IdolFrameBridge {
     updateContinuity(episode: EpisodeData): void {
       continuity = updateContinuityFromEpisode(continuity, episode);
       saveContinuity(continuityPath, continuity);
-      console.log(`[Idol Frame] Continuity updated: ep ${continuity.episode_count}, ${continuity.recent_opinions.length} opinions, ${continuity.stories_covered.length} stories tracked`);
+      console.log(`[Idol Frame] Continuity updated (sync): ep ${continuity.episode_count}, ${continuity.stories_covered.length} stories tracked`);
+    },
+
+    async updateContinuityAsync(episode: EpisodeData): Promise<void> {
+      const name = entity.entity.name;
+
+      // Sync part: stories, passive bit detection
+      continuity = updateContinuityFromEpisode(continuity, episode);
+
+      // LLM 1: extract real opinions (replaces regex)
+      const llmOpinions = await extractOpinionsLLM(episode.segments, name, episode.episodeNumber);
+      for (const op of llmOpinions) {
+        const topicLower = op.topic.toLowerCase();
+        const isDupe = continuity.recent_opinions.some(
+          o => o.topic.toLowerCase().includes(topicLower.slice(0, 25)) ||
+               topicLower.includes(o.topic.toLowerCase().slice(0, 25))
+        );
+        if (!isDupe) continuity.recent_opinions.push(op);
+      }
+      if (continuity.recent_opinions.length > 30) {
+        continuity.recent_opinions = continuity.recent_opinions.slice(-30);
+      }
+
+      // LLM 2: detect + suggest active recurring bits
+      continuity.active_bits = await detectActiveBits(continuity, episode, name);
+
+      // LLM 3: personality synthesis — every 10 episodes
+      if (continuity.episode_count - continuity.last_synthesis_episode >= SYNTHESIS_INTERVAL) {
+        const synthesis = await synthesizePersonality(continuity, name);
+        continuity.personality_summary = synthesis.summary;
+        continuity.stance_evolution = synthesis.stanceEvolution;
+        continuity.last_synthesis_episode = continuity.episode_count;
+        console.log(`[Idol Frame] Personality synthesized at ep ${continuity.episode_count}`);
+      }
+
+      saveContinuity(continuityPath, continuity);
+      console.log(`[Idol Frame] Continuity updated: ep ${continuity.episode_count}, ${continuity.recent_opinions.length} opinions, ${continuity.active_bits.length} active bits, ${continuity.stance_evolution.length} stances`);
     },
 
     validateSegment(narration: string): ValidationResult {
       return validateSegment(narration, entity);
+    },
+
+    async validateSegmentDeep(narration: string): Promise<ValidationResult> {
+      return validateSegmentDeep(narration, entity);
     },
 
     getEntity(): EntityManifest {
