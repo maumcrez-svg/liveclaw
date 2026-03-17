@@ -60,24 +60,8 @@ export function initCommandHandler(): void {
     }
   });
 
-  bus.on('chat:message', async (msg) => {
-    // Respond to regular chat messages occasionally
-    try {
-      const state = parseGameState();
-      const context = `At ${state.position.mapName}, ${state.badgeCount}/8 badges, ${state.battle.active ? 'in battle' : 'exploring'}`;
-      const response = await chatCompletion(
-        SARAH_PERSONA,
-        chatResponsePrompt(msg.username, msg.content, context),
-      );
-      if (response) {
-        await sendChatMessage(response);
-        await updateCommentary(response);
-        await speak(response);
-      }
-    } catch (err) {
-      console.error('[CommandHandler] Chat response error:', err);
-    }
-  });
+  // Chat message responses disabled — Sarah only speaks on game events
+  // bus.on('chat:message', async (msg) => { ... });
 
   console.log('[CommandHandler] Initialized');
 }
@@ -129,8 +113,8 @@ function handleViewerInput(command: string, username: string, args: string): voi
   if (now - lastTime < INPUT_COOLDOWN_MS) return;
   lastInputTime.set(username, now);
 
-  // Parse repeat count: "!up 3" = press up 3 times
-  const repeatStr = args.trim();
+  // Parse repeat count: "!up 3" or "!up x3" = press up 3 times
+  const repeatStr = args.trim().replace(/^x/i, '');
   let repeat = 1;
   if (repeatStr) {
     const parsed = parseInt(repeatStr, 10);
