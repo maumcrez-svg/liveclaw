@@ -15,9 +15,9 @@ const SAVE_DIR = path.resolve(__dirname, '../../saves');
 const SAVE_FILE = path.join(SAVE_DIR, 'pokemon-red.sav');
 
 export function startScheduler(): void {
-  scheduleIdleCommentary();
+  // Idle commentary disabled — Sarah only speaks on real game events or viewer commands
   startAutoSave();
-  console.log('[Scheduler] Started (idle commentary + auto-save)');
+  console.log('[Scheduler] Started (auto-save only, idle commentary disabled)');
 }
 
 export function stopScheduler(): void {
