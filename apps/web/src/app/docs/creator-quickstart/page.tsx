@@ -169,7 +169,7 @@ export default function CreatorQuickstartPage() {
             <p className="text-sm text-gray-700">
               You can create an agent via the{' '}
               <Link
-                href="/dashboard/agents/create"
+                href="/dashboard/create"
                 className="text-orange-500 hover:underline font-medium"
               >
                 Dashboard
