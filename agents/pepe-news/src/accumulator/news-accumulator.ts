@@ -3,12 +3,16 @@ import { fetchRssFeed } from '../ingest/rss-fetcher';
 import { fetchMarketSnapshot } from '../ingest/coingecko';
 import { config } from '../config';
 import type { RawArticle, MarketSnapshot } from '../models/types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const MAX_QUEUE_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours in queue — articles sitting this long get dropped
 const MAX_SKIPS = 2; // if an article is offered to ranker 2 times and never picked, drop it
 const SEEN_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours — forget seen articles so they can be re-covered with fresh angle
 const STARVATION_THRESHOLD = 3; // after 3 polls with 0 new articles, lower threshold to generate with what we have
 const STARVATION_MIN_ARTICLES = 3; // minimum articles needed even in starvation mode
+const MAX_ARTICLE_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours — ignore articles older than this
+const SEEN_CACHE_FILE = path.join(__dirname, '..', '..', '.seen-articles.json');
 
 export class NewsAccumulator {
   private seenIds = new Map<string, number>(); // articleId → timestamp when marked seen
@@ -19,6 +23,40 @@ export class NewsAccumulator {
   private timer: ReturnType<typeof setInterval> | null = null;
   private latestMarket: MarketSnapshot | null = null;
   private zeroNewPolls = 0; // consecutive polls with 0 new articles
+
+  constructor() {
+    this.loadSeenCache();
+  }
+
+  private loadSeenCache(): void {
+    try {
+      const raw = fs.readFileSync(SEEN_CACHE_FILE, 'utf-8');
+      const data = JSON.parse(raw) as { ids: [string, number][]; titles: [string, number][] };
+      const now = Date.now();
+      let loaded = 0;
+      for (const [id, ts] of data.ids) {
+        if (now - ts < SEEN_TTL_MS) { this.seenIds.set(id, ts); loaded++; }
+      }
+      for (const [title, ts] of data.titles) {
+        if (now - ts < SEEN_TTL_MS) this.seenTitles.set(title, ts);
+      }
+      console.log(`[Accumulator] Loaded ${loaded} seen articles from disk (expired ${data.ids.length - loaded})`);
+    } catch {
+      // No cache file yet — first run
+    }
+  }
+
+  private saveSeenCache(): void {
+    try {
+      const data = {
+        ids: [...this.seenIds.entries()],
+        titles: [...this.seenTitles.entries()],
+      };
+      fs.writeFileSync(SEEN_CACHE_FILE, JSON.stringify(data), 'utf-8');
+    } catch (err) {
+      console.error('[Accumulator] Failed to save seen cache:', err);
+    }
+  }
 
   start(): void {
     console.log(`[Accumulator] Starting — polling every ${config.accumulatorPollMs / 1000}s, threshold: ${config.articleThreshold} articles`);
@@ -55,7 +93,11 @@ export class NewsAccumulator {
     );
 
     let newCount = 0;
+    let tooOld = 0;
     for (const article of feedResults.flat()) {
+      // Skip articles older than 12 hours — only fresh news
+      const articleAge = now - new Date(article.publishedAt).getTime();
+      if (articleAge > MAX_ARTICLE_AGE_MS) { tooOld++; continue; }
       if (this.isDuplicate(article)) continue;
       // Also check if already in pending (avoid duplicates within pending)
       if (this.pendingArticles.some((p) => p.id === article.id)) continue;
@@ -74,7 +116,7 @@ export class NewsAccumulator {
       this.zeroNewPolls = 0;
     }
 
-    console.log(`[Accumulator] +${newCount} new articles (pending: ${this.pendingArticles.length}, seen: ${this.seenIds.size}, starvation: ${this.zeroNewPolls})`);
+    console.log(`[Accumulator] +${newCount} new articles, ${tooOld} too old (pending: ${this.pendingArticles.length}, seen: ${this.seenIds.size}, starvation: ${this.zeroNewPolls})`);
   }
 
   hasEnough(): boolean {
@@ -152,6 +194,7 @@ export class NewsAccumulator {
       return true;
     });
     console.log(`[Accumulator] Marked ${removedCount} articles as used (pending: ${this.pendingArticles.length}, seen: ${this.seenIds.size})`);
+    this.saveSeenCache();
   }
 
   private isDuplicate(article: RawArticle): boolean {
