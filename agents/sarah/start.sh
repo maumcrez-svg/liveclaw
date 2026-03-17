@@ -72,9 +72,9 @@ RTMP_URL="${MEDIAMTX_RTMP_URL}/${STREAM_KEY}"
 ffmpeg -hide_banner -loglevel warning \
     -video_size $RESOLUTION -framerate 30 -f x11grab -draw_mouse 0 -i $DISPLAY \
     -f pulse -i sarah_voice.monitor \
-    -c:v libx264 -preset veryfast -tune zerolatency \
-    -b:v 2500k -maxrate 2500k -bufsize 5000k \
-    -pix_fmt yuv420p -g 60 \
+    -c:v libx264 -preset ultrafast -tune zerolatency \
+    -b:v 2500k -maxrate 2500k -bufsize 2500k \
+    -pix_fmt yuv420p -g 30 -keyint_min 30 \
     -c:a aac -b:a 128k -ar 44100 \
     -f flv "$RTMP_URL" &
 FFMPEG_PID=$!
