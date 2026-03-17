@@ -123,9 +123,9 @@ function handleViewerInput(command: string, username: string, args: string): voi
     }
   }
 
-  // Queue the inputs
+  // Queue the inputs (16 frames = 1 full tile step in Pokemon Red)
   for (let i = 0; i < repeat; i++) {
-    sendInput(button, 8);
+    sendInput(button, 16);
   }
 
   console.log(`[Viewer Input] ${username}: !${command}${repeat > 1 ? ` x${repeat}` : ''}`);

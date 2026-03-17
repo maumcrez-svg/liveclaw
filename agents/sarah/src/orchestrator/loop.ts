@@ -1,7 +1,7 @@
 import type { Page } from 'puppeteer-core';
 import { config } from '../config';
 import { getScreenPixels } from '../emulator/adapter';
-import { processFrame, queueLength } from '../emulator/input';
+import { processFrame, queueLength, sendInput, clearQueue } from '../emulator/input';
 import { parseGameState } from '../game/state-parser';
 import { tickFSM, getCurrentState } from '../engine/fsm';
 import { GameState } from '../game/state';
@@ -12,6 +12,7 @@ let page: Page;
 let loopTimer: ReturnType<typeof setInterval> | null = null;
 let prevState: GameState | null = null;
 let tickCount = 0;
+let booted = false; // true once we detect the game is past the title screen
 
 export function initLoop(puppeteerPage: Page): void {
   page = puppeteerPage;
@@ -34,12 +35,26 @@ function tick(): void {
   try {
     tickCount++;
 
+    // Auto-boot: navigate title → menu → CONTINUE (first item) → load game
+    if (!booted && queueLength() === 0 && tickCount % 90 === 0) {
+      sendInput('START' as any, 16);
+      sendInput('A' as any, 16);
+      sendInput('A' as any, 16);
+    }
+
     // Run 2 emulator frames per tick (~60fps at 30 ticks/sec).
     const pressed1 = processFrame();
     const pressed2 = processFrame();
 
     // Parse game state (after frames have advanced)
     const state = parseGameState();
+
+    // Detect boot completion
+    if (!booted && (state.position.mapId > 0 || state.position.x > 0 || state.position.y > 0)) {
+      booted = true;
+      clearQueue(); // flush leftover auto-boot inputs
+      console.log(`[Loop] BOOTED — game is live at ${state.position.mapName} (${state.position.x},${state.position.y})`);
+    }
 
     // Detect movement since last tick
     const moved = prevState
