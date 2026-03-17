@@ -7,8 +7,8 @@ import * as path from 'path';
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let saveTimer: ReturnType<typeof setInterval> | null = null;
 
-const IDLE_MIN_MS = 60_000;
-const IDLE_MAX_MS = 120_000;
+const IDLE_MIN_MS = 180_000;  // 3 min — don't spam, let viewers play
+const IDLE_MAX_MS = 300_000;  // 5 min
 const SAVE_INTERVAL_MS = 300_000; // 5 min
 
 const SAVE_DIR = path.resolve(__dirname, '../../saves');
