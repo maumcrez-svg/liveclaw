@@ -8,7 +8,7 @@ import { SARAH_PERSONA, chatResponsePrompt } from '../brain/prompts';
 import { speak } from '../voice/speech-queue';
 import { updateCommentary } from '../visual/bridge';
 import { GameState } from '../game/state';
-import { sendInput } from '../emulator/input';
+import { sendInput, sendWait } from '../emulator/input';
 import { Button } from '../emulator/adapter';
 
 // Viewer input: maps chat commands to gameboy buttons
@@ -124,8 +124,10 @@ function handleViewerInput(command: string, username: string, args: string): voi
   }
 
   // Queue the inputs (16 frames = 1 full tile step in Pokemon Red)
+  // 4-frame gap between repeats so the game can process each step
   for (let i = 0; i < repeat; i++) {
     sendInput(button, 16);
+    if (i < repeat - 1) sendWait(4);
   }
 
   console.log(`[Viewer Input] ${username}: !${command}${repeat > 1 ? ` x${repeat}` : ''}`);
