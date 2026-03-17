@@ -32,7 +32,10 @@ async function pollChat(): Promise<void> {
     const timeout = setTimeout(() => controller.abort(), 10_000);
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error(`[ChatPoller] HTTP ${res.status}`);
+      return;
+    }
 
     const messages = (await res.json()) as ChatMessage[];
     if (!messages.length) return;
@@ -55,12 +58,16 @@ async function pollChat(): Promise<void> {
     }
 
     newMessages.reverse();
+    if (newMessages.length > 0) {
+      console.log(`[ChatPoller] ${newMessages.length} new messages`);
+    }
     for (const msg of newMessages) {
       // Check for commands
       if (msg.content.startsWith('!')) {
         const parts = msg.content.slice(1).split(' ');
+        const cmd = parts[0].toLowerCase();
         bus.emit('chat:command', {
-          command: parts[0].toLowerCase(),
+          command: cmd,
           args: parts.slice(1).join(' '),
           username: msg.username,
           rawMessage: msg,
