@@ -88,8 +88,8 @@ function tick(): void {
       checkTriggers(prevState, state);
     }
 
-    // Run FSM (decides what to do next, queues inputs for future frames)
-    tickFSM(state);
+    // FSM disabled — viewers control the game via chat commands (Twitch Plays style)
+    // tickFSM(state);
 
     // Push frame to browser overlay
     pushFrame(state);
