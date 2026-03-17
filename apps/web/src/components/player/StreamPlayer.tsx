@@ -19,10 +19,13 @@ export function StreamPlayer({ src }: StreamPlayerProps) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 5,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
         highBufferWatchdogPeriod: 1,
+        backBufferLength: 5,
+        maxBufferLength: 3,
+        maxMaxBufferLength: 5,
       });
 
       hls.loadSource(src);
