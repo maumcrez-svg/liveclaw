@@ -93,12 +93,12 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
   return (
     <div className="flex flex-col">
       {/* Tab bar */}
-      <div className="flex border-b border-claw-border bg-claw-bg">
+      <div className="flex border-b border-claw-border bg-claw-bg overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 ${
               activeTab === tab.id
                 ? 'border-claw-accent text-claw-text'
                 : 'border-transparent text-claw-text-muted hover:text-claw-text hover:bg-claw-card/30'
@@ -116,7 +116,7 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
       {/* Tab content */}
       <div className="bg-claw-bg">
         {activeTab === 'chat' && stream && (
-          <div className="h-[500px] border-b border-claw-border">
+          <div className="h-[calc(100dvh-280px)] min-h-[300px] border-b border-claw-border">
             <ChatPanel
               streamId={stream.id}
               agentId={agent.id}
