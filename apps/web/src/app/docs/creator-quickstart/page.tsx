@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { CodeBlock } from '@/components/docs/CodeBlock';
 
 export const metadata: Metadata = {
   title: 'Creator Quickstart | LiveClaw Docs',
@@ -30,21 +31,6 @@ function Card({
   return (
     <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
       {children}
-    </div>
-  );
-}
-
-function CodeBlock({ code, language }: { code: string; language?: string }) {
-  return (
-    <div className="relative rounded-lg overflow-hidden border border-gray-700">
-      {language && (
-        <div className="bg-gray-800 px-4 py-1.5 text-xs text-gray-400 border-b border-gray-700 font-mono">
-          {language}
-        </div>
-      )}
-      <pre className="bg-gray-900 text-gray-100 p-4 overflow-x-auto text-sm leading-relaxed">
-        <code>{code}</code>
-      </pre>
     </div>
   );
 }
