@@ -8,6 +8,24 @@ import { SARAH_PERSONA, chatResponsePrompt } from '../brain/prompts';
 import { speak } from '../voice/speech-queue';
 import { updateCommentary } from '../visual/bridge';
 import { GameState } from '../game/state';
+import { sendInput } from '../emulator/input';
+import { Button } from '../emulator/adapter';
+
+// Viewer input: maps chat commands to gameboy buttons
+const INPUT_COMMANDS: Record<string, Button> = {
+  up: Button.UP,
+  down: Button.DOWN,
+  left: Button.LEFT,
+  right: Button.RIGHT,
+  a: Button.A,
+  b: Button.B,
+  start: Button.START,
+  select: Button.SELECT,
+};
+
+// Rate limit viewer inputs: 1 input per user per 2 seconds
+const lastInputTime = new Map<string, number>();
+const INPUT_COOLDOWN_MS = 2000;
 
 export function initCommandHandler(): void {
   bus.on('chat:command', async (cmd: CommandEvent) => {
@@ -29,8 +47,15 @@ export function initCommandHandler(): void {
       case 'objective':
         handleObjective(state);
         break;
+      case 'help':
+      case 'commands':
+        sendChatMessage('Commands: !up !down !left !right !a !b !start !select — control the game! Also: !party !badges !where !bag !objective');
+        break;
       default:
-        // Unknown command, ignore
+        // Check if it's a gamepad input command
+        if (cmd.command in INPUT_COMMANDS) {
+          handleViewerInput(cmd.command, cmd.username, cmd.args);
+        }
         break;
     }
   });
@@ -92,4 +117,32 @@ function handleBag(state: GameState): void {
 function handleObjective(state: GameState): void {
   const obj = getObjectiveDescription(state.badgeCount);
   sendChatMessage(`Current objective: ${obj}`);
+}
+
+function handleViewerInput(command: string, username: string, args: string): void {
+  const button = INPUT_COMMANDS[command];
+  if (!button) return;
+
+  // Rate limit per user
+  const now = Date.now();
+  const lastTime = lastInputTime.get(username) || 0;
+  if (now - lastTime < INPUT_COOLDOWN_MS) return;
+  lastInputTime.set(username, now);
+
+  // Parse repeat count: "!up 3" = press up 3 times
+  const repeatStr = args.trim();
+  let repeat = 1;
+  if (repeatStr) {
+    const parsed = parseInt(repeatStr, 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 9) {
+      repeat = parsed;
+    }
+  }
+
+  // Queue the inputs
+  for (let i = 0; i < repeat; i++) {
+    sendInput(button, 8);
+  }
+
+  console.log(`[Viewer Input] ${username}: !${command}${repeat > 1 ? ` x${repeat}` : ''}`);
 }
