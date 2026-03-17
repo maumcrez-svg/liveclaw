@@ -167,6 +167,8 @@ export class EpisodeCoordinator {
 
     console.log(`[Coordinator] Episode #${num} generated: ${script.segments.length} segments, ${audioSegments.length} audio files`);
 
+    this.accumulator.resetStarvation();
+
     return { date, episodeNumber: num, articles, plan, script, audioSegments };
   }
 }

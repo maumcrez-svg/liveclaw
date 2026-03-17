@@ -6,15 +6,19 @@ import type { RawArticle, MarketSnapshot } from '../models/types';
 
 const MAX_QUEUE_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours in queue — articles sitting this long get dropped
 const MAX_SKIPS = 2; // if an article is offered to ranker 2 times and never picked, drop it
+const SEEN_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours — forget seen articles so they can be re-covered with fresh angle
+const STARVATION_THRESHOLD = 3; // after 3 polls with 0 new articles, lower threshold to generate with what we have
+const STARVATION_MIN_ARTICLES = 3; // minimum articles needed even in starvation mode
 
 export class NewsAccumulator {
-  private seenIds = new Set<string>();
-  private seenTitles = new Set<string>();
+  private seenIds = new Map<string, number>(); // articleId → timestamp when marked seen
+  private seenTitles = new Map<string, number>(); // normalizedTitle → timestamp
   private pendingArticles: RawArticle[] = [];
   private queuedAt = new Map<string, number>(); // articleId → timestamp when added to queue
   private skipCounts = new Map<string, number>(); // articleId → times offered but not selected
   private timer: ReturnType<typeof setInterval> | null = null;
   private latestMarket: MarketSnapshot | null = null;
+  private zeroNewPolls = 0; // consecutive polls with 0 new articles
 
   start(): void {
     console.log(`[Accumulator] Starting — polling every ${config.accumulatorPollMs / 1000}s, threshold: ${config.articleThreshold} articles`);
@@ -33,6 +37,19 @@ export class NewsAccumulator {
   async poll(): Promise<void> {
     console.log('[Accumulator] Polling RSS feeds...');
 
+    // Expire old seen entries so articles can resurface with fresh angles
+    const now = Date.now();
+    let expired = 0;
+    for (const [id, ts] of this.seenIds) {
+      if (now - ts > SEEN_TTL_MS) { this.seenIds.delete(id); expired++; }
+    }
+    for (const [title, ts] of this.seenTitles) {
+      if (now - ts > SEEN_TTL_MS) this.seenTitles.delete(title);
+    }
+    if (expired > 0) {
+      console.log(`[Accumulator] Expired ${expired} seen articles (seen: ${this.seenIds.size})`);
+    }
+
     const feedResults = await Promise.all(
       RSS_SOURCES.map((source) => fetchRssFeed(source)),
     );
@@ -43,17 +60,29 @@ export class NewsAccumulator {
       // Also check if already in pending (avoid duplicates within pending)
       if (this.pendingArticles.some((p) => p.id === article.id)) continue;
       this.pendingArticles.push(article);
-      this.queuedAt.set(article.id, Date.now());
+      this.queuedAt.set(article.id, now);
       newCount++;
     }
 
     // Also refresh market data
     this.latestMarket = await fetchMarketSnapshot();
 
-    console.log(`[Accumulator] +${newCount} new articles (pending: ${this.pendingArticles.length}, seen: ${this.seenIds.size})`);
+    // Track starvation
+    if (newCount === 0) {
+      this.zeroNewPolls++;
+    } else {
+      this.zeroNewPolls = 0;
+    }
+
+    console.log(`[Accumulator] +${newCount} new articles (pending: ${this.pendingArticles.length}, seen: ${this.seenIds.size}, starvation: ${this.zeroNewPolls})`);
   }
 
   hasEnough(): boolean {
+    // In starvation mode, accept fewer articles to avoid infinite replay
+    if (this.zeroNewPolls >= STARVATION_THRESHOLD && this.pendingArticles.length >= STARVATION_MIN_ARTICLES) {
+      console.log(`[Accumulator] Starvation mode: ${this.pendingArticles.length} articles (threshold lowered from ${config.articleThreshold} to ${STARVATION_MIN_ARTICLES})`);
+      return true;
+    }
     return this.pendingArticles.length >= config.articleThreshold;
   }
 
@@ -75,7 +104,7 @@ export class NewsAccumulator {
       if (queueAge > MAX_QUEUE_AGE_MS) return false;
       const skips = this.skipCounts.get(a.id) || 0;
       if (skips >= MAX_SKIPS) {
-        this.seenIds.add(a.id); // prevent re-fetching
+        this.seenIds.set(a.id, Date.now()); // prevent re-fetching
         this.queuedAt.delete(a.id);
         return false;
       }
@@ -112,11 +141,11 @@ export class NewsAccumulator {
     let removedCount = 0;
     this.pendingArticles = this.pendingArticles.filter((a) => {
       if (usedIds.has(a.id)) {
-        this.seenIds.add(a.id);
+        this.seenIds.set(a.id, Date.now());
         this.skipCounts.delete(a.id);
         this.queuedAt.delete(a.id);
         const normalized = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 50);
-        this.seenTitles.add(normalized);
+        this.seenTitles.set(normalized, Date.now());
         removedCount++;
         return false;
       }
@@ -130,5 +159,10 @@ export class NewsAccumulator {
     const normalized = article.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 50);
     if (this.seenTitles.has(normalized)) return true;
     return false;
+  }
+
+  /** Reset starvation counter (called externally after successful episode generation) */
+  resetStarvation(): void {
+    this.zeroNewPolls = 0;
   }
 }
