@@ -34,8 +34,7 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
   // Live: chat (mobile), emotes (desktop) — live experience takes priority
   // Offline: videos if any exist, otherwise emotes
   const getDefaultTab = (): TabId => {
-    if (stream && mobileOnly) return 'chat';
-    if (stream) return 'emotes';
+    if (mobileOnly) return 'chat';
     if (pastStreams.length > 0) return 'videos';
     return 'emotes';
   };
