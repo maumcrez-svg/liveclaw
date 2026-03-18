@@ -1,6 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@liveclaw/shared'],
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.liveclaw.tv' }],
+        destination: 'https://liveclaw.tv/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const hlsOrigin = process.env.HLS_ORIGIN || 'http://165.227.91.241:8888';
     const thumbOrigin = process.env.THUMBNAIL_ORIGIN || 'http://165.227.91.241:8889';
