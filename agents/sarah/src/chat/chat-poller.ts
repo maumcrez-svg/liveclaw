@@ -1,5 +1,6 @@
 import { config } from '../config';
 import { bus } from '../orchestrator/events';
+import { recordChat } from '../idol-frame';
 
 interface ChatMessage {
   id: string;
@@ -75,6 +76,8 @@ async function pollChat(): Promise<void> {
       } else {
         bus.emit('chat:message', msg);
       }
+      // Record ALL chat to lossless archive
+      recordChat(msg.username, msg.content);
     }
 
     lastSeenId = newestId;

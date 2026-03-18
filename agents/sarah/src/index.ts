@@ -10,6 +10,7 @@ import { startChatPoller, stopChatPoller } from './chat/chat-poller';
 import { initCommandHandler } from './chat/command-handler';
 import { initCommentaryListeners } from './commentator/commentary-queue';
 import { sendChatMessage } from './chat/chat-sender';
+import { initIdolFrame } from './idol-frame';
 
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';
 
@@ -20,6 +21,10 @@ async function main(): Promise<void> {
   console.log(`Resolution: ${config.resolution}`);
   console.log(`Broadcast port: ${config.broadcastPort}`);
   console.log(`ROM: ${config.rom.path}`);
+
+  // 0. Initialize Idol Frame (personality + memory)
+  console.log('[Init] Loading Idol Frame identity...');
+  initIdolFrame();
 
   // 1. Initialize emulator with ROM + saved SRAM
   console.log('[Init] Loading ROM...');
@@ -124,6 +129,10 @@ async function main(): Promise<void> {
     stopChatPoller();
     stopScheduler();
     persistSaveData(); // Save SRAM before exit
+    // Persist Idol Frame state + flush lossless
+    const { persistState, stopLossless } = await import('./idol-frame');
+    persistState();
+    stopLossless();
     await sendChatMessage('Stream ending! Thanks for watching, chat! See you next time~ ✌️').catch(() => {});
     await browser.close();
     process.exit(0);

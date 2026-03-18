@@ -108,7 +108,8 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
       {/* Main column — scrolls independently on desktop */}
       <div className="flex-1 flex flex-col min-w-0 lg:overflow-y-auto">
         {/* Player + Channel Identity — unified visual zone */}
-        <div className="relative flex-shrink-0">
+        {/* On mobile: sticky player so viewers can watch + chat simultaneously */}
+        <div className={`relative flex-shrink-0 ${isLive ? 'sticky top-0 z-30 lg:static' : ''}`}>
           {/* Player */}
           <div className="w-full aspect-video bg-claw-bg relative">
             {/* Alert overlay — renders above player when stream is live */}

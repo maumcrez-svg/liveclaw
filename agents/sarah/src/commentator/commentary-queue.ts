@@ -7,7 +7,7 @@ import { speak } from '../voice/speech-queue';
 import { sendChatMessage } from '../chat/chat-sender';
 import { updateCommentary, addTickerMessage, updateObjective } from '../visual/bridge';
 import { getObjectiveDescription } from '../engine/exploration/route-planner';
-import { buildSarahPrompt, updateMoodFromEvent, addMemory, persistState } from '../idol-frame';
+import { buildSarahPrompt, updateMoodFromEvent, addMemory, persistState, recordCommentary, recordGameEvent, recordChat, getState } from '../idol-frame';
 
 let lastCommentaryTime = 0;
 let lastTtsTime = 0;
@@ -51,6 +51,9 @@ async function generateAndDeliver(prompt: string, tickerText: string, critical =
     // Track for anti-repetition
     recentMessages.push(commentary);
     if (recentMessages.length > MAX_RECENT) recentMessages.shift();
+
+    // Record to lossless archive (never lost)
+    recordCommentary(commentary, eventType || 'unknown', getState().mood);
 
     // Update visual overlay
     await updateCommentary(commentary);
