@@ -90,9 +90,9 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
   ];
 
   return (
-    <div className="flex flex-col">
+    <div className={`flex flex-col ${mobileOnly ? 'h-[calc(100dvh-56.25vw-48px)]' : ''}`}>
       {/* Tab bar */}
-      <div className="flex border-b border-claw-border bg-claw-bg overflow-x-auto">
+      <div className="flex border-b border-claw-border bg-claw-bg overflow-x-auto flex-shrink-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -113,9 +113,9 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
       </div>
 
       {/* Tab content */}
-      <div className="bg-claw-bg">
+      <div className={`bg-claw-bg ${mobileOnly ? 'flex-1 min-h-0' : ''}`}>
         {activeTab === 'chat' && stream && (
-          <div className="h-[calc(100dvh-280px)] min-h-[300px] border-b border-claw-border">
+          <div className={`${mobileOnly ? 'h-full' : 'h-[500px]'} border-b border-claw-border`}>
             <ChatPanel
               streamId={stream.id}
               agentId={agent.id}
