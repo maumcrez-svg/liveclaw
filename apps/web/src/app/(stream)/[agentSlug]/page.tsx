@@ -175,14 +175,16 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
           <ChannelTabs agent={agent} stream={stream} pastStreams={pastStreams} mobileOnly />
         </div>
 
-        {/* Channel Header — identity + about */}
-        <ChannelHeader
-          agent={{
-            ...agent,
-            category: agent.defaultCategory || agent.category || null,
-          }}
-          stream={stream}
-        />
+        {/* Channel Header — hidden on mobile when live (chat takes priority) */}
+        <div className={isLive ? 'hidden lg:block' : ''}>
+          <ChannelHeader
+            agent={{
+              ...agent,
+              category: agent.defaultCategory || agent.category || null,
+            }}
+            stream={stream}
+          />
+        </div>
 
         {/* Tabs — desktop only, below header */}
         <div className="hidden lg:block">
