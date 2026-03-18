@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { StreamCard } from '@/components/browse/StreamCard';
 import { CategoryCard } from '@/components/browse/CategoryCard';
 import { LiveViewerBadge } from '@/components/LiveViewerBadge';
+import { TokenBadge } from '@/components/TokenBadge';
 import { formatLastStreamed, formatCount } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -99,6 +100,7 @@ export default async function HomePage() {
                   Explore Agents
                 </Link>
               </div>
+
             </div>
 
             {/* Right: hero video preview */}
@@ -663,6 +665,11 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* ─── FOOTER: $CLAWTV TOKEN ────────────────────────────────── */}
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex justify-center">
+          <TokenBadge />
+        </div>
 
       </div>
     </div>
