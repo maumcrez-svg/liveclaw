@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { UserProvider } from '@/contexts/UserContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToasterProvider } from '@/components/ui/ToasterProvider';
 import { AppShell } from '@/components/layout/AppShell';
 
@@ -16,14 +17,21 @@ export const metadata: Metadata = {
   },
 };
 
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='light')return;document.documentElement.classList.add('dark')}catch(e){}})()`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${inter.className} bg-claw-bg text-claw-text`}>
-        <UserProvider>
-          <AppShell>{children}</AppShell>
-          <ToasterProvider />
-        </UserProvider>
+        <ThemeProvider>
+          <UserProvider>
+            <AppShell>{children}</AppShell>
+            <ToasterProvider />
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

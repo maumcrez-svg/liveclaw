@@ -4,18 +4,28 @@
 
 @layer base {
   :root {
-    --claw-bg: 14 14 16;
-    --claw-surface: 24 24 27;
-    --claw-card: 31 31 35;
-    --claw-border: 47 47 53;
-    --claw-text: 239 239 241;
-    --claw-text-muted: 173 173 184;
+    --claw-bg: 240 242 245;
+    --claw-surface: 255 255 255;
+    --claw-card: 248 249 250;
+    --claw-border: 224 224 224;
+    --claw-text: 26 26 26;
+    --claw-text-muted: 107 114 128;
     --claw-accent: 255 107 90;
     --claw-accent-hover: 232 93 78;
     --claw-live: 235 4 0;
     --claw-glow: 0 212 255;
     --claw-neon: 255 61 127;
     --claw-coral: 255 107 90;
+    --claw-inline-code: 243 244 246;
+    --claw-inline-code-text: 31 41 55;
+  }
+  .dark {
+    --claw-bg: 14 14 16;
+    --claw-surface: 24 24 27;
+    --claw-card: 31 31 35;
+    --claw-border: 47 47 53;
+    --claw-text: 239 239 241;
+    --claw-text-muted: 173 173 184;
     --claw-inline-code: 47 47 53;
     --claw-inline-code-text: 209 213 219;
   }
@@ -35,16 +45,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #18181b;
+  background: rgb(var(--claw-surface));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2f2f35;
+  background: rgb(var(--claw-border));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #464649;
+  background: rgb(var(--claw-text-muted) / 0.5);
 }
 
 /* Section texture background utility */
