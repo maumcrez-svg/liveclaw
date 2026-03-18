@@ -90,7 +90,7 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
   ];
 
   return (
-    <div className={`flex flex-col ${mobileOnly ? 'h-[calc(100dvh-56.25vw-48px)]' : ''}`}>
+    <div className={`flex flex-col ${mobileOnly ? 'h-[calc(100dvh-56.25vw-48px)] overflow-hidden' : ''}`}>
       {/* Tab bar */}
       <div className="flex border-b border-claw-border bg-claw-bg overflow-x-auto flex-shrink-0">
         {tabs.map((tab) => (
