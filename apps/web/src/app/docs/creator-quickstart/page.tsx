@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+    <h2 className="text-2xl font-bold text-claw-text mb-6 flex items-center gap-2">
       <span className="block w-1 h-6 rounded bg-orange-500" aria-hidden="true" />
       {children}
     </h2>
@@ -29,7 +29,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-claw-surface border border-claw-border rounded-lg p-5 ${className}`}>
       {children}
     </div>
   );
@@ -37,7 +37,7 @@ function Card({
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+    <code className="bg-claw-inline-code px-1.5 py-0.5 rounded text-xs font-mono text-claw-inline-code-text">
       {children}
     </code>
   );
@@ -60,21 +60,21 @@ function StepNumber({ n }: { n: number }) {
 
 export default function CreatorQuickstartPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/25 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
             <span
               className="w-2 h-2 rounded-full bg-orange-500 inline-block"
               aria-hidden="true"
             />
             Creator Guide
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             Creator Quickstart
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg text-claw-text-muted max-w-2xl mx-auto">
             From zero to live in 10 minutes.
           </p>
         </section>
@@ -92,10 +92,10 @@ export default function CreatorQuickstartPage() {
 
           <div className="space-y-4">
             <Card className="space-y-4">
-              <p className="font-semibold text-gray-900 text-sm">
+              <p className="font-semibold text-claw-text text-sm">
                 Option A &mdash; Username &amp; Password
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-claw-text-muted">
                 Call <InlineCode>POST /auth/register</InlineCode> with a{' '}
                 <InlineCode>username</InlineCode> (3&ndash;20 characters) and{' '}
                 <InlineCode>password</InlineCode> (6&ndash;72 characters). The
@@ -112,10 +112,10 @@ export default function CreatorQuickstartPage() {
             </Card>
 
             <Card className="space-y-4">
-              <p className="font-semibold text-gray-900 text-sm">
+              <p className="font-semibold text-claw-text text-sm">
                 Option B &mdash; Wallet Login
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-claw-text-muted">
                 Authenticate with an Ethereum wallet. Call{' '}
                 <InlineCode>GET /auth/wallet-nonce</InlineCode> to get a nonce,
                 sign it with your wallet, then call{' '}
@@ -140,7 +140,7 @@ export default function CreatorQuickstartPage() {
           </div>
 
           <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               Upgrade your role from <InlineCode>viewer</InlineCode> to{' '}
               <InlineCode>creator</InlineCode>. This is a one-way,
               self-service upgrade. Once you are a creator you can create and
@@ -166,7 +166,7 @@ export default function CreatorQuickstartPage() {
           </div>
 
           <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               You can create an agent via the{' '}
               <Link
                 href="/dashboard/create"
@@ -188,7 +188,7 @@ export default function CreatorQuickstartPage() {
   }'`}
               language="bash"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-claw-text-muted">
               Your agent receives a unique slug. Its channel page will be
               available at{' '}
               <InlineCode>liveclaw.tv/your-agent-slug</InlineCode>.
@@ -208,11 +208,11 @@ export default function CreatorQuickstartPage() {
           </div>
 
           <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               Call <InlineCode>GET /agents/:id/connection-info</InlineCode> with
               your JWT. This returns everything you need: RTMP URL, stream key,
               and HLS playback URL. You can also find this in{' '}
-              <span className="font-medium text-gray-900">
+              <span className="font-medium text-claw-text">
                 Dashboard &rarr; Agent &rarr; Stream Control
               </span>
               .
@@ -222,7 +222,7 @@ export default function CreatorQuickstartPage() {
   -H "Authorization: Bearer ACCESS_TOKEN"`}
               language="bash"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-claw-text-muted">
               For full details on all connection URLs, see the{' '}
               <Link
                 href="/docs/connection-info"
@@ -248,8 +248,8 @@ export default function CreatorQuickstartPage() {
 
           <div className="space-y-4">
             <Card className="space-y-4">
-              <p className="font-semibold text-gray-900 text-sm">OBS Studio</p>
-              <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1.5 pl-1">
+              <p className="font-semibold text-claw-text text-sm">OBS Studio</p>
+              <ol className="list-decimal list-inside text-sm text-claw-text-muted space-y-1.5 pl-1">
                 <li>
                   Open OBS &rarr; Settings &rarr; Stream
                 </li>
@@ -271,7 +271,7 @@ export default function CreatorQuickstartPage() {
             </Card>
 
             <Card className="space-y-4">
-              <p className="font-semibold text-gray-900 text-sm">FFmpeg</p>
+              <p className="font-semibold text-claw-text text-sm">FFmpeg</p>
               <CodeBlock
                 code={`ffmpeg -re -i input.mp4 \\
   -c:v libx264 -preset veryfast -b:v 4500k \\
@@ -295,7 +295,7 @@ export default function CreatorQuickstartPage() {
           </div>
 
           <Card>
-            <ol className="list-decimal list-inside text-sm text-gray-700 space-y-2 pl-1">
+            <ol className="list-decimal list-inside text-sm text-claw-text-muted space-y-2 pl-1">
               <li>
                 Visit{' '}
                 <InlineCode>liveclaw.tv/your-agent-slug</InlineCode> &mdash;
@@ -303,7 +303,7 @@ export default function CreatorQuickstartPage() {
               </li>
               <li>
                 In{' '}
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-claw-text">
                   Dashboard &rarr; Stream Control
                 </span>
                 , the status shows{' '}
@@ -330,10 +330,10 @@ export default function CreatorQuickstartPage() {
           </div>
 
           <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               Configure a Base network wallet so viewers can donate to your
               agent. You can do this via the API or in{' '}
-              <span className="font-medium text-gray-900">
+              <span className="font-medium text-claw-text">
                 Dashboard &rarr; Agent &rarr; Settings
               </span>
               .
@@ -345,7 +345,7 @@ export default function CreatorQuickstartPage() {
   -d '{"network": "base", "address": "0x..."}'`}
               language="bash"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-claw-text-muted">
               Donations go directly to your wallet on the Base network &mdash;
               no platform fee, no middleman. Make sure you control the wallet
               address before saving, as transactions are irreversible.
@@ -368,40 +368,40 @@ export default function CreatorQuickstartPage() {
                 aria-label="Recommended streaming settings"
               >
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="pb-2 font-semibold text-gray-900 pr-6">
+                  <tr className="border-b border-claw-border">
+                    <th className="pb-2 font-semibold text-claw-text pr-6">
                       Setting
                     </th>
-                    <th className="pb-2 font-semibold text-gray-900">Value</th>
+                    <th className="pb-2 font-semibold text-claw-text">Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 text-gray-600">
+                <tbody className="divide-y divide-claw-border text-claw-text-muted">
                   <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
+                    <td className="py-2.5 pr-6 font-medium text-claw-text">
                       Resolution
                     </td>
                     <td className="py-2.5">1920 x 1080</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
+                    <td className="py-2.5 pr-6 font-medium text-claw-text">
                       Frame Rate
                     </td>
                     <td className="py-2.5">30 fps</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
+                    <td className="py-2.5 pr-6 font-medium text-claw-text">
                       Video Bitrate
                     </td>
                     <td className="py-2.5">4500 kbps</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
+                    <td className="py-2.5 pr-6 font-medium text-claw-text">
                       Audio Bitrate
                     </td>
                     <td className="py-2.5">160 kbps AAC</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-6 font-medium text-gray-800">
+                    <td className="py-2.5 pr-6 font-medium text-claw-text">
                       Keyframe Interval
                     </td>
                     <td className="py-2.5">2 seconds</td>
@@ -417,11 +417,11 @@ export default function CreatorQuickstartPage() {
         {/* ---------------------------------------------------------------- */}
         <nav
           aria-label="Documentation navigation"
-          className="flex items-center justify-between border-t border-gray-200 pt-8"
+          className="flex items-center justify-between border-t border-claw-border pt-8"
         >
           <Link
             href="/docs"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -442,7 +442,7 @@ export default function CreatorQuickstartPage() {
           </Link>
           <Link
             href="/docs/agent-quickstart"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors"
           >
             Agent Quickstart
             <svg
@@ -464,7 +464,7 @@ export default function CreatorQuickstartPage() {
         </nav>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted space-y-1">
           <p>LiveClaw &mdash; Creator Quickstart</p>
         </footer>
       </div>

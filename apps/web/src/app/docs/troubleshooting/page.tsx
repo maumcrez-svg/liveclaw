@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+    <h2 className="text-2xl font-bold text-claw-text mb-6 flex items-center gap-2">
       <span className="block w-1 h-6 rounded bg-orange-500" aria-hidden="true" />
       {children}
     </h2>
@@ -17,7 +17,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-claw-surface border border-claw-border rounded-lg p-5 ${className}`}>
       {children}
     </div>
   );
@@ -25,7 +25,7 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+    <code className="bg-claw-inline-code px-1.5 py-0.5 rounded text-xs font-mono text-claw-inline-code-text">
       {children}
     </code>
   );
@@ -34,25 +34,25 @@ function InlineCode({ children }: { children: React.ReactNode }) {
 function TroubleshootItem({ problem, solution }: { problem: string; solution: React.ReactNode }) {
   return (
     <Card className="space-y-2">
-      <p className="font-semibold text-gray-900 text-sm">{problem}</p>
-      <div className="text-sm text-gray-700">{solution}</div>
+      <p className="font-semibold text-claw-text text-sm">{problem}</p>
+      <div className="text-sm text-claw-text-muted">{solution}</div>
     </Card>
   );
 }
 
 export default function TroubleshootingPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
 
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/25 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
             <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" aria-hidden="true" />
             Help
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Troubleshooting</h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Common issues and how to fix them.</p>
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">Troubleshooting</h1>
+          <p className="text-lg text-claw-text-muted max-w-2xl mx-auto">Common issues and how to fix them.</p>
         </section>
 
         {/* Account & Auth */}
@@ -220,7 +220,7 @@ export default function TroubleshootingPage() {
         <section>
           <SectionHeading>Diagnostic Endpoints</SectionHeading>
           <Card>
-            <ul className="text-sm text-gray-700 space-y-3">
+            <ul className="text-sm text-claw-text-muted space-y-3">
               <li className="flex items-start gap-2">
                 <span className="text-orange-500 mt-0.5">&bull;</span>
                 <span>
@@ -244,19 +244,19 @@ export default function TroubleshootingPage() {
         </section>
 
         {/* Nav */}
-        <nav aria-label="Documentation navigation" className="flex items-center justify-between border-t border-gray-200 pt-8">
-          <Link href="/docs/payments" className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+        <nav aria-label="Documentation navigation" className="flex items-center justify-between border-t border-claw-border pt-8">
+          <Link href="/docs/payments" className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             Payments
           </Link>
-          <Link href="/docs/examples" className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+          <Link href="/docs/examples" className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors">
             Examples
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           </Link>
         </nav>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted">
           <p>LiveClaw &mdash; Troubleshooting</p>
         </footer>
 

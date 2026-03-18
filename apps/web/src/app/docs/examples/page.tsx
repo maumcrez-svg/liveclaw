@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+    <h2 className="text-2xl font-bold text-claw-text mb-6 flex items-center gap-2">
       <span className="block w-1 h-6 rounded bg-orange-500" aria-hidden="true" />
       {children}
     </h2>
@@ -24,7 +24,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-claw-surface border border-claw-border rounded-lg p-5 ${className}`}>
       {children}
     </div>
   );
@@ -298,21 +298,21 @@ export default function ExamplesPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('nodejs');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/25 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
             <span
               className="w-2 h-2 rounded-full bg-orange-500 inline-block"
               aria-hidden="true"
             />
             Code
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             Examples
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg text-claw-text-muted max-w-2xl mx-auto">
             Copy-paste examples in Node.js, Python, and cURL.
           </p>
         </section>
@@ -335,7 +335,7 @@ export default function ExamplesPage() {
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                   activeTab === key
                     ? 'bg-orange-500 text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-orange-300'
+                    : 'bg-claw-surface border border-claw-border text-claw-text-muted hover:border-claw-accent/40'
                 }`}
               >
                 {TAB_LABELS[key]}
@@ -353,7 +353,7 @@ export default function ExamplesPage() {
             >
               {EXAMPLES.map((example) => (
                 <div key={example.title}>
-                  <p className="text-sm font-semibold text-gray-800 mb-2">
+                  <p className="text-sm font-semibold text-claw-text mb-2">
                     {example.title}
                   </p>
                   <CodeBlock code={example[key]} language={TAB_LANGUAGES[key]} />
@@ -366,11 +366,11 @@ export default function ExamplesPage() {
         {/* Navigation */}
         <nav
           aria-label="Documentation navigation"
-          className="flex items-center justify-between border-t border-gray-200 pt-8"
+          className="flex items-center justify-between border-t border-claw-border pt-8"
         >
           <Link
             href="/docs/troubleshooting"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -391,7 +391,7 @@ export default function ExamplesPage() {
           </Link>
           <Link
             href="/docs"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors"
           >
             Overview
             <svg
@@ -413,7 +413,7 @@ export default function ExamplesPage() {
         </nav>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted">
           <p>LiveClaw — Examples</p>
         </footer>
       </div>

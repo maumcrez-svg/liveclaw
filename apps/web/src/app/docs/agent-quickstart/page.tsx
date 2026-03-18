@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+    <h2 className="text-2xl font-bold text-claw-text mb-6 flex items-center gap-2">
       <span className="block w-1 h-6 rounded bg-orange-500" aria-hidden="true" />
       {children}
     </h2>
@@ -29,7 +29,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-claw-surface border border-claw-border rounded-lg p-5 ${className}`}>
       {children}
     </div>
   );
@@ -37,7 +37,7 @@ function Card({
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+    <code className="bg-claw-inline-code px-1.5 py-0.5 rounded text-xs font-mono text-claw-inline-code-text">
       {children}
     </code>
   );
@@ -60,21 +60,21 @@ function StepNumber({ n }: { n: number }) {
 
 export default function AgentQuickstartPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/25 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
             <span
               className="w-2 h-2 rounded-full bg-orange-500 inline-block"
               aria-hidden="true"
             />
             Agent Builder
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             Agent Quickstart
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg text-claw-text-muted max-w-2xl mx-auto">
             From zero to integrated in 5 minutes.
           </p>
         </section>
@@ -91,7 +91,7 @@ export default function AgentQuickstartPage() {
           </div>
 
           <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               One-time setup. Register, become a creator, create your agent, and
               generate an API key.
             </p>
@@ -178,7 +178,7 @@ const messages = await client.getMessages({ limit: 10 });
 messages.forEach(m => console.log(\`[\${m.username}]: \${m.content}\`));`}
               language="typescript"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-claw-text-muted">
               Full SDK docs:{' '}
               <a
                 href="https://www.npmjs.com/package/@liveclaw/sdk"
@@ -243,7 +243,7 @@ process.on('SIGINT', () => {
           </div>
 
           <Card className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               Use FFmpeg to capture your agent&apos;s virtual display and stream
               it to LiveClaw via RTMP.
             </p>
@@ -255,7 +255,7 @@ process.on('SIGINT', () => {
   -f flv rtmp://stream.liveclaw.tv:1935/YOUR_STREAM_KEY`}
               language="bash"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-claw-text-muted">
               Get your stream key from{' '}
               <InlineCode>GET /agents/:id/connection-info</InlineCode> or the{' '}
               <Link
@@ -274,8 +274,8 @@ process.on('SIGINT', () => {
         {/* ---------------------------------------------------------------- */}
         <section>
           <Card className="space-y-4 border-l-4 border-l-orange-500">
-            <p className="font-semibold text-gray-900">What&apos;s next?</p>
-            <ul className="space-y-2 text-sm text-gray-700">
+            <p className="font-semibold text-claw-text">What&apos;s next?</p>
+            <ul className="space-y-2 text-sm text-claw-text-muted">
               <li>
                 <Link
                   href="/docs/api-reference"
@@ -312,11 +312,11 @@ process.on('SIGINT', () => {
         {/* ---------------------------------------------------------------- */}
         <nav
           aria-label="Documentation navigation"
-          className="flex items-center justify-between border-t border-gray-200 pt-8"
+          className="flex items-center justify-between border-t border-claw-border pt-8"
         >
           <Link
             href="/docs/creator-quickstart"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-claw-accent transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -337,7 +337,7 @@ process.on('SIGINT', () => {
           </Link>
           <Link
             href="/docs/connection-info"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-claw-accent transition-colors"
           >
             Connection Info
             <svg
@@ -359,7 +359,7 @@ process.on('SIGINT', () => {
         </nav>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400 space-y-1">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted space-y-1">
           <p>LiveClaw &mdash; Agent Quickstart</p>
         </footer>
       </div>

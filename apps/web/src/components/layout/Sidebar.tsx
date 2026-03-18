@@ -160,7 +160,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             {agent.name[0]?.toUpperCase()}
           </div>
         )}
-        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-claw-surface ${
           isLive ? 'bg-green-500 animate-pulse' : 'bg-red-500 animate-pulse'
         }`} />
       </div>
@@ -169,7 +169,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate leading-tight">{agent.name}</p>
             {isLive && (
-              <p className="text-[11px] text-gray-500 truncate leading-tight">
+              <p className="text-[11px] text-claw-text-muted truncate leading-tight">
                 {agent.category?.name || agent.agentType}
               </p>
             )}
@@ -177,7 +177,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           {isLive && (
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-claw-live" />
-              <span className="text-[11px] text-gray-500 font-medium">
+              <span className="text-[11px] text-claw-text-muted font-medium">
                 {(viewerCounts.get(agent.id) ?? agent.currentViewers ?? 0).toLocaleString()}
               </span>
             </div>
@@ -191,10 +191,10 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     <aside
       className={`${
         collapsed ? 'w-[50px]' : 'w-[240px]'
-      } bg-white border-r border-orange-400/60 flex flex-col transition-all duration-200 h-full flex-shrink-0 text-gray-700`}
+      } bg-claw-surface border-r border-claw-border flex flex-col transition-all duration-200 h-full flex-shrink-0 text-claw-text`}
     >
       {/* Logo */}
-      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-3 border-b border-claw-border flex items-center justify-between">
         {!collapsed ? (
           <Link href="/" onClick={handleLinkClick} className="flex items-center py-1">
             <img src="/liveclaw-logo.png" alt="LiveClaw" className="w-[200px] h-auto" />
@@ -206,7 +206,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
+          className="text-claw-text-muted hover:text-claw-text p-1 rounded hover:bg-claw-card transition-colors"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -245,7 +245,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                 } ${
                   active
                     ? 'bg-orange-500/10 text-orange-500'
-                    : 'text-gray-500 hover:bg-orange-500/10 hover:text-orange-500'
+                    : 'text-claw-text-muted hover:bg-orange-500/10 hover:text-orange-500'
                 }`}
               >
                 {item.icon}
@@ -308,7 +308,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       )}
 
       {/* Separator */}
-      <div className="border-b border-gray-200 mx-3 my-1" />
+      <div className="border-b border-claw-border mx-3 my-1" />
 
       {/* Agent list */}
       <div className="flex-1 overflow-y-auto py-2">
@@ -317,7 +317,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           <>
             {!collapsed && (
               <div className="px-4 mb-1.5 mt-0.5">
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-claw-text-muted uppercase tracking-wider">
                   Followed Channels
                 </span>
               </div>
@@ -334,7 +334,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             {!collapsed && (
               <div className="px-4 mt-3 mb-1.5 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-claw-text-muted uppercase tracking-wider">
                   Live Channels
                 </span>
               </div>
@@ -349,7 +349,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             {!collapsed && (
               <div className="px-4 mt-3 mb-1.5 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-claw-text-muted uppercase tracking-wider">
                   Offline
                 </span>
               </div>
@@ -360,7 +360,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* User section */}
-      <div className="p-3 border-t border-gray-200">
+      <div className="p-3 border-t border-claw-border">
         {isLoggedIn ? (
           <div className="flex items-center justify-between">
             {!collapsed && (
@@ -383,7 +383,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               <Link
                 href="/settings"
                 onClick={handleLinkClick}
-                className="text-xs text-gray-500 hover:text-gray-800 p-1 rounded hover:bg-gray-100 transition-colors"
+                className="text-xs text-claw-text-muted hover:text-claw-text p-1 rounded hover:bg-claw-card transition-colors"
                 title="Settings"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -393,7 +393,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               </Link>
               <button
                 onClick={logout}
-                className="text-xs text-gray-500 hover:text-gray-800 p-1 rounded hover:bg-gray-100 transition-colors"
+                className="text-xs text-claw-text-muted hover:text-claw-text p-1 rounded hover:bg-claw-card transition-colors"
                 title="Logout"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -425,12 +425,12 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           </button>
         )}
         {!collapsed && (
-          <div className="flex items-center justify-center gap-2 mt-2 text-[10px] text-gray-400">
-            <Link href="/terms" onClick={handleLinkClick} className="hover:text-gray-600 transition-colors">
+          <div className="flex items-center justify-center gap-2 mt-2 text-[10px] text-claw-text-muted">
+            <Link href="/terms" onClick={handleLinkClick} className="hover:text-claw-text transition-colors">
               Terms
             </Link>
             <span aria-hidden="true">&middot;</span>
-            <Link href="/privacy" onClick={handleLinkClick} className="hover:text-gray-600 transition-colors">
+            <Link href="/privacy" onClick={handleLinkClick} className="hover:text-claw-text transition-colors">
               Privacy
             </Link>
           </div>

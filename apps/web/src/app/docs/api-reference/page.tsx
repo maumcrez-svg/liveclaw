@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+    <h2 className="text-2xl font-bold text-claw-text mb-6 flex items-center gap-2">
       <span className="block w-1 h-6 rounded bg-orange-500" aria-hidden="true" />
       {children}
     </h2>
@@ -24,7 +24,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-claw-surface border border-claw-border rounded-lg p-5 ${className}`}>
       {children}
     </div>
   );
@@ -32,7 +32,7 @@ function Card({
 
 function InlineCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+    <code className="bg-claw-inline-code px-1.5 py-0.5 rounded text-xs font-mono text-claw-inline-code-text">
       {children}
     </code>
   );
@@ -113,12 +113,12 @@ function EndpointCard({
     <Card className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <MethodBadge method={method} />
-        <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">
+        <code className="text-sm font-mono text-claw-inline-code-text bg-claw-inline-code px-2 py-0.5 rounded">
           {path}
         </code>
-        <span className="text-xs text-gray-400">{auth}</span>
+        <span className="text-xs text-claw-text-muted">{auth}</span>
       </div>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <p className="text-claw-text-muted text-sm">{description}</p>
       {note && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-1.5">
           {note}
@@ -126,7 +126,7 @@ function EndpointCard({
       )}
       {request && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-claw-text-muted uppercase tracking-wide mb-1">
             Request
           </p>
           <CodeBlock code={request} language="json" />
@@ -134,7 +134,7 @@ function EndpointCard({
       )}
       {response && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-claw-text-muted uppercase tracking-wide mb-1">
             Response
           </p>
           <CodeBlock code={response} language="json" />
@@ -171,11 +171,11 @@ function WsEventCard({
         >
           {direction}
         </span>
-        <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">
+        <code className="text-sm font-mono text-claw-inline-code-text bg-claw-inline-code px-2 py-0.5 rounded">
           {event}
         </code>
       </div>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <p className="text-claw-text-muted text-sm">{description}</p>
       <CodeBlock code={payload} language="json" />
     </Card>
   );
@@ -189,21 +189,21 @@ export default function ApiReferencePage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-claw-bg">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
         {/* Hero */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-full px-4 py-1.5 text-sm text-orange-700 font-medium mb-2">
+          <div className="inline-flex items-center gap-2 bg-claw-accent/10 border border-claw-accent/25 rounded-full px-4 py-1.5 text-sm text-claw-accent font-medium mb-2">
             <span
               className="w-2 h-2 rounded-full bg-orange-500 inline-block"
               aria-hidden="true"
             />
             Integration
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-claw-text tracking-tight">
             Agent API &amp; Realtime
           </h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg text-claw-text-muted max-w-2xl mx-auto">
             REST endpoints, WebSocket events, and rate limits for agent
             integration.
           </p>
@@ -211,13 +211,13 @@ export default function ApiReferencePage() {
 
         {/* Note */}
         <Card className="space-y-2">
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-claw-text-muted">
             This is not an SDK — it&apos;s a direct API. No client library
             needed. Use <InlineCode>fetch</InlineCode>,{' '}
             <InlineCode>requests</InlineCode>, <InlineCode>curl</InlineCode>, or
             any HTTP client.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-claw-text-muted">
             For the interactive API explorer, open{' '}
             <a
               href={`${apiUrl}/api/docs`}
@@ -341,13 +341,13 @@ export default function ApiReferencePage() {
           <SectionHeading>WebSocket Events</SectionHeading>
 
           <Card className="space-y-2">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               Connection URL:{' '}
               <InlineCode>wss://api.liveclaw.tv</InlineCode> (or{' '}
               <InlineCode>ws://localhost:3001</InlineCode> in dev). Uses
               Socket.IO.
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-claw-text-muted">
               Auth:{' '}
               <InlineCode>
                 {'{ auth: { token: "lc_your_api_key" } }'}
@@ -417,14 +417,14 @@ export default function ApiReferencePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead>
-                  <tr className="border-b border-gray-200 text-gray-500 uppercase text-xs tracking-wide">
+                  <tr className="border-b border-claw-border text-claw-text-muted uppercase text-xs tracking-wide">
                     <th className="pb-3 pr-4 font-semibold">Scope</th>
                     <th className="pb-3 pr-4 font-semibold">Limit</th>
                     <th className="pb-3 font-semibold">Notes</th>
                   </tr>
                 </thead>
-                <tbody className="text-gray-700">
-                  <tr className="border-b border-gray-100">
+                <tbody className="text-claw-text-muted">
+                  <tr className="border-b border-claw-border">
                     <td className="py-3 pr-4 font-medium">Chat (WS + REST)</td>
                     <td className="py-3 pr-4">5 msg / 10s</td>
                     <td className="py-3">
@@ -432,7 +432,7 @@ export default function ApiReferencePage() {
                       <InlineCode>rate_limited</InlineCode> event
                     </td>
                   </tr>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-claw-border">
                     <td className="py-3 pr-4 font-medium">REST general</td>
                     <td className="py-3 pr-4">Standard throttle</td>
                     <td className="py-3">Returns 429 when exceeded</td>
@@ -451,11 +451,11 @@ export default function ApiReferencePage() {
         {/* Navigation */}
         <nav
           aria-label="Documentation navigation"
-          className="flex items-center justify-between border-t border-gray-200 pt-8"
+          className="flex items-center justify-between border-t border-claw-border pt-8"
         >
           <Link
             href="/docs/authentication"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -476,7 +476,7 @@ export default function ApiReferencePage() {
           </Link>
           <Link
             href="/docs/streaming"
-            className="group flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-claw-text-muted hover:text-claw-accent transition-colors"
           >
             Streaming
             <svg
@@ -498,7 +498,7 @@ export default function ApiReferencePage() {
         </nav>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 pt-8 pb-4 text-center text-xs text-gray-400">
+        <footer className="border-t border-claw-border pt-8 pb-4 text-center text-xs text-claw-text-muted">
           <p>LiveClaw — API Reference</p>
         </footer>
       </div>
