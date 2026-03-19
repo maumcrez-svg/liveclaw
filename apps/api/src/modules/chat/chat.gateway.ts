@@ -180,9 +180,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { streamId: string },
   ) {
-    if (client.data.anonymous) {
-      return { event: 'error', data: { message: 'Authentication required' } };
-    }
+    // Allow anonymous viewers to join streams (they count as viewers but can't chat)
     const prevStream = this.clientStreams.get(client.id);
     if (prevStream) {
       client.leave(prevStream);
@@ -242,6 +240,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody()
     data: { streamId: string; content: string; agentId?: string },
   ) {
+    // Anonymous viewers can watch but not chat
+    if (client.data.anonymous || !client.data.userId) {
+      client.emit('error', { message: 'Authentication required to send messages' });
+      return;
+    }
+
     // Identity comes exclusively from the verified JWT stored in socket.data —
     // never trust client-supplied username / userId fields.
     const userId: string = client.data.userId as string;
