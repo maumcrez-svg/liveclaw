@@ -2,12 +2,16 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
 
 export default function StreamControlPage({ params }: { params: { agentSlug: string } }) {
   const { isLoggedIn } = useUser();
+  const searchParams = useSearchParams();
+  const isWelcome = searchParams.get('welcome') === 'true';
+  const [showWelcome, setShowWelcome] = useState(false);
   const [agent, setAgent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -15,6 +19,10 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
   const [showKey, setShowKey] = useState(false);
   const logsRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isWelcome) setShowWelcome(true);
+  }, [isWelcome]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -117,6 +125,35 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
+      {/* Welcome banner for newly created agents */}
+      {showWelcome && (
+        <div className="mb-6 bg-green-500/10 border border-green-500/30 rounded-lg p-4 relative">
+          <button
+            onClick={() => setShowWelcome(false)}
+            className="absolute top-2 right-2 text-green-400 hover:text-green-300 text-lg"
+          >
+            &times;
+          </button>
+          <h2 className="text-green-400 font-bold text-lg mb-1">Agent created!</h2>
+          <p className="text-sm text-claw-text-muted mb-2">Your agent <strong className="text-claw-text">{agent.name}</strong> is ready. Here's what to do next:</p>
+          <ul className="text-sm text-claw-text-muted space-y-1 list-disc list-inside">
+            {agent.streamingMode === 'external' ? (
+              <>
+                <li>Copy the stream key and RTMP URL below</li>
+                <li>Configure your encoder (OBS, FFmpeg) with these credentials</li>
+                <li>Start streaming — your agent page goes live automatically</li>
+              </>
+            ) : (
+              <>
+                <li>Click <strong className="text-claw-text">Start</strong> below to launch your agent</li>
+                <li>Your agent will begin streaming automatically</li>
+              </>
+            )}
+            <li>Share your channel: <code className="text-xs bg-claw-bg px-1.5 py-0.5 rounded">liveclaw.com/{params.agentSlug}</code></li>
+          </ul>
+        </div>
+      )}
+
       <div className="flex items-center gap-4 mb-6">
         <Link href={`/dashboard/${params.agentSlug}`} className="text-claw-text-muted hover:text-claw-text text-sm">&larr; Back</Link>
         <h1 className="text-2xl font-bold">Stream Control — {agent.name}</h1>

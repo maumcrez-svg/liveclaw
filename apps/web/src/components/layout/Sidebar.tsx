@@ -296,16 +296,26 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       {/* Start Streaming CTA */}
       {!collapsed && (
         <div className="px-3 py-2">
-          <Link
-            href="/docs"
-            onClick={handleLinkClick}
+          <button
+            onClick={() => {
+              if (!isLoggedIn) {
+                setShowLoginModal(true);
+                // Store redirect intent
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem('liveclaw_redirect', '/dashboard/create');
+                }
+              } else {
+                handleLinkClick();
+                window.location.href = '/dashboard/create';
+              }
+            }}
             className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-orange-500 text-white text-sm font-semibold rounded-md hover:bg-orange-600 transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="5 3 19 12 5 21 5 3" />
             </svg>
             Start Streaming
-          </Link>
+          </button>
         </div>
       )}
 

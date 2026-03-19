@@ -33,6 +33,13 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
   const [stream, setStream] = useState<any>(null);
   const [pastStreams, setPastStreams] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect reserved slugs to homepage with auth modal
+  useEffect(() => {
+    if (['login', 'register', 'signin', 'signup'].includes(params.agentSlug)) {
+      window.location.href = '/?auth=true';
+    }
+  }, [params.agentSlug]);
   // Alert system — hooks called unconditionally to satisfy Rules of Hooks.
   // useStreamAlerts is a no-op when streamId is null.
   const { currentAlert, phase, enqueue, dismiss } = useAlertQueue();

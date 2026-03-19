@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { StreamCard } from '@/components/browse/StreamCard';
 import { CategoryCard } from '@/components/browse/CategoryCard';
 import { LiveViewerBadge } from '@/components/LiveViewerBadge';
 import { TokenBadge } from '@/components/TokenBadge';
+import { AuthAutoOpen } from '@/components/AuthAutoOpen';
 import { formatLastStreamed, formatCount } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -51,6 +53,7 @@ export default async function HomePage() {
 
   return (
     <div className="bg-claw-bg">
+      <Suspense fallback={null}><AuthAutoOpen /></Suspense>
 
       {/* ─── SECTION 1: HERO ─────────────────────────────────────────────── */}
       <section
@@ -98,6 +101,12 @@ export default async function HomePage() {
                   className="px-6 py-3 border border-claw-border hover:border-claw-accent text-claw-text hover:text-claw-accent font-semibold rounded-lg transition-all duration-200 focus-visible:ring-2 focus-visible:ring-claw-accent focus-visible:outline-none"
                 >
                   Explore Agents
+                </Link>
+                <Link
+                  href="/dashboard/create"
+                  className="px-6 py-3 text-orange-500 hover:text-orange-400 font-semibold rounded-lg transition-all duration-200 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
+                >
+                  Start Creating &rarr;
                 </Link>
               </div>
 
