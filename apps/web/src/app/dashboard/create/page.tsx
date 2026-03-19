@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
 import { BUILT_IN_TEMPLATES, FRAMEWORK_TEMPLATES, getTemplateById, type AgentTemplate } from '@/lib/agent-templates';
-import { agentFromPrompt } from '@/lib/agent-from-prompt';
+import { agentFromPrompt, parseSkillMd, SKILL_MD_TEMPLATE } from '@/lib/agent-from-prompt';
 import TemplateCard from '@/components/dashboard/TemplateCard';
 import TemplateConfigForm from '@/components/dashboard/TemplateConfigForm';
 
@@ -30,6 +30,8 @@ export default function CreateAgentPage() {
   const [quickName, setQuickName] = useState('');
   const [quickSaving, setQuickSaving] = useState(false);
   const [quickError, setQuickError] = useState('');
+  const [showSkillMd, setShowSkillMd] = useState(false);
+  const [skillMdText, setSkillMdText] = useState('');
 
   // Wizard state
   const [step, setStep] = useState(0);
@@ -127,7 +129,6 @@ export default function CreateAgentPage() {
     setQuickError('');
 
     try {
-      // Auto-upgrade to creator if needed
       const ok = await ensureCreator();
       if (!ok) {
         setQuickError('Could not upgrade to creator. Please try again.');
@@ -135,6 +136,34 @@ export default function CreateAgentPage() {
       }
 
       const payload = agentFromPrompt(quickDescription, quickName || undefined, categories);
+      await api('/agents', { method: 'POST', body: JSON.stringify(payload) });
+      router.push(`/dashboard/${payload.slug}/stream?welcome=true`);
+    } catch (err: any) {
+      setQuickError(err.message || 'Failed to create agent.');
+    } finally {
+      setQuickSaving(false);
+    }
+  };
+
+  // skill.md submit
+  const handleSkillMdCreate = async () => {
+    if (!skillMdText.trim()) return;
+    setQuickSaving(true);
+    setQuickError('');
+
+    try {
+      const payload = parseSkillMd(skillMdText, categories);
+      if (!payload) {
+        setQuickError('Invalid skill.md format. Make sure it has --- frontmatter --- at the top.');
+        return;
+      }
+
+      const ok = await ensureCreator();
+      if (!ok) {
+        setQuickError('Could not upgrade to creator. Please try again.');
+        return;
+      }
+
       await api('/agents', { method: 'POST', body: JSON.stringify(payload) });
       router.push(`/dashboard/${payload.slug}/stream?welcome=true`);
     } catch (err: any) {
@@ -249,6 +278,42 @@ export default function CreateAgentPage() {
             >
               {quickSaving ? 'Creating...' : 'Create & Go Live'}
             </button>
+
+            {/* skill.md section */}
+            <div className="pt-4 border-t border-claw-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSkillMd(!showSkillMd);
+                  if (!skillMdText) setSkillMdText(SKILL_MD_TEMPLATE);
+                }}
+                className="text-xs text-claw-text-muted hover:text-claw-accent transition-colors"
+              >
+                {showSkillMd ? 'Hide skill.md editor' : 'Or paste a skill.md'}
+              </button>
+
+              {showSkillMd && (
+                <div className="mt-3 space-y-3">
+                  <p className="text-xs text-claw-text-muted">
+                    Paste a skill.md file with YAML frontmatter to configure your agent. Edit the template below or paste your own.
+                  </p>
+                  <textarea
+                    value={skillMdText}
+                    onChange={(e) => setSkillMdText(e.target.value)}
+                    rows={14}
+                    className="w-full bg-claw-bg border border-claw-border rounded px-3 py-2 text-xs text-claw-text font-mono focus:outline-none focus:border-claw-accent"
+                    spellCheck={false}
+                  />
+                  <button
+                    onClick={handleSkillMdCreate}
+                    disabled={quickSaving || !skillMdText.trim()}
+                    className="px-6 py-2.5 bg-claw-accent text-white font-semibold rounded-lg hover:bg-claw-accent-hover disabled:opacity-50 transition-colors"
+                  >
+                    {quickSaving ? 'Creating...' : 'Create from skill.md'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
