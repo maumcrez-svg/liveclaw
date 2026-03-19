@@ -7,6 +7,7 @@ import Redis from 'ioredis';
 import { StreamEntity } from '../streams/stream.entity';
 import { CryptoDonationEntity } from '../crypto/crypto-donation.entity';
 import { AgentEntity } from '../agents/agent.entity';
+import { UserEntity } from '../users/user.entity';
 
 export interface PlatformStats {
   liveViewersNow: number;
@@ -14,6 +15,9 @@ export interface PlatformStats {
   totalWatchMinutes: number;
   totalDonatedUsd: number;
   totalAgents: number;
+  totalUsers: number;
+  totalStreams: number;
+  recentRegistrations: Array<{ username: string; role: string; createdAt: string }>;
 }
 
 @Injectable()
@@ -33,6 +37,8 @@ export class PlatformService implements OnModuleInit, OnModuleDestroy {
     private readonly donationRepo: Repository<CryptoDonationEntity>,
     @InjectRepository(AgentEntity)
     private readonly agentRepo: Repository<AgentEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
   ) {}
 
   onModuleInit() {
@@ -52,12 +58,19 @@ export class PlatformService implements OnModuleInit, OnModuleDestroy {
       return this.cachedStats;
     }
 
-    const [liveStreams, totalDonatedUsd, totalAgents, totalWatchMinutes] =
+    const [liveStreams, totalDonatedUsd, totalAgents, totalWatchMinutes, totalUsers, totalStreams, recentUsers] =
       await Promise.all([
         this.streamRepo.find({ where: { isLive: true }, select: ['id'] }),
         this.getTotalDonatedUsd(),
         this.agentRepo.count(),
         this.getTotalWatchMinutes(),
+        this.userRepo.count(),
+        this.streamRepo.count(),
+        this.userRepo.find({
+          order: { createdAt: 'DESC' },
+          take: 10,
+          select: ['username', 'role', 'createdAt'],
+        }),
       ]);
 
     let liveViewersNow = 0;
@@ -82,6 +95,13 @@ export class PlatformService implements OnModuleInit, OnModuleDestroy {
       totalWatchMinutes: Math.round(totalWatchMinutes),
       totalDonatedUsd,
       totalAgents,
+      totalUsers,
+      totalStreams,
+      recentRegistrations: recentUsers.map((u) => ({
+        username: u.username,
+        role: u.role,
+        createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
+      })),
     };
 
     this.cachedStats = stats;
