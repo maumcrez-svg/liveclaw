@@ -155,7 +155,15 @@ export function useChat(streamId: string, agentId?: string) {
       );
     });
 
+    // Heartbeat: tell server this viewer is still actively watching
+    const heartbeat = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('viewer_heartbeat');
+      }
+    }, 30_000);
+
     return () => {
+      clearInterval(heartbeat);
       socket.disconnect();
       if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
     };

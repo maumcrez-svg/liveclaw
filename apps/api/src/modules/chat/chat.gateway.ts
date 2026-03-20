@@ -48,6 +48,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Cache streamId → agentId to avoid repeated DB lookups */
   private streamAgentMap: Map<string, string> = new Map();
 
+  /** Track last heartbeat response time per client */
+  private clientLastSeen: Map<string, number> = new Map();
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+
   constructor(
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
@@ -61,7 +65,35 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @Optional() @Inject(forwardRef(() => ModerationService))
     private readonly moderationService: ModerationService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
-  ) {}
+  ) {
+    // Heartbeat: every 60s, evict viewers whose sockets are dead but weren't cleaned up
+    this.heartbeatInterval = setInterval(() => this.evictStaleViewers(), 60_000);
+  }
+
+  private async evictStaleViewers(): Promise<void> {
+    const now = Date.now();
+    const staleThreshold = 90_000; // 90s without activity = stale
+    let evicted = 0;
+    for (const [clientId, streamId] of this.clientStreams.entries()) {
+      const lastSeen = this.clientLastSeen.get(clientId) ?? 0;
+      // Check if socket is still connected
+      const socket = this.server?.sockets?.sockets?.get(clientId);
+      if (!socket || !socket.connected) {
+        // Socket is gone but wasn't cleaned up — evict
+        await this.chatService.removeViewer(streamId, clientId);
+        this.clientStreams.delete(clientId);
+        this.clientLastSeen.delete(clientId);
+        evicted++;
+      } else if (now - lastSeen > staleThreshold && lastSeen > 0) {
+        // Socket connected but no heartbeat response in 90s
+        // Don't evict — just log. Socket.IO's own ping/pong handles truly dead connections.
+        this.logger.debug(`Stale viewer ${clientId} on stream ${streamId} (${Math.round((now - lastSeen) / 1000)}s)`);
+      }
+    }
+    if (evicted > 0) {
+      this.logger.log(`Evicted ${evicted} stale viewer(s)`);
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Connection lifecycle
@@ -136,6 +168,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Viewer disconnected from stream ${streamId} (client: ${client.id}, remaining: ${count})`);
       this.server.to(streamId).emit('viewer_count', { streamId, count });
       this.clientStreams.delete(client.id);
+      this.clientLastSeen.delete(client.id);
 
       const agentId = await this.resolveAgentId(streamId);
       if (agentId) this.broadcastViewerUpdate(streamId, agentId, count);
@@ -218,6 +251,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     client.join(data.streamId);
     this.clientStreams.set(client.id, data.streamId);
+    this.clientLastSeen.set(client.id, Date.now());
     const count = await this.chatService.addViewer(data.streamId, client.id);
     this.logger.log(`Viewer joined stream ${data.streamId} (client: ${client.id}, count: ${count})`);
     this.server
@@ -240,6 +274,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       event: 'joined',
       data: { streamId: data.streamId, viewerCount: count },
     };
+  }
+
+  @SubscribeMessage('viewer_heartbeat')
+  handleViewerHeartbeat(@ConnectedSocket() client: Socket) {
+    this.clientLastSeen.set(client.id, Date.now());
   }
 
   @SubscribeMessage('leave_stream')
