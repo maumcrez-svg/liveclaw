@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CategoryCard } from '@/components/browse/CategoryCard';
@@ -19,22 +19,35 @@ export default function BrowsePage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [streams, setStreams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [sort, setSort] = useState<SortOption>('viewers');
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [cats, liveStreams] = await Promise.all([
-          fetch(`${API_URL}/categories?sort=viewers`).then((r) => (r.ok ? r.json() : [])),
-          fetch(`${API_URL}/streams/live?sort=viewers`).then((r) => (r.ok ? r.json() : [])),
-        ]);
-        setCategories(cats);
-        setStreams(liveStreams);
-      } catch {}
-      setLoading(false);
+  const load = useCallback(async (isInitial = false) => {
+    try {
+      const [cats, liveStreams] = await Promise.all([
+        fetch(`${API_URL}/categories?sort=viewers`).then((r) => (r.ok ? r.json() : [])),
+        fetch(`${API_URL}/streams/live?sort=viewers`).then((r) => (r.ok ? r.json() : [])),
+      ]);
+      setCategories(cats);
+      setStreams(liveStreams);
+      setFetchError(false);
+      if (!isInitial) {
+        console.info(`[Browse] Poll refresh: ${cats.length} categories, ${liveStreams.length} streams`);
+      } else {
+        console.info(`[Browse] Loaded ${cats.length} categories, ${liveStreams.length} live streams`);
+      }
+    } catch {
+      setFetchError(true);
+      console.warn('[Browse] Fetch failed, will retry in 30s');
     }
-    load();
+    if (isInitial) setLoading(false);
   }, []);
+
+  useEffect(() => {
+    load(true);
+    const interval = setInterval(() => load(false), 30000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   const setTab = (t: Tab) => {
     router.push(`/browse?tab=${t}`);
@@ -121,7 +134,17 @@ export default function BrowsePage() {
             </div>
           ) : (
             <div className="bg-claw-card border border-claw-border rounded-lg p-12 text-center">
-              <p className="text-claw-text-muted">No categories yet</p>
+              <p className="text-claw-text-muted">
+                {fetchError ? 'Failed to load categories — retrying...' : 'No categories yet'}
+              </p>
+              {fetchError && (
+                <button
+                  onClick={() => load(false)}
+                  className="mt-3 px-4 py-2 text-sm bg-claw-accent text-white rounded-lg hover:bg-claw-accent-hover transition-colors"
+                >
+                  Retry now
+                </button>
+              )}
             </div>
           )}
         </>
@@ -164,8 +187,20 @@ export default function BrowsePage() {
             </>
           ) : (
             <div className="bg-claw-card border border-claw-border rounded-lg p-12 text-center">
-              <p className="text-lg font-medium text-claw-text-muted mb-1">No live streams right now</p>
-              <p className="text-sm text-claw-text-muted/70">Check back soon!</p>
+              <p className="text-lg font-medium text-claw-text-muted mb-1">
+                {fetchError ? 'Failed to load streams — retrying...' : 'No live streams right now'}
+              </p>
+              <p className="text-sm text-claw-text-muted/70">
+                {fetchError ? '' : 'Check back soon!'}
+              </p>
+              {fetchError && (
+                <button
+                  onClick={() => load(false)}
+                  className="mt-3 px-4 py-2 text-sm bg-claw-accent text-white rounded-lg hover:bg-claw-accent-hover transition-colors"
+                >
+                  Retry now
+                </button>
+              )}
             </div>
           )}
         </>

@@ -82,7 +82,15 @@ export function StreamPlayer({ src }: StreamPlayerProps) {
   }, [src]);
 
   const tryPlay = useCallback((video: HTMLVideoElement) => {
-    video.play().catch((err) => {
+    video.play().then(() => {
+      // Firefox can resolve play() without error but keep video paused
+      setTimeout(() => {
+        if (video.paused && !video.ended) {
+          console.warn('[StreamPlayer] play() resolved but video still paused (Firefox autoplay policy)');
+          setPlaybackError('click');
+        }
+      }, 500);
+    }).catch((err) => {
       console.warn('[StreamPlayer] Autoplay blocked:', err.name);
       setPlaybackError('click');
     });
@@ -101,6 +109,8 @@ export function StreamPlayer({ src }: StreamPlayerProps) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    console.info('[StreamPlayer] Init | browser:', navigator.userAgent.slice(0, 80));
 
     retriesRef.current = 0;
     usingFallbackRef.current = false;

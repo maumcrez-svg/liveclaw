@@ -73,11 +73,13 @@ export function useChat(streamId: string, agentId?: string) {
 
     socket.on('connect', () => {
       setConnected(true);
+      console.info(`[Chat] Connected, joining stream ${streamId}`);
       socket.emit('join_stream', { streamId });
     });
 
     socket.on('disconnect', () => {
       setConnected(false);
+      console.info('[Chat] Disconnected');
     });
 
     socket.on('new_message', (message: ChatMessage) => {
@@ -90,6 +92,7 @@ export function useChat(streamId: string, agentId?: string) {
 
     socket.on('viewer_count', (data: { streamId: string; count: number }) => {
       if (data.streamId === streamId) {
+        console.info(`[Chat] Viewer count: ${data.count}`);
         setViewerCount(data.count);
       }
     });

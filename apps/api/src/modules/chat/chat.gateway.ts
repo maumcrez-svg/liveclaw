@@ -22,6 +22,7 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { EmotesService } from '../emotes/emotes.service';
 import { ModerationService } from './moderation/moderation.service';
 import { AgentEntity } from '../agents/agent.entity';
+import { StreamEntity } from '../streams/stream.entity';
 
 /** Maximum messages a user may send in the rate-limit window. */
 const RATE_LIMIT_MAX_MESSAGES = 5;
@@ -148,6 +149,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('subscribe_counts')
   async handleSubscribeCounts(@ConnectedSocket() client: Socket) {
     client.join('counts');
+
+    // Send snapshot of all current viewer counts so client starts with full picture
+    try {
+      const streamRepo = this.agentRepo.manager.getRepository(StreamEntity);
+      const liveStreams = await streamRepo.find({
+        where: { isLive: true },
+        select: ['id', 'agentId'],
+      });
+      if (liveStreams.length > 0) {
+        const entries: Array<{ agentId: string; count: number }> = [];
+        for (const s of liveStreams) {
+          const count = await this.chatService.getViewerCount(s.id);
+          if (count > 0) {
+            entries.push({ agentId: s.agentId, count });
+            this.streamAgentMap.set(s.id, s.agentId);
+          }
+        }
+        if (entries.length > 0) {
+          client.emit('viewer_count_snapshot', entries);
+        }
+      }
+    } catch (err) {
+      this.logger.warn('Failed to send viewer count snapshot', err);
+    }
+
     return { event: 'subscribed_counts' };
   }
 

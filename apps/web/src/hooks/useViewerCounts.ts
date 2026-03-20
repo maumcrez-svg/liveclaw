@@ -22,9 +22,23 @@ export function useViewerCounts(): Map<string, number> {
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.info('[ViewerCounts] Connected, subscribing to counts');
       socket.emit('subscribe_counts');
     });
 
+    // Initial snapshot of all current viewer counts
+    socket.on('viewer_count_snapshot', (entries: Array<{ agentId: string; count: number }>) => {
+      console.info(`[ViewerCounts] Snapshot received: ${entries.length} streams`);
+      setCounts(() => {
+        const next = new Map<string, number>();
+        for (const e of entries) {
+          if (e.count > 0) next.set(e.agentId, e.count);
+        }
+        return next;
+      });
+    });
+
+    // Real-time updates after snapshot
     socket.on('viewer_count_update', (data: { agentId: string; count: number }) => {
       setCounts((prev) => {
         const next = new Map(prev);
