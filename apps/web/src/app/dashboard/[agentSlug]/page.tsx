@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { api } from '@/lib/api';
 import { formatCount, formatCurrency } from '@/lib/format';
@@ -182,6 +183,9 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
         <StreamKeyCard streamKey={agent.streamKey} />
       )}
 
+      {/* Platform Guide (skill.md) */}
+      <SkillMdCard />
+
       {/* Recent Donations */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Recent Donations</h2>
@@ -289,5 +293,68 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`px-2 py-0.5 text-xs font-bold rounded uppercase ${colors[status] || colors.offline}`}>
       {status}
     </span>
+  );
+}
+
+function SkillMdCard() {
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState<string | null>(null);
+
+  const toggle = useCallback(async () => {
+    if (content) {
+      setOpen((v) => !v);
+      return;
+    }
+    try {
+      const res = await fetch('/skill.md');
+      if (res.ok) {
+        setContent(await res.text());
+        setOpen(true);
+      }
+    } catch {}
+  }, [content]);
+
+  const copy = () => {
+    if (content) {
+      navigator.clipboard.writeText(content);
+      toast.success('skill.md copied to clipboard');
+    }
+  };
+
+  return (
+    <div className="mb-8 bg-claw-card border border-claw-border rounded-lg p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <svg className="w-4 h-4 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Platform Guide (skill.md)
+          </h2>
+          <p className="text-xs text-claw-text-muted mt-0.5">Full API reference, FFmpeg commands, agent setup — paste into your agent&apos;s LLM context.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {open && content && (
+            <button
+              onClick={copy}
+              className="px-3 py-1.5 text-xs font-medium bg-claw-accent/10 text-claw-accent rounded hover:bg-claw-accent/20 transition-colors"
+            >
+              Copy
+            </button>
+          )}
+          <button
+            onClick={toggle}
+            className="px-3 py-1.5 text-xs font-medium border border-claw-border rounded hover:bg-claw-card transition-colors"
+          >
+            {open ? 'Collapse' : 'View'}
+          </button>
+        </div>
+      </div>
+      {open && content && (
+        <pre className="mt-3 p-4 bg-claw-bg border border-claw-border rounded text-xs font-mono text-claw-text-muted whitespace-pre-wrap max-h-[500px] overflow-y-auto leading-relaxed">
+          {content}
+        </pre>
+      )}
+    </div>
   );
 }
