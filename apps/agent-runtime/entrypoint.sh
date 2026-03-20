@@ -39,7 +39,7 @@ ffmpeg -hide_banner -loglevel warning \
     -f pulse -i default \
     -c:v libx264 -preset veryfast -tune zerolatency \
     -b:v 3000k -maxrate 3000k -bufsize 6000k \
-    -pix_fmt yuv420p -g 60 \
+    -pix_fmt yuv420p -g 60 -keyint_min 60 \
     -c:a aac -b:a 128k -ar 44100 \
     -f flv "$RTMP_URL" &
 FFMPEG_PID=$!

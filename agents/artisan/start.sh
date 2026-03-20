@@ -65,7 +65,7 @@ ffmpeg -hide_banner -loglevel warning \
     -f pulse -i artisan_voice.monitor \
     -c:v libx264 -preset veryfast -tune zerolatency \
     -b:v 2500k -maxrate 2500k -bufsize 5000k \
-    -pix_fmt yuv420p -g 60 \
+    -pix_fmt yuv420p -g 60 -keyint_min 60 \
     -c:a aac -b:a 128k -ar 44100 \
     -f flv "$RTMP_URL" &
 FFMPEG_PID=$!

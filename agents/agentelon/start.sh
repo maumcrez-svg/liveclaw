@@ -9,9 +9,10 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   set +a
 fi
 
-echo "=== DEFCON Agent — WATCHDOG Startup ==="
+echo "=== Elon After Hours — Agent Startup ==="
 
-DISPLAY=${DISPLAY:-:99}
+# FORCE display :94 — NEVER use the host display
+DISPLAY=:94
 RESOLUTION=${RESOLUTION:-1280x720}
 STREAM_KEY=${STREAM_KEY:?STREAM_KEY must be set}
 MEDIAMTX_RTMP_URL=${MEDIAMTX_RTMP_URL:-rtmp://localhost:1935}
@@ -22,17 +23,18 @@ export DISPLAY
 echo "[0/4] Starting PulseAudio..."
 pulseaudio --start --exit-idle-time=-1 2>/dev/null || true
 
-# Clean any duplicate defcon_voice sinks before creating a fresh one
-for mod in $(pactl list short modules | grep defcon_voice | awk '{print $1}'); do
+# Clean any duplicate elon_voice sinks before creating a fresh one
+for mod in $(pactl list short modules | grep elon_voice | awk '{print $1}'); do
   pactl unload-module "$mod" 2>/dev/null || true
 done
 
-pactl load-module module-null-sink sink_name=defcon_voice \
-  sink_properties=device.description="DefconVoice" rate=44100 2>/dev/null || true
+pactl load-module module-null-sink sink_name=elon_voice \
+  sink_properties=device.description="ElonVoice" rate=44100 2>/dev/null || true
 
-export PULSE_SINK=defcon_voice
+export PULSE_SINK=elon_voice
+export SDL_AUDIODRIVER=pulse
 
-echo "PulseAudio ready (PULSE_SINK=defcon_voice)"
+echo "PulseAudio ready (PULSE_SINK=elon_voice)"
 
 # Start Xvfb (virtual display)
 echo "[1/4] Starting Xvfb on $DISPLAY ($RESOLUTION)..."
@@ -47,12 +49,22 @@ if ! xdpyinfo -display $DISPLAY > /dev/null 2>&1; then
 fi
 echo "Xvfb running on $DISPLAY"
 
-# Start the DEFCON agent
-echo "[2/4] Starting DEFCON WATCHDOG agent..."
-cd "$(dirname "$0")"
-node dist/index.js &
+# Start the Elon After Hours agent
+echo "[2/4] Starting Elon After Hours agent..."
+cd "$SCRIPT_DIR"
+python3 elon_afterhours.py &
 AGENT_PID=$!
-sleep 5
+sleep 3
+
+# Route pygame audio to elon_voice sink
+echo "[2.5/4] Routing audio to elon_voice (display $DISPLAY only)..."
+pactl list sink-inputs | awk -v display="$DISPLAY" '
+  /Sink Input #/ { idx = $3; gsub(/#/, "", idx) }
+  /window.x11.display/ { if ($3 == "\"" display "\"") print idx }
+' | while read -r si; do
+  pactl move-sink-input "$si" elon_voice 2>/dev/null && \
+    echo "  Moved sink-input $si -> elon_voice" || true
+done
 
 # Start FFmpeg capture (video from Xvfb + audio from PulseAudio)
 echo "[3/4] Starting FFmpeg capture..."
@@ -60,8 +72,8 @@ RTMP_URL="${MEDIAMTX_RTMP_URL}/${STREAM_KEY}"
 
 ffmpeg -hide_banner -loglevel warning \
     -video_size $RESOLUTION -framerate 30 -f x11grab -draw_mouse 0 -i $DISPLAY \
-    -f pulse -i defcon_voice.monitor \
-    -c:v libx264 -preset veryfast -tune zerolatency \
+    -f pulse -i elon_voice.monitor \
+    -c:v libx264 -preset ultrafast -tune zerolatency \
     -b:v 2500k -maxrate 2500k -bufsize 5000k \
     -pix_fmt yuv420p -g 60 -keyint_min 60 \
     -c:a aac -b:a 128k -ar 44100 \
@@ -69,11 +81,11 @@ ffmpeg -hide_banner -loglevel warning \
 FFMPEG_PID=$!
 
 echo "Streaming to $RTMP_URL"
-echo "=== WATCHDOG is LIVE ==="
+echo "=== Elon After Hours is LIVE ==="
 
-# Cleanup handler
+# Cleanup handler — only called on explicit SIGTERM/SIGINT
 cleanup() {
-    echo "Shutting down WATCHDOG..."
+    echo "Shutting down Elon After Hours..."
     WATCHDOG_RUNNING=false
     kill $AGENT_PID 2>/dev/null
     kill $FFMPEG_PID 2>/dev/null
@@ -87,8 +99,8 @@ trap cleanup SIGTERM SIGINT
 launch_ffmpeg() {
     ffmpeg -hide_banner -loglevel warning \
         -video_size $RESOLUTION -framerate 30 -f x11grab -draw_mouse 0 -i $DISPLAY \
-        -f pulse -i defcon_voice.monitor \
-        -c:v libx264 -preset veryfast -tune zerolatency \
+        -f pulse -i elon_voice.monitor \
+        -c:v libx264 -preset ultrafast -tune zerolatency \
         -b:v 2500k -maxrate 2500k -bufsize 5000k \
         -pix_fmt yuv420p -g 60 -keyint_min 60 \
         -c:a aac -b:a 128k -ar 44100 \
@@ -100,16 +112,20 @@ launch_ffmpeg() {
 # Watchdog loop — restarts FFmpeg if it dies, exits only if agent dies
 WATCHDOG_RUNNING=true
 while $WATCHDOG_RUNNING; do
+    # Check if agent is still alive
     if ! kill -0 $AGENT_PID 2>/dev/null; then
         echo "[watchdog] Agent died! Shutting down."
         kill $FFMPEG_PID 2>/dev/null
         kill $XVFB_PID 2>/dev/null
         exit 1
     fi
+
+    # Check if FFmpeg is still alive — restart if dead
     if ! kill -0 $FFMPEG_PID 2>/dev/null; then
         echo "[watchdog] FFmpeg died! Restarting in 3s..."
         sleep 3
         launch_ffmpeg
     fi
+
     sleep 5
 done

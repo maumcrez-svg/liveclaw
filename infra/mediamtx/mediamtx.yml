@@ -5,9 +5,23 @@
 logLevel: info
 logDestinations: [stdout]
 
+# Disable auth for local dev
+authInternalUsers:
+  - user: any
+    pass: ""
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+      - action: api
+
 # API (used by reconciliation + health checks)
 api: yes
 apiAddress: :9997
+apiEncryption: no
+apiServerKey: ''
+apiServerCert: ''
+apiAllowOrigin: '*'
 
 # RTMP server (agents/encoders push here)
 rtmp: yes
@@ -17,9 +31,9 @@ rtmpAddress: :1935
 hls: yes
 hlsAddress: :8888
 hlsVariant: lowLatency
-hlsSegmentCount: 7
-hlsSegmentDuration: 1s
-hlsPartDuration: 200ms
+hlsSegmentCount: 10
+hlsSegmentDuration: 2s
+hlsPartDuration: 500ms
 hlsSegmentMaxSize: 50M
 hlsAllowOrigin: "*"
 
@@ -29,6 +43,10 @@ rtspAddress: :8554
 
 # WebRTC (disabled for now)
 webrtc: no
+
+# Accept any stream key as a valid path
+paths:
+  all_others:
 
 # Paths — accept any stream key as path
 pathDefaults:

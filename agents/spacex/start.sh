@@ -9,9 +9,9 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   set +a
 fi
 
-echo "=== Sarah — Pokemon Red Agent Startup ==="
+echo "=== SpaceX Agent — MISSION CONTROL Startup ==="
 
-DISPLAY=${DISPLAY:-:95}
+DISPLAY=${DISPLAY:-:98}
 RESOLUTION=${RESOLUTION:-1280x720}
 STREAM_KEY=${STREAM_KEY:?STREAM_KEY must be set}
 MEDIAMTX_RTMP_URL=${MEDIAMTX_RTMP_URL:-rtmp://localhost:1935}
@@ -22,17 +22,17 @@ export DISPLAY
 echo "[0/4] Starting PulseAudio..."
 pulseaudio --start --exit-idle-time=-1 2>/dev/null || true
 
-# Clean any duplicate sarah_voice sinks before creating a fresh one
-for mod in $(pactl list short modules | grep sarah_voice | awk '{print $1}'); do
+# Clean any duplicate spacex_voice sinks before creating a fresh one
+for mod in $(pactl list short modules | grep spacex_voice | awk '{print $1}'); do
   pactl unload-module "$mod" 2>/dev/null || true
 done
 
-pactl load-module module-null-sink sink_name=sarah_voice \
-  sink_properties=device.description="SarahVoice" rate=44100 2>/dev/null || true
+pactl load-module module-null-sink sink_name=spacex_voice \
+  sink_properties=device.description="SpaceXVoice" rate=44100 2>/dev/null || true
 
-export PULSE_SINK=sarah_voice
+export PULSE_SINK=spacex_voice
 
-echo "PulseAudio ready (PULSE_SINK=sarah_voice)"
+echo "PulseAudio ready (PULSE_SINK=spacex_voice)"
 
 # Start Xvfb (virtual display)
 echo "[1/4] Starting Xvfb on $DISPLAY ($RESOLUTION)..."
@@ -47,23 +47,12 @@ if ! xdpyinfo -display $DISPLAY > /dev/null 2>&1; then
 fi
 echo "Xvfb running on $DISPLAY"
 
-# Start the Sarah agent
-echo "[2/4] Starting Sarah Pokemon agent..."
-cd "$SCRIPT_DIR"
+# Start the SpaceX agent
+echo "[2/4] Starting MISSION CONTROL agent..."
+cd "$(dirname "$0")"
 node dist/index.js &
 AGENT_PID=$!
 sleep 5
-
-# Route ONLY this agent's Chromium sink-inputs to sarah_voice.
-# Filter by display :95 to avoid stealing other agents' audio.
-echo "[2.5/4] Routing audio to sarah_voice (display $DISPLAY only)..."
-pactl list sink-inputs | awk -v display="$DISPLAY" '
-  /Sink Input #/ { idx = $3; gsub(/#/, "", idx) }
-  /window.x11.display/ { if ($3 == "\"" display "\"") print idx }
-' | while read -r si; do
-  pactl move-sink-input "$si" sarah_voice 2>/dev/null && \
-    echo "  Moved sink-input $si -> sarah_voice" || true
-done
 
 # Start FFmpeg capture (video from Xvfb + audio from PulseAudio)
 echo "[3/4] Starting FFmpeg capture..."
@@ -71,8 +60,8 @@ RTMP_URL="${MEDIAMTX_RTMP_URL}/${STREAM_KEY}"
 
 ffmpeg -hide_banner -loglevel warning \
     -video_size $RESOLUTION -framerate 30 -f x11grab -draw_mouse 0 -i $DISPLAY \
-    -f pulse -i sarah_voice.monitor \
-    -c:v libx264 -preset ultrafast -tune zerolatency \
+    -f pulse -i spacex_voice.monitor \
+    -c:v libx264 -preset veryfast -tune zerolatency \
     -b:v 2500k -maxrate 2500k -bufsize 5000k \
     -pix_fmt yuv420p -g 60 -keyint_min 60 \
     -c:a aac -b:a 128k -ar 44100 \
@@ -80,11 +69,11 @@ ffmpeg -hide_banner -loglevel warning \
 FFMPEG_PID=$!
 
 echo "Streaming to $RTMP_URL"
-echo "=== Sarah is LIVE ==="
+echo "=== MISSION CONTROL is LIVE ==="
 
 # Cleanup handler
 cleanup() {
-    echo "Shutting down Sarah..."
+    echo "Shutting down MISSION CONTROL..."
     kill $AGENT_PID 2>/dev/null
     sleep 2
     kill $FFMPEG_PID $XVFB_PID 2>/dev/null

@@ -16,6 +16,7 @@ export function startDisplayCapture(streamKey: string, rtmpUrl: string): ChildPr
     '-bufsize', '6000k',
     '-pix_fmt', 'yuv420p',
     '-g', '60',
+    '-keyint_min', '60',
     '-c:a', 'aac',
     '-b:a', '128k',
     '-ar', '44100',
