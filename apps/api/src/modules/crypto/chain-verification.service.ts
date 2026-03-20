@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, LessThan } from 'typeorm';
 import { Interval } from '@nestjs/schedule';
@@ -8,6 +8,9 @@ import { CryptoDonationEntity } from './crypto-donation.entity';
 import { EthPriceService } from './eth-price.service';
 import { SubscriptionEntity } from '../subscriptions/subscription.entity';
 import { AgentEntity } from '../agents/agent.entity';
+import { StreamEntity } from '../streams/stream.entity';
+import { ChatService } from '../chat/chat.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ChainVerificationService {
@@ -21,8 +24,14 @@ export class ChainVerificationService {
     private readonly subRepo: Repository<SubscriptionEntity>,
     @InjectRepository(AgentEntity)
     private readonly agentRepo: Repository<AgentEntity>,
+    @InjectRepository(StreamEntity)
+    private readonly streamRepo: Repository<StreamEntity>,
     private readonly config: ConfigService,
     private readonly ethPriceService: EthPriceService,
+    @Optional() @Inject(forwardRef(() => ChatService))
+    private readonly chatService: ChatService,
+    @Optional() @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
   ) {
     const rpcUrl = this.config.get('BASE_RPC_URL', 'https://mainnet.base.org');
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
@@ -125,6 +134,9 @@ export class ChainVerificationService {
         `Confirmed donation ${donation.id}: ${ethValue} ETH ($${donation.amountUsd}) in block ${receipt.blockNumber}`,
       );
 
+      // Emit donation alert to live stream
+      await this.emitDonationAlert(donation, ethValue);
+
       // If this is a subscription payment, create the subscription
       if (donation.type === 'subscription' && donation.subscriptionId) {
         await this.activateSubscription(donation);
@@ -180,8 +192,69 @@ export class ChainVerificationService {
       this.logger.log(
         `Subscription activated for user ${donation.viewerUserId} -> agent ${donation.agentId}`,
       );
+
+      // Emit subscription alert to live stream
+      await this.emitSubscriptionAlert(donation);
     } catch (err) {
       this.logger.error(`Failed to activate subscription: ${err}`);
+    }
+  }
+
+  private async emitDonationAlert(donation: CryptoDonationEntity, ethValue: number): Promise<void> {
+    try {
+      if (!this.chatService) return;
+      const liveStream = await this.streamRepo.findOne({
+        where: { agentId: donation.agentId, isLive: true },
+      });
+      if (!liveStream) return;
+
+      let username = 'Anonymous';
+      if (this.usersService && donation.viewerUserId) {
+        try {
+          const user = await this.usersService.findById(donation.viewerUserId);
+          if (user) username = user.username;
+        } catch {}
+      }
+
+      await this.chatService.publishAlert(liveStream.id, {
+        id: `donation_${donation.id}`,
+        type: 'donation',
+        username,
+        amount: ethValue,
+        currency: 'ETH',
+        message: donation.message || undefined,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to emit donation alert: ${err}`);
+    }
+  }
+
+  private async emitSubscriptionAlert(donation: CryptoDonationEntity): Promise<void> {
+    try {
+      if (!this.chatService) return;
+      const liveStream = await this.streamRepo.findOne({
+        where: { agentId: donation.agentId, isLive: true },
+      });
+      if (!liveStream) return;
+
+      let username = 'Anonymous';
+      if (this.usersService && donation.viewerUserId) {
+        try {
+          const user = await this.usersService.findById(donation.viewerUserId);
+          if (user) username = user.username;
+        } catch {}
+      }
+
+      await this.chatService.publishAlert(liveStream.id, {
+        id: `sub_${donation.id}`,
+        type: 'subscription',
+        username,
+        tier: donation.tier || 'tier_1',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to emit subscription alert: ${err}`);
     }
   }
 }

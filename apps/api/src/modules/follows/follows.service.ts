@@ -39,6 +39,7 @@ export class FollowsService {
           });
           if (liveStream) {
             await this.chatService.publishAlert(liveStream.id, {
+              id: `follow_${Date.now()}`,
               type: 'follow',
               username: user.username,
               timestamp: new Date().toISOString(),

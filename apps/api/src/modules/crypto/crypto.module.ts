@@ -15,6 +15,9 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../../common/common.module';
 import { SubscriptionEntity } from '../subscriptions/subscription.entity';
 import { AgentEntity } from '../agents/agent.entity';
+import { StreamEntity } from '../streams/stream.entity';
+import { ChatModule } from '../chat/chat.module';
+import { UsersModule } from '../users/users.module';
 import { ModuleRef } from '@nestjs/core';
 
 @Module({
@@ -25,9 +28,12 @@ import { ModuleRef } from '@nestjs/core';
       CryptoDonationEntity,
       SubscriptionEntity,
       AgentEntity,
+      StreamEntity,
     ]),
     forwardRef(() => AgentsModule),
     forwardRef(() => AuthModule),
+    forwardRef(() => ChatModule),
+    forwardRef(() => UsersModule),
     CommonModule,
   ],
   controllers: [CryptoWalletController, CryptoDonationController, EthPriceController],
