@@ -8,6 +8,8 @@ const HLS_FALLBACK_URL = '/hls';
 
 interface StreamPlayerProps {
   src: string;
+  /** Called when the player exhausts all retries and gives up */
+  onStreamEnded?: () => void;
 }
 
 function isMobile(): boolean {
@@ -62,7 +64,7 @@ function getHlsConfig(mobile: boolean): Record<string, any> {
   };
 }
 
-export function StreamPlayer({ src }: StreamPlayerProps) {
+export function StreamPlayer({ src, onStreamEnded }: StreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const retriesRef = useRef(0);
@@ -260,12 +262,14 @@ export function StreamPlayer({ src }: StreamPlayerProps) {
             console.error('[StreamPlayer] Max retries reached, giving up');
             setPlaybackError('network');
             hls.destroy();
+            onStreamEnded?.();
           }
           return;
         }
 
         setPlaybackError('fatal');
         hls.destroy();
+        onStreamEnded?.();
       });
 
       hlsRef.current = hls;
@@ -296,6 +300,7 @@ export function StreamPlayer({ src }: StreamPlayerProps) {
         if (stallRecoveryTimer) clearTimeout(stallRecoveryTimer);
       };
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, getFallbackSrc, tryPlay]);
 
   return (
