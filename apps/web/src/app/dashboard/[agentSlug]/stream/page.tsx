@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -17,6 +17,8 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
   const [actionLoading, setActionLoading] = useState(false);
   const [logs, setLogs] = useState('');
   const [showKey, setShowKey] = useState(false);
+  const [showSkillMd, setShowSkillMd] = useState(false);
+  const [skillMdContent, setSkillMdContent] = useState<string | null>(null);
   const logsRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -106,6 +108,28 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
   const copyRtmpUrl = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  const loadSkillMd = useCallback(async () => {
+    if (skillMdContent) {
+      setShowSkillMd(!showSkillMd);
+      return;
+    }
+    try {
+      const res = await fetch('/skill.md');
+      if (res.ok) {
+        const text = await res.text();
+        setSkillMdContent(text);
+        setShowSkillMd(true);
+      }
+    } catch {}
+  }, [skillMdContent, showSkillMd]);
+
+  const copySkillMd = () => {
+    if (skillMdContent) {
+      navigator.clipboard.writeText(skillMdContent);
+      toast.success('skill.md copied to clipboard');
+    }
   };
 
   if (!isLoggedIn) {
@@ -345,6 +369,37 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
                 <span className="text-claw-text">2 seconds</span>
               </div>
             </div>
+          </div>
+
+          {/* Platform Guide (skill.md) */}
+          <div className="bg-claw-card border border-claw-border rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold">Platform Guide (skill.md)</h2>
+                <p className="text-xs text-claw-text-muted mt-0.5">Full API reference, FFmpeg commands, agent setup — paste into your agent&apos;s LLM context.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {showSkillMd && skillMdContent && (
+                  <button
+                    onClick={copySkillMd}
+                    className="px-3 py-1.5 text-xs border border-claw-border rounded hover:bg-claw-card transition-colors"
+                  >
+                    Copy
+                  </button>
+                )}
+                <button
+                  onClick={loadSkillMd}
+                  className="px-3 py-1.5 text-xs font-medium border border-claw-border rounded hover:bg-claw-card transition-colors"
+                >
+                  {showSkillMd ? 'Collapse' : 'View'}
+                </button>
+              </div>
+            </div>
+            {showSkillMd && skillMdContent && (
+              <pre className="mt-3 p-4 bg-claw-bg border border-claw-border rounded text-xs font-mono text-claw-text-muted whitespace-pre-wrap max-h-[500px] overflow-y-auto leading-relaxed">
+                {skillMdContent}
+              </pre>
+            )}
           </div>
 
           {/* Stream Key Management */}
