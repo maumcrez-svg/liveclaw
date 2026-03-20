@@ -90,22 +90,29 @@
   /* Segment Card Container */
   .segment-card {
     width: 780px;
-    background: rgba(6,9,18,0.94);
-    border: 1px solid rgba(0,82,255,0.2);
+    background: rgba(8,14,28,0.96);
+    border: 1px solid rgba(0,82,255,0.35);
     border-radius: 10px;
     overflow: hidden;
     backdrop-filter: blur(16px);
-    box-shadow: 0 12px 60px rgba(0,0,0,0.6), 0 0 60px rgba(0,82,255,0.05);
+    box-shadow: 0 12px 60px rgba(0,0,0,0.6), 0 0 60px rgba(0,82,255,0.1);
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+    transform: translateY(30px) scale(0.97);
+    transition: opacity 1.0s cubic-bezier(0.16,1,0.3,1), transform 1.0s cubic-bezier(0.16,1,0.3,1), box-shadow 1.0s ease;
+    transition-delay: 0.3s;
     pointer-events: none;
     display: none;
   }
   .segment-card.visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     display: block;
+    box-shadow: 0 16px 80px rgba(0,0,0,0.7), 0 0 120px rgba(0,82,255,0.25), 0 0 40px rgba(0,82,255,0.12);
+    animation: cardPulse 3s ease-in-out infinite;
+  }
+  @keyframes cardPulse {
+    0%, 100% { box-shadow: 0 16px 80px rgba(0,0,0,0.7), 0 0 120px rgba(0,82,255,0.25); }
+    50% { box-shadow: 0 16px 80px rgba(0,0,0,0.7), 0 0 140px rgba(0,82,255,0.35); }
   }
   .segment-card .card-header {
     display: flex; align-items: center; gap: 10px;
@@ -597,6 +604,25 @@ let reactTimer = 0;
 let blinkTimer = 0;
 let isBlinking = false;
 let breathOffset = 0;
+let browRaise = 0;
+let browRaiseTarget = 0;
+let mouthFrame = 0;
+let mouthTimer = 0;
+
+// Movement system
+let headTilt = 0;        // head rotation in radians
+let headTiltTarget = 0;
+let torsoLean = 0;       // torso x offset
+let torsoLeanTarget = 0;
+let gestureArm = 0;      // 0=rest, 1=left raised, 2=right raised, 3=both
+let gestureArmTarget = 0;
+let gestureArmSmooth = 0;
+let weightShift = 0;     // lateral weight shift
+let weightShiftTarget = 0;
+let shoulderRaise = 0;   // shoulder emphasis
+let shoulderRaiseTarget = 0;
+let gestureTimer = 0;    // time between gesture changes
+let idleShiftTimer = 0;  // idle weight shift timer
 
 // Ecosystem data for left rail
 let ecosystemData = { baseTvl: '--', ethPrice: '--', gas: '--', blockNumber: '--', dailyTxn: '--', mood: 'Neutral' };
@@ -606,17 +632,31 @@ let ecosystemFlash = { baseTvl: 0, ethPrice: 0, gas: 0, blockNumber: 0, dailyTxn
 let currentSegmentType = 'monitoring';
 
 // =============================================
-// PIXEL ART — VESPOLAK (PX = 8, no cigarette)
+// VESPOLAK — PNG head + pixel art body
 // =============================================
 const PX = 8;
+const HEAD_IMG = new Image();
+let headLoaded = false;
+HEAD_IMG.onload = () => { headLoaded = true; console.log('[Broadcast] Head image loaded'); };
+HEAD_IMG.onerror = (e) => { console.error('[Broadcast] Head image FAILED to load', e); };
+HEAD_IMG.src = '/assets/vespolak-head.png';
+// Fallback: check every 500ms if loaded
+const headCheck = setInterval(() => {
+  if (HEAD_IMG.complete && HEAD_IMG.naturalWidth > 0) {
+    headLoaded = true;
+    clearInterval(headCheck);
+    console.log('[Broadcast] Head image loaded (fallback check)');
+  }
+}, 500);
 
-function px(n) { return n * PX; }
+// Head image size on screen
+const HEAD_W = 210;
+const HEAD_H = 210;
 
+// Body pixel art colors
 const COLORS = {
   skin:   '#8B5E3C',
   skin2:  '#7A5030',
-  hair:   '#F5D44A',
-  hair2:  '#E8C020',
   shirt:  '#1a1a2e',
   shirt2: '#12122a',
   blue:   '#0052FF',
@@ -626,11 +666,12 @@ const COLORS = {
   belt:   '#2a2020',
   shoe:   '#111118',
   shoeS:  '#0044dd',
-  white:  '#f0f0f0',
-  eye:    '#0a0a0a',
 };
 
-function buildCharacterPixels() {
+// Body-only pixels (no head — starts at neck/shoulders)
+// Origin (0,0) = top-left of body grid
+// Body is ~27 cols wide, ~30 rows tall
+function buildBodyPixels() {
   const pixels = [];
   function row(r, segments) {
     for (const [c0, c1, col] of segments) {
@@ -638,211 +679,190 @@ function buildCharacterPixels() {
     }
   }
 
-  // HAIR — messy blond
-  row(0,  [[8,11,'hair2'],[12,20,'hair'],[21,23,'hair2']]);
-  row(1,  [[6,9,'hair2'],[10,22,'hair'],[23,25,'hair2'],[7,7,'hair2']]);
-  row(2,  [[5,7,'hair2'],[8,11,'hair'],[12,22,'hair'],[23,26,'hair2']]);
-  row(3,  [[6,8,'hair2'],[9,10,'hair'],[11,21,'hair'],[22,25,'hair2'],[24,24,'hair']]);
-  row(4,  [[7,9,'hair2'],[10,11,'skin'],[12,20,'skin'],[21,22,'hair2'],[23,26,'hair2']]);
-  row(5,  [[8,9,'hair2'],[10,11,'skin'],[12,21,'skin'],[22,24,'hair']]);
-  // Stray hair spikes
-  row(0, [[4,5,'hair2'],[26,27,'hair2']]);
-  row(1, [[3,4,'hair2'],[27,28,'hair']]);
-  row(2, [[4,5,'hair']]);
+  // NECK — rows 0-1
+  row(0, [[13,19,'skin']]);
+  row(1, [[13,19,'skin']]);
 
-  // FACE — rows 4-13
-  row(6,  [[10,21,'skin']]);
-  row(7,  [[9,22,'skin']]);
-  row(8,  [[9,22,'skin']]);
-  row(9,  [[9,22,'skin']]);
-  row(10, [[9,22,'skin']]);
-  row(11, [[9,22,'skin']]);
-  row(12, [[9,22,'skin']]);
-  row(13, [[10,21,'skin']]);
-
-  // Eyes — tiny black dots
-  row(8,  [[12,13,'eye'],[19,20,'eye']]);
-  row(9,  [[12,13,'eye'],[19,20,'eye']]);
-
-  // Mouth area — no cigarette, just subtle skin shadow
-  row(12, [[14,14,'skin2'],[15,17,'skin2'],[18,18,'skin2']]);
-
-  // NECK
-  row(14, [[13,19,'skin']]);
-  row(15, [[13,19,'skin']]);
-
-  // SHOULDERS / SHIRT
-  row(16, [[7,9,'shirt'],[10,12,'skin'],[13,19,'shirt'],[20,22,'skin'],[23,25,'shirt']]);
-  row(17, [[6,9,'shirt'],[10,11,'shirt2'],[12,20,'shirt'],[21,22,'shirt2'],[23,26,'shirt']]);
-  row(18, [[5,8,'shirt'],[9,23,'shirt'],[24,27,'shirt']]);
-  row(19, [[5,27,'shirt']]);
-  row(20, [[5,27,'shirt']]);
+  // SHOULDERS / SHIRT — rows 2-11 (narrowed: cols 8-24 instead of 5-27)
+  row(2,  [[10,12,'shirt'],[13,14,'skin'],[15,17,'shirt'],[18,19,'skin'],[20,22,'shirt']]);
+  row(3,  [[9,12,'shirt'],[13,14,'shirt2'],[15,18,'shirt'],[19,20,'shirt2'],[21,23,'shirt']]);
+  row(4,  [[8,11,'shirt'],[12,20,'shirt'],[21,24,'shirt']]);
+  row(5,  [[8,24,'shirt']]);
+  row(6,  [[8,24,'shirt']]);
   // Blue collar accent
-  row(16, [[13,14,'blue'],[17,18,'blue']]);
+  row(2,  [[15,16,'blue'],[17,18,'blue']]);
   // Blue patches
-  row(20, [[7,11,'blue'],[21,25,'blue2']]);
-  row(21, [[5,27,'shirt']]);
-  row(22, [[5,27,'shirt2']]);
-  row(23, [[5,27,'shirt']]);
-  row(24, [[5,27,'shirt']]);
-  row(25, [[5,27,'shirt2']]);
+  row(6,  [[10,13,'blue'],[19,22,'blue2']]);
+  row(7,  [[8,24,'shirt']]);
+  row(8,  [[8,24,'shirt2']]);
+  row(9,  [[8,24,'shirt']]);
+  row(10, [[8,24,'shirt']]);
+  row(11, [[8,24,'shirt2']]);
 
-  // ARMS — at rest
-  row(17, [[3,5,'skin'],[27,29,'skin']]);
-  row(18, [[3,5,'skin'],[27,29,'skin']]);
-  row(19, [[3,5,'skin'],[27,29,'skin']]);
-  row(20, [[3,5,'skin'],[27,29,'skin']]);
-  row(21, [[3,5,'skin'],[27,29,'skin']]);
-  row(22, [[3,5,'skin'],[27,29,'skin']]);
-  row(23, [[3,5,'skin'],[27,29,'skin']]);
-  row(24, [[4,5,'skin'],[27,28,'skin']]);
-  row(25, [[4,5,'skin'],[27,28,'skin']]);
+  // ARMS — at rest, rows 3-14 (narrowed: cols 6-7 / 25-26)
+  row(3,  [[6,7,'skin'],[25,26,'skin']]);
+  row(4,  [[6,7,'skin'],[25,26,'skin']]);
+  row(5,  [[6,7,'skin'],[25,26,'skin']]);
+  row(6,  [[6,7,'skin'],[25,26,'skin']]);
+  row(7,  [[6,7,'skin'],[25,26,'skin']]);
+  row(8,  [[6,7,'skin'],[25,26,'skin']]);
+  row(9,  [[6,7,'skin'],[25,26,'skin']]);
+  row(10, [[7,7,'skin'],[25,25,'skin']]);
+  row(11, [[7,7,'skin'],[25,25,'skin']]);
   // Hands
-  row(26, [[3,6,'skin'],[26,29,'skin']]);
-  row(27, [[3,6,'skin'],[26,29,'skin']]);
-  row(28, [[3,5,'skin'],[26,28,'skin']]);
+  row(12, [[6,8,'skin'],[24,26,'skin']]);
+  row(13, [[6,8,'skin'],[24,26,'skin']]);
+  row(14, [[6,7,'skin'],[25,26,'skin']]);
 
-  // BELT
-  row(26, [[5,27,'belt']]);
-  row(27, [[5,27,'belt']]);
-  row(26, [[14,18,'skin2']]);
-  row(27, [[14,18,'skin2']]);
+  // BELT — rows 12-13
+  row(12, [[8,24,'belt']]);
+  row(13, [[8,24,'belt']]);
+  row(12, [[14,18,'skin2']]);
+  row(13, [[14,18,'skin2']]);
 
-  // PANTS
-  for (let r = 28; r <= 36; r++) row(r, [[6,26,'pants']]);
-  for (let r = 28; r <= 36; r++) row(r, [[15,16,'pants2']]);
-  row(37, [[6,14,'pants'],[17,26,'pants']]);
-  row(38, [[6,14,'pants'],[17,26,'pants']]);
-  row(39, [[6,14,'pants'],[17,26,'pants']]);
-  row(40, [[6,14,'pants'],[17,26,'pants']]);
+  // PANTS — rows 14-26 (narrowed: cols 9-23)
+  for (let r = 14; r <= 22; r++) row(r, [[9,23,'pants']]);
+  for (let r = 14; r <= 22; r++) row(r, [[15,16,'pants2']]);
+  row(23, [[9,14,'pants'],[17,23,'pants']]);
+  row(24, [[9,14,'pants'],[17,23,'pants']]);
+  row(25, [[9,14,'pants'],[17,23,'pants']]);
+  row(26, [[9,14,'pants'],[17,23,'pants']]);
 
-  // SHOES
-  row(41, [[5,14,'shoe'],[16,26,'shoe']]);
-  row(42, [[4,15,'shoe'],[15,27,'shoe']]);
-  row(43, [[3,16,'shoe'],[14,28,'shoe']]);
-  row(44, [[3,16,'shoeS'],[14,28,'shoeS']]);
-  row(45, [[4,15,'shoeS'],[15,27,'shoeS']]);
+  // SHOES — rows 27-31 (narrowed)
+  row(27, [[8,14,'shoe'],[17,23,'shoe']]);
+  row(28, [[7,15,'shoe'],[16,24,'shoe']]);
+  row(29, [[7,15,'shoe'],[16,24,'shoe']]);
+  row(30, [[7,15,'shoeS'],[16,24,'shoeS']]);
+  row(31, [[8,14,'shoeS'],[17,23,'shoeS']]);
 
   return pixels;
 }
 
-const CHARACTER_PIXELS = buildCharacterPixels();
-const CHAR_W = 32;
-const CHAR_H = 46;
-
-// Mouth frames for speaking: 0=closed, 1=slightly open, 2=open
-let mouthFrame = 0;
-let mouthTimer = 0;
-
-// Eyebrow raise for reacting
-let browRaise = 0;
-let browRaiseTarget = 0;
+const BODY_PIXELS = buildBodyPixels();
+const BODY_W = 32;  // cols
+const BODY_H = 32;  // rows
 
 function drawVespolak(cx, bottomY) {
-  const breath = Math.sin(time * 1.3) * 1.2;
-  const sway = Math.sin(time * 0.5) * 1.5; // subtle idle sway
+  const breath = Math.sin(time * 1.3) * 1.5;
+  const baseSway = Math.sin(time * 0.4) * 2;
+  const totalSway = baseSway + weightShift + torsoLean;
 
-  const ox = cx - (CHAR_W / 2) * PX + sway;
-  const oy = bottomY - CHAR_H * PX + breath;
+  // Body origin — body sits below head
+  const bodyTopY = bottomY - BODY_H * PX;
+  const bodyOx = cx - (BODY_W / 2) * PX + totalSway;
+  const bodyOy = bodyTopY + breath - shoulderRaise;
 
   ctx.save();
 
-  // Draw pixels
-  for (const [col, row, colorKey] of CHARACTER_PIXELS) {
-    let pixX = ox + col * PX;
-    let pixY = oy + row * PX;
-    // Subtle head micro-nod when speaking
-    if (row < 16 && hostState === 'speaking') {
-      pixY += Math.sin(time * 3) * 0.8;
+  // Draw body pixels with per-pixel arm gesture offsets
+  for (const [col, row, colorKey] of BODY_PIXELS) {
+    let pixX = bodyOx + col * PX;
+    let pixY = bodyOy + row * PX;
+
+    // Arm gesture animation — offset arm pixels
+    const isLeftArm = col <= 8 && row >= 3 && row <= 14;
+    const isRightArm = col >= 24 && row >= 3 && row <= 14;
+
+    if (isLeftArm) {
+      // gestureArmSmooth: 1=left up, 3=both up
+      const leftRaise = (gestureArmTarget === 1 || gestureArmTarget === 3) ? gestureArmSmooth : gestureArmSmooth * 0.2;
+      const raiseAmount = Math.min(leftRaise, 1.0);
+      const armPivotRow = 3;
+      const dist = row - armPivotRow;
+      // Raise: move up and outward
+      pixY -= dist * raiseAmount * 2.5;
+      pixX -= raiseAmount * 6;
+      // Slight rotation feel
+      pixY -= raiseAmount * 4;
     }
+
+    if (isRightArm) {
+      const rightRaise = (gestureArmTarget === 2 || gestureArmTarget === 3) ? gestureArmSmooth : gestureArmSmooth * 0.2;
+      const raiseAmount = Math.min(rightRaise, 1.0);
+      const armPivotRow = 3;
+      const dist = row - armPivotRow;
+      pixY -= dist * raiseAmount * 2.5;
+      pixX += raiseAmount * 6;
+      pixY -= raiseAmount * 4;
+    }
+
+    // Shoulder raise on emphasis rows
+    if (row >= 2 && row <= 4) {
+      pixY -= shoulderRaise * 0.5;
+    }
+
     ctx.fillStyle = COLORS[colorKey] || '#ff00ff';
     ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
   }
 
-  // Draw eyes (with blink + looking left toward Zone B)
-  drawEyes(ox, oy);
+  // Draw head image above body — with tilt and nod
+  if (headLoaded) {
+    const headX = cx - HEAD_W / 2 + totalSway;
+    const headY = bodyOy - HEAD_H + 16 - shoulderRaise * 0.5;
+    // Nod when speaking + lean forward on react
+    const nod = hostState === 'speaking' ? Math.sin(time * 2.5) * 2.5 :
+                hostState === 'reacting' ? -4 : 0;
 
-  // Draw mouth based on state
-  drawMouth(ox, oy);
+    // Apply head tilt rotation
+    ctx.save();
+    const headCx = headX + HEAD_W / 2;
+    const headCy = headY + HEAD_H / 2 + nod;
+    ctx.translate(headCx, headCy);
+    ctx.rotate(headTilt);
+    ctx.drawImage(HEAD_IMG, Math.round(-HEAD_W / 2), Math.round(-HEAD_H / 2), HEAD_W, HEAD_H);
 
-  // Draw eyebrow raise for reacting
-  if (browRaise > 0.1) {
-    drawBrowRaise(ox, oy);
+    // Lip sync overlay — draw mouth shapes based on mouthFrame
+    if (mouthFrame > 0) {
+      const mouthLocalX = 0; // center of head
+      const mouthLocalY = HEAD_H * 0.28; // ~78% down from top (mouth area)
+      if (mouthFrame === 1) {
+        ctx.fillStyle = '#3a2218';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY, 10, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6B422E';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY - 3, 12, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (mouthFrame === 2) {
+        ctx.fillStyle = '#2a1610';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY, 13, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6B422E';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY - 5, 14, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#7A5030';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY + 5, 11, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   ctx.restore();
 
-  // Subtle ambient glow under character
-  const glowGrad = ctx.createRadialGradient(cx + sway, bottomY - 10, 10, cx + sway, bottomY - 10, 200);
-  glowGrad.addColorStop(0, 'rgba(0,82,255,0.05)');
+  // Ambient glow — intensifies when speaking
+  const glowIntensity = hostState === 'speaking' ? 0.08 + currentAmplitude * 0.06 : 0.04;
+  const glowGrad = ctx.createRadialGradient(cx + totalSway, bottomY - 10, 10, cx + totalSway, bottomY - 10, 200);
+  glowGrad.addColorStop(0, `rgba(0,82,255,${glowIntensity})`);
   glowGrad.addColorStop(1, 'rgba(0,82,255,0)');
   ctx.fillStyle = glowGrad;
   ctx.beginPath();
-  ctx.ellipse(cx + sway, bottomY - 10, 200, 60, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + totalSway, bottomY - 10, 200, 60, 0, 0, Math.PI * 2);
   ctx.fill();
-}
-
-function drawEyes(ox, oy) {
-  const eyeRows = [8, 9];
-  const leftCols = [12, 13];
-  const rightCols = [19, 20];
-  // Eyes look slightly left (toward Zone B content)
-  const lookOffset = -1;
-
-  const drawEye = (cols, rows) => {
-    for (const r of rows) {
-      for (const c of cols) {
-        const pixX = ox + (c + lookOffset) * PX;
-        const pixY = oy + r * PX;
-        if (isBlinking) {
-          ctx.fillStyle = COLORS.skin;
-          ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
-          if (r === 8) {
-            ctx.fillStyle = COLORS.skin2;
-            ctx.fillRect(Math.round(pixX), Math.round(pixY + PX * 0.4), PX, PX * 0.3);
-          }
-        } else {
-          ctx.fillStyle = COLORS.eye;
-          ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
-        }
-      }
-    }
-  };
-
-  drawEye(leftCols, eyeRows);
-  drawEye(rightCols, eyeRows);
-}
-
-function drawMouth(ox, oy) {
-  // Mouth at rows 12-13, cols 14-18
-  if (hostState === 'speaking' && mouthFrame > 0) {
-    // Open mouth
-    const mouthCols = mouthFrame === 2 ? [14,15,16,17,18] : [15,16,17];
-    for (const c of mouthCols) {
-      const pixX = ox + c * PX;
-      const pixY = oy + 12 * PX;
-      ctx.fillStyle = '#3a2018'; // dark mouth interior
-      ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
-    }
-  }
-}
-
-function drawBrowRaise(ox, oy) {
-  // Draw raised eyebrows above eyes (row 7)
-  const browY = oy + (7 - browRaise * 1.2) * PX;
-  ctx.fillStyle = COLORS.hair2;
-  // Left brow
-  ctx.fillRect(Math.round(ox + 11 * PX), Math.round(browY), PX * 3, PX * 0.6);
-  // Right brow
-  ctx.fillRect(Math.round(ox + 18 * PX), Math.round(browY), PX * 3, PX * 0.6);
 }
 
 // =============================================
 // HOST STATE UPDATES
 // =============================================
 function updateHost() {
+  const dt = 0.016;
+
   // Blink
-  blinkTimer += 0.016;
+  blinkTimer += dt;
   if (!isBlinking && blinkTimer > 3 + Math.random() * 4) {
     isBlinking = true;
     blinkTimer = 0;
@@ -851,10 +871,9 @@ function updateHost() {
 
   // Mouth animation when speaking
   if (hostState === 'speaking') {
-    mouthTimer += 0.016;
-    if (mouthTimer > 0.1) {
+    mouthTimer += dt;
+    if (mouthTimer > 0.08) {
       mouthTimer = 0;
-      // Proportional to amplitude
       if (currentAmplitude > 0.15) mouthFrame = 2;
       else if (currentAmplitude > 0.05) mouthFrame = 1;
       else mouthFrame = 0;
@@ -865,7 +884,7 @@ function updateHost() {
 
   // Reacting state — eyebrow raise for 0.5s then return
   if (hostState === 'reacting') {
-    reactTimer -= 0.016;
+    reactTimer -= dt;
     browRaiseTarget = 1;
     if (reactTimer <= 0) {
       hostState = 'idle';
@@ -875,6 +894,74 @@ function updateHost() {
     browRaiseTarget = 0;
   }
   browRaise += (browRaiseTarget - browRaise) * 0.15;
+
+  // === MOVEMENT BY STATE ===
+  gestureTimer += dt;
+
+  if (hostState === 'speaking') {
+    // Head tilts rhythmically with speech
+    headTiltTarget = Math.sin(time * 1.8) * 0.04 + (currentAmplitude > 0.12 ? Math.sin(time * 3.5) * 0.025 : 0);
+
+    // Torso leans into speech, shifts with emphasis
+    torsoLeanTarget = Math.sin(time * 0.7) * 4 + (currentAmplitude > 0.15 ? 3 : 0);
+
+    // Arm gestures — change every 1.5-3s during speech
+    if (gestureTimer > 1.5 + Math.random() * 1.5) {
+      gestureTimer = 0;
+      const r = Math.random();
+      if (currentAmplitude > 0.12) {
+        // Animated gesturing
+        gestureArmTarget = r < 0.3 ? 1 : r < 0.6 ? 2 : r < 0.8 ? 3 : 0;
+      } else {
+        // Quieter — mostly rest with occasional gesture
+        gestureArmTarget = r < 0.7 ? 0 : r < 0.85 ? 1 : 2;
+      }
+    }
+
+    // Shoulder raise on emphasis
+    shoulderRaiseTarget = currentAmplitude > 0.18 ? 3 : currentAmplitude > 0.1 ? 1.5 : 0;
+
+    // Weight shift with speech rhythm
+    weightShiftTarget = Math.sin(time * 0.9) * 5;
+
+  } else if (hostState === 'reacting') {
+    // Quick lean forward + head tilt
+    headTiltTarget = -0.06;
+    torsoLeanTarget = 6;
+    shoulderRaiseTarget = 4;
+    gestureArmTarget = 3; // both arms up
+    weightShiftTarget = 0;
+
+  } else {
+    // IDLE — subtle alive movement
+    idleShiftTimer += dt;
+
+    // Slow weight shift every ~4s
+    if (idleShiftTimer > 4 + Math.random() * 3) {
+      idleShiftTimer = 0;
+      weightShiftTarget = (Math.random() - 0.5) * 8;
+      // Occasional subtle head tilt change
+      headTiltTarget = (Math.random() - 0.5) * 0.035;
+    }
+
+    // Very slow idle sway
+    torsoLeanTarget = Math.sin(time * 0.3) * 2;
+    shoulderRaiseTarget = 0;
+
+    // Occasional arm shift at rest
+    if (gestureTimer > 5 + Math.random() * 4) {
+      gestureTimer = 0;
+      gestureArmTarget = Math.random() < 0.85 ? 0 : (Math.random() < 0.5 ? 1 : 2);
+    }
+  }
+
+  // Smooth interpolation
+  const lerpSpeed = hostState === 'reacting' ? 0.18 : 0.06;
+  headTilt += (headTiltTarget - headTilt) * lerpSpeed;
+  torsoLean += (torsoLeanTarget - torsoLean) * lerpSpeed;
+  gestureArmSmooth += (gestureArmTarget - gestureArmSmooth) * 0.08;
+  weightShift += (weightShiftTarget - weightShift) * 0.04;
+  shoulderRaise += (shoulderRaiseTarget - shoulderRaise) * 0.12;
 }
 
 // =============================================
@@ -978,13 +1065,37 @@ function drawBackground() {
 // TRANSITION EFFECTS
 // =============================================
 let transitionAlpha = 0;
+let focusGlow = 0; // glow on Zone B when card appears
 
 function drawEffects() {
+  // Segment transition flash
   if (transitionAlpha > 0) {
-    ctx.fillStyle = `rgba(0,52,200,${transitionAlpha * 0.08})`;
+    // Blue sweep from left
+    const sweepX = (1 - transitionAlpha) * 1920;
+    const sweepGrad = ctx.createLinearGradient(sweepX - 200, 0, sweepX + 100, 0);
+    sweepGrad.addColorStop(0, 'rgba(0,82,255,0)');
+    sweepGrad.addColorStop(0.5, `rgba(0,82,255,${transitionAlpha * 0.15})`);
+    sweepGrad.addColorStop(1, 'rgba(0,82,255,0)');
+    ctx.fillStyle = sweepGrad;
     ctx.fillRect(0, 0, 1920, 1080);
-    transitionAlpha = Math.max(0, transitionAlpha - 0.04);
+    transitionAlpha = Math.max(0, transitionAlpha - 0.02);
   }
+
+  // Focus glow on Zone B when card is visible
+  if (focusGlow > 0) {
+    const glowGrad = ctx.createRadialGradient(900, 400, 100, 900, 400, 600);
+    glowGrad.addColorStop(0, `rgba(0,82,255,${focusGlow * 0.15})`);
+    glowGrad.addColorStop(1, 'rgba(0,82,255,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(346, 65, 1114, 691);
+  }
+
+  // Activity indicator — subtle pulse dots on left rail
+  const pulseAlpha = 0.15 + Math.sin(time * 2) * 0.1;
+  ctx.fillStyle = `rgba(0,82,255,${pulseAlpha})`;
+  ctx.beginPath();
+  ctx.arc(330, 80, 3, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 // =============================================
@@ -1033,7 +1144,6 @@ function getSegmentTag(type) {
     market_scan: 'MARKET RADAR',
     opening: 'BASE PULSE',
     closing: 'BASE PULSE',
-    pulse_check: 'BASE PULSE',
     monitoring: 'BASE PULSE',
   };
   return tags[type] || 'BASE PULSE';
@@ -1344,6 +1454,12 @@ window.__nod = function() {
 
 window.__segmentTransition = function(type) {
   transitionAlpha = 1.0;
+  focusGlow = 1.0;
+  // Decay focus glow over 2s
+  const decayFocus = setInterval(() => {
+    focusGlow = Math.max(0, focusGlow - 0.008);
+    if (focusGlow <= 0) clearInterval(decayFocus);
+  }, 16);
 };
 
 window.__environmentPulse = function(intensity) {
@@ -1450,102 +1566,12 @@ window.__updateEcosystem({
   dailyTxn: '3.2M',
 });
 
-// Demo: cycle through segment cards
-const demoSegments = [
-  () => {
-    window.__setMainScreen('social_pulse', 'Jesse Pollak posts thread on Base roadmap', '');
-    window.__showLowerThird('Jesse Pollak posts thread on Base roadmap', 'Base lead dev active on X');
-    window.__showSegmentCard('social', {
-      displayName: 'Jesse Pollak',
-      username: 'jessepollak',
-      text: 'Base is the home for builders. New DEX launching this week — the ecosystem keeps shipping. This is what onchain summer looks like.',
-      platform: 'twitter',
-      signalType: 'builder',
-      likes: '4.2K',
-      retweets: '891',
-      replies: '234',
-    });
-    hostState = 'speaking';
-  },
-  () => {
-    window.__setMainScreen('builder_spotlight', 'Aerodrome Finance hits new TVL milestone', '');
-    window.__showLowerThird('Aerodrome Finance hits new TVL milestone', 'Base DeFi backbone');
-    window.__showSegmentCard('builder', {
-      name: 'AERODROME FINANCE',
-      tagline: 'Central liquidity hub for Base ecosystem',
-      body: 'Aerodrome has become the de facto liquidity backbone of Base, concentrating over 40% of all DEX volume. Their ve(3,3) model continues to attract sticky liquidity.',
-      stage: 'LIVE',
-      traction: 'dominant',
-      layer: 'DeFi',
-    });
-    hostState = 'speaking';
-  },
-  () => {
-    window.__setMainScreen('chain_radar', 'Base TVL trending down — 3rd consecutive day', '');
-    window.__showLowerThird('Base TVL trending down', '3rd consecutive day of outflows');
-    window.__showSegmentCard('onchain', {
-      metric: '$4.15B',
-      label: 'Base TVL',
-      change: '4.3% (24h)',
-      changeDir: 'down',
-      context: '3rd consecutive day of outflows. Gas remains < 0.01 gwei, suggesting low network stress despite capital movement.',
-      supporting: 'Block 43.5M | 3.2M txn/d',
-    });
-    hostState = 'speaking';
-  },
-  () => {
-    window.__setMainScreen('signal_analysis', 'AERO crossing new TVL milestone', '');
-    window.__showLowerThird('AERO crossing new TVL milestone', 'Liquidity concentrating on Base');
-    window.__showSegmentCard('market', {
-      symbol: 'AERO',
-      price: '$0.32',
-      change: '▲ 8.1%',
-      analysis: 'Aerodrome crossing new TVL milestone as liquidity concentrates on Base. Protocol fees trending up week-over-week.',
-      ecosystemLink: 'Ecosystem link: Base DeFi backbone',
-    });
-    hostState = 'speaking';
-  },
-];
+// Demo mode — only runs if Puppeteer hasn't taken control
+// Puppeteer calls __lockBroadcast() to disable demo cycling
+let demoLocked = false;
+window.__lockBroadcast = function() { demoLocked = true; };
 
-let demoIdx = 0;
-function cycleDemoSegment() {
-  window.__segmentTransition();
-  setTimeout(() => {
-    demoSegments[demoIdx % demoSegments.length]();
-    demoIdx++;
-    setTimeout(() => {
-      window.__hideLowerThird();
-    }, 5000);
-  }, 300);
-}
-
-setInterval(cycleDemoSegment, 12000);
-cycleDemoSegment();
-
-// Simulate speaking
-setInterval(() => {
-  if (hostState !== 'speaking') {
-    isSpeaking = true;
-    hostState = 'speaking';
-    currentAmplitude = 0.1 + Math.random() * 0.4;
-    setTimeout(() => {
-      isSpeaking = false;
-      currentAmplitude = 0;
-      hostState = 'idle';
-    }, 2000 + Math.random() * 3000);
-  }
-}, 8000);
-
-// Ecosystem updates
-setInterval(() => {
-  window.__updateEcosystem({
-    ethPrice: '$' + (3200 + Math.random() * 200).toFixed(0),
-    baseTvl: '$' + (3.8 + Math.random() * 0.6).toFixed(2) + 'B',
-    gas: (0.001 + Math.random() * 0.005).toFixed(4) + ' gwei',
-    blockNumber: (43500000 + Math.floor(Math.random() * 10000)).toLocaleString(),
-    dailyTxn: (2.8 + Math.random() * 0.8).toFixed(1) + 'M',
-  });
-}, 6000);
+// No demo cycling — Puppeteer controls everything via episode runner
 </script>
 </body>
 </html>

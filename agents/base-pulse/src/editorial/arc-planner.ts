@@ -17,12 +17,12 @@ import { chatCompletionJson } from '../brain/llm-client';
 
 export type EditorialBeat =
   | 'establishing'      // set the stage, orient the viewer
-  | 'rapid_scan'        // quick hits, pulse check energy
-  | 'deep_signal'       // focused analysis on one signal
+  | 'tweet_deep_read'   // focused deep read of one tweet — read it, unpack it
+  | 'tweet_reaction'    // genuine first reaction to a tweet — slower, personal
   | 'builder_focus'     // genuine appreciation, slower delivery
   | 'data_driven'       // numbers, charts, onchain reality
   | 'pattern_connect'   // connecting dots across stories
-  | 'social_read'       // attention layer, what people are saying
+  | 'discourse_read'    // reading the conversation — replies, quote tweets, threads
   | 'editorial_take'    // Vespolak's strong opinion
   | 'forward_look'      // what to watch next
   | 'clean_close';      // takeaway and sign-off
@@ -49,60 +49,60 @@ export interface EmotionalArc {
 
 const ARC_PATTERNS: Array<{ name: string; beats: EditorialBeat[] }> = [
   {
-    name: 'signal_cascade',
-    beats: ['establishing', 'deep_signal', 'rapid_scan', 'builder_focus', 'pattern_connect', 'data_driven', 'social_read', 'editorial_take', 'forward_look'],
+    name: 'tweet_cascade',
+    beats: ['establishing', 'tweet_deep_read', 'tweet_reaction', 'builder_focus', 'data_driven', 'discourse_read', 'editorial_take', 'forward_look'],
   },
   {
     name: 'builder_first',
-    beats: ['establishing', 'builder_focus', 'deep_signal', 'data_driven', 'rapid_scan', 'pattern_connect', 'social_read', 'editorial_take', 'forward_look'],
+    beats: ['establishing', 'builder_focus', 'tweet_deep_read', 'data_driven', 'discourse_read', 'pattern_connect', 'editorial_take', 'forward_look'],
   },
   {
     name: 'data_to_insight',
-    beats: ['establishing', 'data_driven', 'deep_signal', 'pattern_connect', 'builder_focus', 'rapid_scan', 'social_read', 'editorial_take', 'forward_look'],
+    beats: ['establishing', 'data_driven', 'tweet_deep_read', 'pattern_connect', 'builder_focus', 'discourse_read', 'editorial_take', 'forward_look'],
   },
   {
-    name: 'attention_driven',
-    beats: ['establishing', 'social_read', 'deep_signal', 'builder_focus', 'data_driven', 'pattern_connect', 'rapid_scan', 'editorial_take', 'forward_look'],
+    name: 'discourse_driven',
+    beats: ['establishing', 'discourse_read', 'tweet_deep_read', 'tweet_reaction', 'data_driven', 'pattern_connect', 'editorial_take', 'forward_look'],
   },
 ];
 
 const BEAT_ENERGY: Record<EditorialBeat, number> = {
-  establishing: 6,
-  rapid_scan: 7,
-  deep_signal: 7,
-  builder_focus: 6,
-  data_driven: 6,
-  pattern_connect: 7,
-  social_read: 6,
+  establishing: 5,
+  tweet_deep_read: 6,
+  tweet_reaction: 5,
+  builder_focus: 5,
+  data_driven: 5,
+  pattern_connect: 6,
+  discourse_read: 5,
   editorial_take: 8,
-  forward_look: 7,
-  clean_close: 5,
+  forward_look: 6,
+  clean_close: 4,
 };
 
 const BEAT_EXPRESSION: Record<EditorialBeat, string> = {
   establishing: 'neutral',
-  rapid_scan: 'focused',
-  deep_signal: 'focused',
+  tweet_deep_read: 'focused',
+  tweet_reaction: 'impressed',
   builder_focus: 'impressed',
   data_driven: 'focused',
   pattern_connect: 'confident',
-  social_read: 'neutral',
+  discourse_read: 'neutral',
   editorial_take: 'confident',
   forward_look: 'confident',
   clean_close: 'neutral',
 };
 
 const BEAT_PACING: Record<EditorialBeat, string> = {
-  establishing: 'Clear, confident opening. Setting the stage for today\'s pulse.',
-  rapid_scan: 'Quick, efficient delivery. Multiple signals in succession.',
-  deep_signal: 'Measured analysis. Taking time to explain why this matters.',
+  establishing: 'Calm, conversational opening. Setting the frame for today\'s discourse.',
+  tweet_deep_read: 'Deliberate reading. Take time with this tweet — read it, unpack it, explain why it matters.',
+  tweet_reaction: 'Genuine first reaction. Slower, personal. Vespolak speaks as himself, not as a host.',
   builder_focus: 'Genuine appreciation. Slower, more deliberate. Highlighting real work.',
-  data_driven: 'Clean, data-forward delivery. Numbers speak, Vespolak interprets.',
+  data_driven: 'Grounding energy. Numbers as context for the conversation, not standalone data.',
   pattern_connect: 'Analytical energy. Connecting dots the audience hasn\'t seen yet.',
-  social_read: 'Reading the room. What\'s gaining attention and why.',
+  discourse_read: 'Reading the conversation. Replies, quote tweets, threads — what people are actually saying.',
   editorial_take: 'Strongest delivery. This is Vespolak\'s clear editorial position.',
   forward_look: 'Forward-facing energy. What to watch, what\'s building.',
-  clean_close: 'Clean, measured sign-off. One clear takeaway.',
+  clean_close: 'Reflective, measured sign-off. One thread from today\'s conversation to carry.',
 };
 
 // ---------------------------------------------------------------------------
@@ -164,8 +164,8 @@ export async function planArcLLM(plan: EpisodePlan, articles: Array<{ id: string
   const headlineTitle = articleMap.get(plan.headline.articleId) || 'Unknown';
 
   const beatList = [
-    'establishing', 'rapid_scan', 'deep_signal', 'builder_focus', 'data_driven',
-    'pattern_connect', 'social_read', 'editorial_take', 'forward_look', 'clean_close',
+    'establishing', 'tweet_deep_read', 'tweet_reaction', 'builder_focus', 'data_driven',
+    'pattern_connect', 'discourse_read', 'editorial_take', 'forward_look', 'clean_close',
   ].join(', ');
 
   const system = `You are an editorial flow planner for a Base L2 ecosystem show hosted by Vespolak, a confident curator.

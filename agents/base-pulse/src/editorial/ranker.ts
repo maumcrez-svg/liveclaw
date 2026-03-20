@@ -29,20 +29,30 @@ export async function rankNews(
     .join('\n\n');
 
   const baseTvlLine = market.baseTvl
-    ? `\nBase TVL: $${(market.baseTvl / 1e9).toFixed(2)}B (${(market.baseTvlChange24h || 0) >= 0 ? '+' : ''}${(market.baseTvlChange24h || 0).toFixed(1)}%)`
-    : '';
+    ? `Base TVL: $${(market.baseTvl / 1e9).toFixed(2)}B (${(market.baseTvlChange24h || 0) >= 0 ? '+' : ''}${(market.baseTvlChange24h || 0).toFixed(1)}%)`
+    : 'Base TVL: unavailable';
 
-  const marketSummary = `Market: BTC $${market.btcPrice.toLocaleString()} (${market.btcChange24h > 0 ? '+' : ''}${market.btcChange24h.toFixed(1)}%), ETH $${market.ethPrice.toLocaleString()} (${market.ethChange24h > 0 ? '+' : ''}${market.ethChange24h.toFixed(1)}%)${baseTvlLine}
-Top movers: ${market.topMovers.map((m) => `${m.symbol} ${m.change > 0 ? '+' : ''}${m.change.toFixed(1)}%`).join(', ')}`;
+  const baseMovers = market.topMovers.filter(m => !['BTC', 'ETH', 'SOL'].includes(m.symbol));
+  const marketSummary = `Base ecosystem:
+${baseTvlLine}
+Base gas: ${market.baseGasGwei !== undefined ? (market.baseGasGwei < 0.01 ? '< 0.01 gwei' : market.baseGasGwei.toFixed(4) + ' gwei') : 'unavailable'}
+Base tokens: ${baseMovers.map((m) => `${m.symbol} ${m.change > 0 ? '+' : ''}${m.change.toFixed(1)}%`).join(', ') || 'no data'}`;
 
   const userPrompt = `Today's date: ${new Date().toISOString().slice(0, 10)}
 
 ${marketSummary}
 
-ARTICLES (from 5 layers — official, onchain, farcaster, market, twitter):
+ARTICLES (tweets + onchain signals):
 ${articleList}
 
-Select 6-10 stories for today's BASE PULSE episode. Pick MORE stories for a longer, better show. Prioritize signal across all layers. Return JSON.`;
+Select 3-5 stories for today's BASE PULSE episode. These are ALL tweets and onchain signals — pick the most interesting, spicy, and substantive ones. Prioritize tweets from builders, ecosystem figures, and anyone with real takes.
+
+TWEET CONTEXT — PRESERVE:
+- When selecting tweets, note if they are part of a reply thread or quote tweet chain.
+- Preserve the original tweet author's @username in the angle field.
+- If a tweet has notable replies or quote tweets, mention them in the angle.
+
+Return JSON.`;
 
   const result = await chatCompletionJson<RankerOutput>(
     RANKER_SYSTEM,

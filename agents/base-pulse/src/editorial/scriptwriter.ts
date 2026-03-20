@@ -30,17 +30,14 @@ export async function writeScript(
 
   const headlineArticle = articleMap.get(plan.headline.articleId);
 
+  // Base-only ticker — no BTC/ETH/SOL noise
+  const baseMovers = plan.marketSnapshot.topMovers.filter(m => !['BTC', 'ETH', 'SOL'].includes(m.symbol));
   const tickerItems = [
-    `ETH $${plan.marketSnapshot.ethPrice.toLocaleString()} ${plan.marketSnapshot.ethChange24h >= 0 ? '▲' : '▼'}${Math.abs(plan.marketSnapshot.ethChange24h).toFixed(1)}%`,
-    ...plan.marketSnapshot.topMovers.slice(0, 5).map(
+    ...(plan.marketSnapshot.baseTvl ? [`BASE TVL $${(plan.marketSnapshot.baseTvl / 1e9).toFixed(2)}B ${(plan.marketSnapshot.baseTvlChange24h || 0) >= 0 ? '▲' : '▼'}${Math.abs(plan.marketSnapshot.baseTvlChange24h || 0).toFixed(1)}%`] : []),
+    ...baseMovers.slice(0, 6).map(
       (m) => `${m.symbol} $${m.price.toLocaleString()} ${m.change >= 0 ? '▲' : '▼'}${Math.abs(m.change).toFixed(1)}%`,
     ),
   ];
-
-  // Add Base TVL to ticker if available
-  if (plan.marketSnapshot.baseTvl) {
-    tickerItems.unshift(`BASE TVL $${(plan.marketSnapshot.baseTvl / 1e9).toFixed(2)}B ${(plan.marketSnapshot.baseTvlChange24h || 0) >= 0 ? '▲' : '▼'}${Math.abs(plan.marketSnapshot.baseTvlChange24h || 0).toFixed(1)}%`);
-  }
 
   const episodeLabel = episodeNumber ? `\nEPISODE NUMBER: ${episodeNumber}\nCRITICAL: Vespolak MUST say "Episode ${episodeNumber}" in the opening. Do NOT invent a different number. The exact number is ${episodeNumber}.\n` : '';
 
@@ -74,24 +71,41 @@ ${selectedStories.map((s, i) => `${i + 1}. [${s.category}] [${s.layer}] ${s.titl
    Angle: ${s.angle}
    Spice level: ${s.spiceLevel}/5`).join('\n\n')}
 
-MARKET DATA:
-BTC: $${plan.marketSnapshot.btcPrice.toLocaleString()} (${plan.marketSnapshot.btcChange24h > 0 ? '+' : ''}${plan.marketSnapshot.btcChange24h.toFixed(1)}%)
-ETH: $${plan.marketSnapshot.ethPrice.toLocaleString()} (${plan.marketSnapshot.ethChange24h > 0 ? '+' : ''}${plan.marketSnapshot.ethChange24h.toFixed(1)}%)${baseTvlLine}
-Top movers: ${plan.marketSnapshot.topMovers.map((m) => `${m.name} (${m.symbol}): ${m.change > 0 ? '+' : ''}${m.change.toFixed(1)}%`).join(', ')}
+BASE ECOSYSTEM DATA:
+${baseTvlLine}
+Gas: ${plan.marketSnapshot.baseGasGwei !== undefined ? (plan.marketSnapshot.baseGasGwei < 0.01 ? '< 0.01 gwei' : plan.marketSnapshot.baseGasGwei.toFixed(4) + ' gwei') : 'unavailable'}
+Base tokens: ${baseMovers.map((m) => `${m.name} (${m.symbol}): ${m.change > 0 ? '+' : ''}${m.change.toFixed(1)}%`).join(', ') || 'no data'}
+DO NOT mention BTC, ETH, or SOL prices. This show is about Base ecosystem ONLY.
 
 TICKER ITEMS: ${JSON.stringify(tickerItems)}
 ${arcDirective}
 
-Write the full BASE PULSE episode script following the EDITORIAL FLOW PLAN above. Include:
-1. Opening segment — Vespolak sets the tone for today's pulse
-2. Pulse check segment — rapid scan of 3-5 quick signals
-3. Builder spotlight segment — deep look at 1-2 builders/projects
-4. Signal analysis segment — connect dots, identify patterns
-5. Chain radar segment — onchain data: TVL, tokens, deployments
-6. Social pulse segment — Twitter/X and Farcaster attention layer
-7. Closing segment — key takeaway + what to watch next
+Write the full BASE PULSE episode as a DELIBERATE, SUBSTANTIVE SHOW (~6-8 minutes).
 
-The editorial flow is MANDATORY. Each segment's energy and pacing must match its assigned beat.
+STRUCTURE — 6 segments. This is a CONVERSATION DESK, not a newsroom:
+
+1. OPENING (opening) — 20-30s. Set the conversational frame. What caught Vespolak's eye on the timeline today. No rushing.
+   "The Base timeline has been interesting today. There's a conversation I want to pull into."
+
+2. TWEET #1 (social_pulse) — 60-80s. THE MAIN TWEET. Read it. Say who posted it. React genuinely. Unpack it. If there are replies or quotes, bring them in. This tweet gets its FULL moment.
+
+3. TWEET #2 (social_pulse) — 50-70s. Second voice. Different person, different angle. Connect or contrast with tweet #1. Read it, react, interpret.
+
+4. ONCHAIN READ (chain_radar) — 40-50s. Numbers as CONTEXT. Connect the data to what the tweets are saying. "The conversation says X. The chain confirms it."
+
+5. TWEET #3 (social_pulse) — 50-70s. Third tweet. Could be a builder, a caller, an emerging voice. Vespolak lingers here. Connects to the earlier conversation.
+
+6. CLOSING (closing) — 20-30s. What the conversation today tells us. One thread to carry. Clean exit.
+
+CRITICAL RULES:
+- Read tweet text IN the narration. Use "quote" and "end quote" framing.
+- After reading a tweet, PAUSE. React as Vespolak. Don't jump to the next thing.
+- Each social_pulse is ONE tweet and its surrounding discourse. Not a headline.
+- NEVER rush. Vespolak is PRESENT with each tweet. He's reading the conversation, not racing through headlines.
+- 6 segments. No padding. No filler. If there are only 2 good tweets, cover 2 tweets well.
+- ALL social_pulse segments MUST reference a specific tweet with @username and the tweet text.
+- NO BTC or ETH price mentions unless directly affecting Base.
+- Total: ~360-480 seconds (6-8 minutes). Let the conversation breathe.
 
 Return valid JSON.`;
 

@@ -52,7 +52,6 @@ export interface EpisodePlan {
 
 export type SegmentType =
   | 'opening'
-  | 'pulse_check'
   | 'builder_spotlight'
   | 'signal_analysis'
   | 'chain_radar'
@@ -72,6 +71,7 @@ export interface Segment {
   visualCue: VisualCue;
   expression: AvatarExpression;
   estimatedDurationSec: number;
+  cardData?: Record<string, string>;
 }
 
 export interface EpisodeScript {
