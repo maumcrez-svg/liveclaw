@@ -1,0 +1,58 @@
+{
+  "btcPrice": 70427,
+  "btcChange24h": -0.9444250149958706,
+  "ethPrice": 2151.19,
+  "ethChange24h": -1.9731455543932592,
+  "topMovers": [
+    {
+      "symbol": "BRETT",
+      "name": "brett",
+      "change": -21.252359678541925,
+      "price": 0.00016678
+    },
+    {
+      "symbol": "KAT",
+      "name": "Katana",
+      "change": -18.13857480310356,
+      "price": 0.010028044840944963
+    },
+    {
+      "symbol": "PENGU",
+      "name": "Pudgy Penguins",
+      "change": -4.810719730157623,
+      "price": 0.007114341076536034
+    },
+    {
+      "symbol": "VIRTUAL",
+      "name": "virtual-protocol",
+      "change": -3.848033308631112,
+      "price": 0.707555
+    },
+    {
+      "symbol": "DEGEN",
+      "name": "degen-base",
+      "change": -3.289772651037689,
+      "price": 0.00073825
+    },
+    {
+      "symbol": "KAS",
+      "name": "Kaspa",
+      "change": -2.46839250825869,
+      "price": 0.037727750733888024
+    },
+    {
+      "symbol": "AERO",
+      "name": "aerodrome-finance",
+      "change": -2.107822839507198,
+      "price": 0.321967
+    },
+    {
+      "symbol": "HIGHER",
+      "name": "higher",
+      "change": -1.7175159160893652,
+      "price": 0.0002898
+    }
+  ],
+  "baseTvl": 4153607002,
+  "baseTvlChange24h": -3.933120258713222
+}

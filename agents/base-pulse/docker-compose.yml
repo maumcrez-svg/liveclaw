@@ -1,0 +1,26 @@
+services:
+  base-pulse:
+    build: .
+    container_name: base-pulse
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - CHROMIUM_PATH=/usr/bin/chromium
+      - DISPLAY=:96
+      - RESOLUTION=1920x1080
+      - BROADCAST_PORT=8095
+      - DATA_DIR=/app/data
+    ports:
+      - "8095:8095"
+    volumes:
+      # Persist episode counter + continuity + seen cache across restarts
+      - basepulse-data:/app/data
+    shm_size: '2gb'
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 4G
+
+volumes:
+  basepulse-data:

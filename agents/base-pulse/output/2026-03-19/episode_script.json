@@ -1,0 +1,105 @@
+{
+  "date": "2026-03-19",
+  "totalEstimatedDurationSec": 420,
+  "segments": [
+    {
+      "id": "seg_01",
+      "type": "opening",
+      "narration": "Base Pulse, episode 78. Today, we're diving into the crypto landscape's current challenges—trust, innovation, and the importance of vigilance. Let's get started.",
+      "headline": "Episode 78: Navigating Challenges in Crypto",
+      "subheadline": "Trust and Innovation at the Forefront",
+      "tickerItems": [
+        "BASE TVL $4.15B ▼3.9%",
+        "ETH $2.151,19 ▼2.0%"
+      ],
+      "visualCue": "anchor",
+      "expression": "neutral",
+      "estimatedDurationSec": 30
+    },
+    {
+      "id": "seg_02",
+      "type": "pulse_check",
+      "narration": "First up, the FBI warns of fake tokens on the Tron network—vigilance is key. Myriad closes a milestone seed round, showing strong interest in decentralized finance. BlackRock's Staked Ethereum Trust amasses $254 million in a week, indicating robust institutional momentum. These are signals, not noise.",
+      "headline": "Rapid Ecosystem Scan",
+      "subheadline": "Key Signals Across the Base",
+      "tickerItems": [
+        "BRETT $0 ▼21.3%",
+        "KAT $0,01 ▼18.1%",
+        "PENGU $0,007 ▼4.8%"
+      ],
+      "visualCue": "split-screen",
+      "expression": "focused",
+      "estimatedDurationSec": 40
+    },
+    {
+      "id": "seg_03",
+      "type": "builder_spotlight",
+      "narration": "With Myriad's successful seed round, we're seeing a resurgence of faith in decentralized financial products. This project—let's be clear—is building something tangible and valuable within the Base ecosystem. This isn't just funding; it's a signal of serious commitment.",
+      "headline": "Builder Spotlight: Myriad's Milestone",
+      "subheadline": "Decentralized Finance on the Rise",
+      "tickerItems": [
+        "AERO $1.42 ▲8.1%",
+        "BASE TVL $4.15B ▼3.9%"
+      ],
+      "visualCue": "fullscreen-headline",
+      "expression": "confident",
+      "estimatedDurationSec": 50
+    },
+    {
+      "id": "seg_04",
+      "type": "signal_analysis",
+      "narration": "Connecting dots: Myriad's funding and BlackRock's rapid asset accumulation both highlight a strong institutional interest in decentralized and staking solutions. This signals a broader trend of traditional finance engaging deeply with crypto, reinforcing Base's position in the ecosystem.",
+      "headline": "Institutional Interest & Crypto",
+      "subheadline": "A Connected Trend",
+      "tickerItems": [
+        "ETH $2.151,19 ▼2.0%",
+        "AERO $1.42 ▲8.1%"
+      ],
+      "visualCue": "data-panel",
+      "expression": "impressed",
+      "estimatedDurationSec": 50
+    },
+    {
+      "id": "seg_05",
+      "type": "chain_radar",
+      "narration": "Onchain check: Base's Total Value Locked stands at $4.15 billion, down 3.9 percent. Top movers include Brett and Katana, both facing significant declines. This is our onchain reality—numbers don't lie.",
+      "headline": "Onchain Reality Check",
+      "subheadline": "TVL and Token Moves",
+      "tickerItems": [
+        "BASE TVL $4.15B ▼3.9%",
+        "BRETT $0 ▼21.3%"
+      ],
+      "visualCue": "market-chart",
+      "expression": "neutral",
+      "estimatedDurationSec": 40
+    },
+    {
+      "id": "seg_06",
+      "type": "social_pulse",
+      "narration": "Community chatter reveals concern over Bitcoin's 5.5% drop to $70,000 amidst macroeconomic pressures. As these conversations unfold, it's clear the Base ecosystem must stay adaptable amid these fluctuations.",
+      "headline": "Social Pulse: Market Sentiment",
+      "subheadline": "Bitcoin Under Pressure",
+      "tickerItems": [
+        "BTC $70.427 ▼0.9%",
+        "ETH $2.151,19 ▼2.0%"
+      ],
+      "visualCue": "split-screen",
+      "expression": "neutral",
+      "estimatedDurationSec": 45
+    },
+    {
+      "id": "seg_07",
+      "type": "closing",
+      "narration": "Today's takeaway: Institutional interest and tech innovations are shaping a resilient future for Base. As we navigate these challenges, stay vigilant and keep building. Until next time.",
+      "headline": "Key Takeaway: Resilience Through Innovation",
+      "subheadline": "Looking Ahead in Base",
+      "tickerItems": [
+        "BASE TVL $4.15B ▼3.9%",
+        "ETH $2.151,19 ▼2.0%"
+      ],
+      "visualCue": "anchor",
+      "expression": "confident",
+      "estimatedDurationSec": 45
+    }
+  ]
+}

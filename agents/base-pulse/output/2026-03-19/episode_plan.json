@@ -1,0 +1,109 @@
+{
+  "date": "2026-03-19",
+  "headline": {
+    "articleId": "c4fa8104138f",
+    "teaser": "Microsoft's new AI image generator impresses with its realism, showcasing innovative advancements in tech."
+  },
+  "stories": [
+    {
+      "articleId": "6e3983ab7a7e",
+      "rank": 1,
+      "spiceLevel": 3,
+      "angle": "The FBI's warning about fake tokens underscores the need for vigilance in the crypto space, impacting trust across platforms including Base."
+    },
+    {
+      "articleId": "74c7eaa61b0f",
+      "rank": 2,
+      "spiceLevel": 4,
+      "angle": "The seed funding success of Myriad in the prediction market sector highlights growing interest and investment in decentralized financial products, essential for Base's ecosystem."
+    },
+    {
+      "articleId": "0301968aa8d2",
+      "rank": 3,
+      "spiceLevel": 4,
+      "angle": "BlackRock's rapid asset accumulation in its Staked Ethereum Trust indicates strong institutional interest in staking solutions, which could positively influence Base's ecosystem."
+    },
+    {
+      "articleId": "215572b16d1a",
+      "rank": 4,
+      "spiceLevel": 2,
+      "angle": "The breakthrough with quantum batteries showcases significant technological advancements that could inspire future developments within the Base ecosystem."
+    },
+    {
+      "articleId": "fb0a3f4c69d9",
+      "rank": 5,
+      "spiceLevel": 3,
+      "angle": "The partnership between MLB and Polymarket signals a growing acceptance of prediction markets, potentially paving the way for similar innovations in Base."
+    },
+    {
+      "articleId": "de7eee19ba21",
+      "rank": 6,
+      "spiceLevel": 2,
+      "angle": "Crypto.com's workforce reduction emphasizes the industry's shift towards AI integration, which could affect various projects on Base."
+    },
+    {
+      "articleId": "bc2df13f7b77",
+      "rank": 7,
+      "spiceLevel": 2,
+      "angle": "Bitcoin's price fluctuations amid macroeconomic pressures illustrate the volatile landscape that Base must navigate for growth."
+    }
+  ],
+  "marketSnapshot": {
+    "btcPrice": 70427,
+    "btcChange24h": -0.9444250149958706,
+    "ethPrice": 2151.19,
+    "ethChange24h": -1.9731455543932592,
+    "topMovers": [
+      {
+        "symbol": "BRETT",
+        "name": "brett",
+        "change": -21.252359678541925,
+        "price": 0.00016678
+      },
+      {
+        "symbol": "KAT",
+        "name": "Katana",
+        "change": -18.13857480310356,
+        "price": 0.010028044840944963
+      },
+      {
+        "symbol": "PENGU",
+        "name": "Pudgy Penguins",
+        "change": -4.810719730157623,
+        "price": 0.007114341076536034
+      },
+      {
+        "symbol": "VIRTUAL",
+        "name": "virtual-protocol",
+        "change": -3.848033308631112,
+        "price": 0.707555
+      },
+      {
+        "symbol": "DEGEN",
+        "name": "degen-base",
+        "change": -3.289772651037689,
+        "price": 0.00073825
+      },
+      {
+        "symbol": "KAS",
+        "name": "Kaspa",
+        "change": -2.46839250825869,
+        "price": 0.037727750733888024
+      },
+      {
+        "symbol": "AERO",
+        "name": "aerodrome-finance",
+        "change": -2.107822839507198,
+        "price": 0.321967
+      },
+      {
+        "symbol": "HIGHER",
+        "name": "higher",
+        "change": -1.7175159160893652,
+        "price": 0.0002898
+      }
+    ],
+    "baseTvl": 4153607002,
+    "baseTvlChange24h": -3.933120258713222
+  }
+}

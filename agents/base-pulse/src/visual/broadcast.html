@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>BASE PULSE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060810;
+    overflow: hidden;
+    width: 1920px;
+    height: 1080px;
+    font-family: 'Inter', sans-serif;
+    color: #e0e0e0;
+  }
+
+  #scene-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    z-index: 0;
+  }
+
+  /* ===== TOP BAR — 65px ===== */
+  #top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 65px;
+    z-index: 150;
+    display: flex; align-items: center;
+    padding: 0 24px;
+    background: rgba(6,8,16,0.88);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0,82,255,0.12);
+    gap: 16px;
+  }
+  #top-segment-tag {
+    background: #0052FF;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 3px; text-transform: uppercase;
+    padding: 6px 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #top-headline-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ===== LIVE Badge ===== */
+  #live-badge {
+    position: fixed; top: 16px; right: 24px; z-index: 200;
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,82,255,0.88); color: white;
+    padding: 7px 16px; border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 800; letter-spacing: 3px;
+    border: 1px solid rgba(0,82,255,0.5);
+    backdrop-filter: blur(8px);
+  }
+  #live-dot {
+    width: 9px; height: 9px;
+    background: white; border-radius: 50%;
+    animation: livePulse 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+  /* ===== ZONE B — PRIMARY STORY STAGE (HTML overlays) ===== */
+  #zone-b {
+    position: fixed;
+    top: 65px; left: 346px;
+    width: 1114px; height: 691px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  /* Segment Card Container */
+  .segment-card {
+    width: 780px;
+    background: rgba(6,9,18,0.94);
+    border: 1px solid rgba(0,82,255,0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 60px rgba(0,0,0,0.6), 0 0 60px rgba(0,82,255,0.05);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+    pointer-events: none;
+    display: none;
+  }
+  .segment-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+    display: block;
+  }
+  .segment-card .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 22px;
+    background: rgba(0,82,255,0.06);
+    border-bottom: 1px solid rgba(0,82,255,0.1);
+  }
+  .segment-card .card-header-type {
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: #0052FF;
+  }
+  .segment-card .card-header-icon {
+    font-size: 14px; color: #445566; margin-left: auto;
+  }
+  .segment-card .card-body {
+    padding: 20px 22px;
+  }
+
+  /* Social Signal Card */
+  #social-card .social-author {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  #social-card .social-avatar {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: linear-gradient(135deg, #0052FF 0%, #003bb5 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; font-weight: 800; color: white; flex-shrink: 0;
+  }
+  #social-card .social-author-info { display: flex; flex-direction: column; }
+  #social-card .social-display-name {
+    font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2;
+  }
+  #social-card .social-username {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 500; color: #0052FF; margin-top: 2px;
+  }
+  #social-card .social-text {
+    font-size: 17px; font-weight: 400; color: #ccd4e0;
+    line-height: 1.6; margin-bottom: 16px;
+    max-height: 160px; overflow: hidden;
+  }
+  #social-card .social-visual {
+    height: 76px; border-radius: 6px; overflow: hidden;
+    margin-bottom: 14px; position: relative;
+  }
+  #social-card .social-visual canvas { width: 100%; height: 100%; }
+  #social-card .social-footer {
+    display: flex; align-items: center; gap: 20px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,82,255,0.07);
+  }
+  #social-card .social-engagement {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500; color: #445566;
+  }
+  #social-card .social-engagement span { color: #8899aa; }
+  #social-card .social-tag {
+    margin-left: auto;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px; border-radius: 3px;
+  }
+  .tag-builder { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+  .tag-launch { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .tag-culture { background: rgba(236,72,153,0.15); color: #ec4899; }
+  .tag-market { background: rgba(0,82,255,0.15); color: #0052FF; }
+  .tag-commentary { background: rgba(100,116,139,0.15); color: #94a3b8; }
+
+  /* Builder Signal Card */
+  #builder-card .builder-name {
+    font-size: 28px; font-weight: 800; color: #fff;
+    margin-bottom: 6px;
+  }
+  #builder-card .builder-tagline {
+    font-size: 16px; font-weight: 500; color: #0052FF;
+    margin-bottom: 20px;
+  }
+  #builder-card .builder-body {
+    font-size: 15px; color: #99aabb; line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  #builder-card .builder-meta {
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  #builder-card .builder-visual {
+    width: 100px; height: 80px; border-radius: 6px;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.2);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  #builder-card .builder-visual canvas { width: 100%; height: 100%; }
+  #builder-card .builder-details {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: #667788; line-height: 2;
+  }
+  #builder-card .builder-details span { color: #aabbcc; }
+
+  /* Onchain Signal Card */
+  #onchain-card .onchain-metric {
+    font-size: 52px; font-weight: 900; color: #fff;
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #onchain-card .onchain-label {
+    font-size: 15px; color: #667788;
+    margin-bottom: 20px;
+  }
+  #onchain-card .onchain-label .change-up { color: #22c55e; }
+  #onchain-card .onchain-label .change-down { color: #ef4444; }
+  #onchain-card .onchain-chart {
+    height: 100px; border-radius: 6px; overflow: hidden;
+    margin-bottom: 16px; position: relative;
+  }
+  #onchain-card .onchain-chart canvas { width: 100%; height: 100%; }
+  #onchain-card .onchain-context {
+    font-size: 14px; color: #8899aa; line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  #onchain-card .onchain-supporting {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #556677;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,82,255,0.07);
+  }
+
+  /* Market Signal Card */
+  #market-card .market-token {
+    display: flex; align-items: baseline; gap: 14px;
+    margin-bottom: 16px;
+  }
+  #market-card .market-symbol {
+    font-size: 28px; font-weight: 800; color: #fff;
+  }
+  #market-card .market-price {
+    font-size: 24px; font-weight: 600; color: #99aabb;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #market-card .market-change {
+    font-size: 20px; font-weight: 700;
+  }
+  #market-card .market-analysis {
+    font-size: 15px; color: #8899aa; line-height: 1.65;
+    margin-bottom: 18px;
+  }
+  #market-card .market-chart {
+    height: 90px; border-radius: 6px; overflow: hidden;
+    margin-bottom: 14px; position: relative;
+  }
+  #market-card .market-chart canvas { width: 100%; height: 100%; }
+  #market-card .market-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: #556677;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,82,255,0.07);
+  }
+
+  /* ===== Lower Third ===== */
+  #lower-third {
+    position: fixed;
+    bottom: 180px; left: 0;
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform 0.55s cubic-bezier(0.16,1,0.3,1);
+    display: flex;
+    max-width: 900px;
+  }
+  #lower-third.visible { transform: translateX(0); }
+  #lt-accent { width: 5px; background: #0052FF; flex-shrink: 0; }
+  #lt-tag {
+    background: #0052FF; color: white;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 3px; padding: 10px 16px;
+    display: flex; align-items: center;
+    text-transform: uppercase; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #lt-content {
+    background: rgba(6,8,16,0.93);
+    border: 1px solid rgba(0,82,255,0.28);
+    border-left: none;
+    padding: 10px 28px;
+    display: flex; flex-direction: column; justify-content: center;
+    backdrop-filter: blur(12px);
+  }
+  #lt-headline {
+    font-size: 21px; font-weight: 700; color: #ffffff;
+    line-height: 1.3;
+  }
+  #lt-sub {
+    font-size: 13px; color: #7788aa; margin-top: 3px;
+  }
+
+  /* ===== Bottom Strip — 130px ===== */
+  #bottom-strip {
+    position: fixed;
+    bottom: 44px; left: 0; right: 0;
+    height: 130px;
+    z-index: 140;
+    background: rgba(6,8,16,0.85);
+    border-top: 1px solid rgba(0,82,255,0.08);
+    overflow: hidden;
+    display: flex; align-items: center;
+    padding: 0 30px;
+  }
+  #bottom-strip-track {
+    display: flex; white-space: nowrap; gap: 0;
+    animation: bottomScroll 60s linear infinite;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 500;
+  }
+  .bottom-tag {
+    padding: 5px 16px;
+    margin-right: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,82,255,0.12);
+    background: rgba(0,82,255,0.04);
+    color: #667788;
+    white-space: nowrap;
+  }
+  .bottom-tag .tag-name { color: #99aabb; font-weight: 600; }
+  @keyframes bottomScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ===== Ticker Bar — 44px ===== */
+  #ticker-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 44px; z-index: 150;
+    background: rgba(6,8,16,0.97);
+    border-top: 1px solid rgba(0,82,255,0.18);
+    overflow: hidden;
+    display: flex; align-items: center;
+  }
+  #ticker-label {
+    background: #0052FF; color: white;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 3px; padding: 0 18px;
+    height: 100%; display: flex; align-items: center;
+    white-space: nowrap; z-index: 1; flex-shrink: 0;
+  }
+  #ticker-track {
+    display: flex; white-space: nowrap;
+    animation: tickerScroll 40s linear infinite;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 500; gap: 0;
+  }
+  .ticker-item { padding: 0 26px; display: flex; align-items: center; gap: 6px; }
+  .ticker-item .symbol { color: #ffffff; font-weight: 600; }
+  .ticker-item .price { color: #8899aa; }
+  .ticker-item .change-up { color: #22c55e; }
+  .ticker-item .change-down { color: #ef4444; }
+  .ticker-sep { color: rgba(0,82,255,0.25); padding: 0 4px; }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ===== End Card ===== */
+  #end-card {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 300;
+    background: #060810;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 1s;
+  }
+  #end-card.visible { opacity: 1; pointer-events: auto; }
+  #end-card-logo {
+    font-size: 80px; font-weight: 900;
+    color: #0052FF; letter-spacing: 10px;
+    text-shadow: 0 0 60px rgba(0,82,255,0.45);
+    margin-bottom: 18px;
+  }
+  #end-card-sub {
+    font-size: 22px; color: #445566; font-weight: 400;
+  }
+
+  /* ===== Intro Overlay ===== */
+  #intro-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    z-index: 500; pointer-events: none; display: none;
+  }
+
+  #speaking-indicator { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="scene-canvas" width="1920" height="1080"></canvas>
+
+<!-- Top Bar -->
+<div id="top-bar">
+  <div id="top-segment-tag">BASE PULSE</div>
+  <div id="top-headline-text">Monitoring Base ecosystem activity...</div>
+</div>
+
+<!-- Live Badge -->
+<div id="live-badge">
+  <div id="live-dot"></div>
+  LIVE
+</div>
+
+<!-- Zone B — Primary Story Stage -->
+<div id="zone-b">
+  <!-- Social Signal Card -->
+  <div id="social-card" class="segment-card">
+    <div class="card-header">
+      <div class="card-header-type">SOCIAL SIGNAL</div>
+      <div class="card-header-icon">𝕏</div>
+    </div>
+    <div class="card-body">
+      <div class="social-author">
+        <div class="social-avatar">?</div>
+        <div class="social-author-info">
+          <div class="social-display-name"></div>
+          <div class="social-username"></div>
+        </div>
+      </div>
+      <div class="social-text"></div>
+      <div class="social-visual">
+        <canvas id="social-visual-canvas" width="736" height="76"></canvas>
+      </div>
+      <div class="social-footer">
+        <div class="social-engagement"></div>
+        <div class="social-tag"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Builder Signal Card -->
+  <div id="builder-card" class="segment-card">
+    <div class="card-header">
+      <div class="card-header-type">BUILDER SIGNAL</div>
+      <div class="card-header-icon"></div>
+    </div>
+    <div class="card-body">
+      <div class="builder-name"></div>
+      <div class="builder-tagline"></div>
+      <div class="builder-body"></div>
+      <div class="builder-meta">
+        <div class="builder-visual"><canvas id="builder-visual-canvas" width="100" height="80"></canvas></div>
+        <div class="builder-details"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onchain Signal Card -->
+  <div id="onchain-card" class="segment-card">
+    <div class="card-header">
+      <div class="card-header-type">ONCHAIN READ</div>
+      <div class="card-header-icon"></div>
+    </div>
+    <div class="card-body">
+      <div class="onchain-metric"></div>
+      <div class="onchain-label"></div>
+      <div class="onchain-chart"><canvas id="onchain-chart-canvas" width="736" height="100"></canvas></div>
+      <div class="onchain-context"></div>
+      <div class="onchain-supporting"></div>
+    </div>
+  </div>
+
+  <!-- Market Signal Card -->
+  <div id="market-card" class="segment-card">
+    <div class="card-header">
+      <div class="card-header-type">MARKET RADAR</div>
+      <div class="card-header-icon"></div>
+    </div>
+    <div class="card-body">
+      <div class="market-token">
+        <span class="market-symbol"></span>
+        <span class="market-price"></span>
+        <span class="market-change"></span>
+      </div>
+      <div class="market-analysis"></div>
+      <div class="market-chart"><canvas id="market-chart-canvas" width="736" height="90"></canvas></div>
+      <div class="market-link"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lower Third -->
+<div id="lower-third">
+  <div id="lt-accent"></div>
+  <div id="lt-tag">SIGNAL</div>
+  <div id="lt-content">
+    <div id="lt-headline"></div>
+    <div id="lt-sub"></div>
+  </div>
+</div>
+
+<!-- Bottom Strip -->
+<div id="bottom-strip">
+  <div id="bottom-strip-track"></div>
+</div>
+
+<!-- Ticker Bar -->
+<div id="ticker-bar">
+  <div id="ticker-label">BASE</div>
+  <div id="ticker-track"></div>
+</div>
+
+<div id="speaking-indicator"></div>
+
+<!-- End Card -->
+<div id="end-card">
+  <div id="end-card-logo">BASE PULSE</div>
+  <div id="end-card-sub">Keep building. We'll keep watching.</div>
+</div>
+
+<!-- Intro Overlay -->
+<canvas id="intro-canvas" width="1920" height="1080"></canvas>
+
+<script>
+// =============================================
+// Audio System
+// =============================================
+let audioCtx = null;
+let analyser = null;
+let currentAmplitude = 0;
+let isSpeaking = false;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  analyser.connect(audioCtx.destination);
+}
+
+window.__playAudio = function(base64, format) {
+  return new Promise(async (resolve) => {
+    try {
+      if (!audioCtx) initAudio();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const buffer = await audioCtx.decodeAudioData(bytes.buffer);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(analyser);
+      isSpeaking = true;
+      hostState = 'speaking';
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const ampInterval = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        currentAmplitude = sum / dataArray.length / 255;
+      }, 50);
+      source.onended = () => {
+        isSpeaking = false; currentAmplitude = 0;
+        hostState = 'idle';
+        clearInterval(ampInterval); resolve();
+      };
+      source.start(0);
+      setTimeout(() => {
+        if (isSpeaking) { isSpeaking = false; currentAmplitude = 0; hostState = 'idle'; clearInterval(ampInterval); resolve(); }
+      }, (buffer.duration + 2) * 1000);
+    } catch (err) {
+      console.error('Audio error:', err);
+      isSpeaking = false; hostState = 'idle'; resolve();
+    }
+  });
+};
+
+// =============================================
+// Scene Canvas (background + left rail + host)
+// =============================================
+const canvas = document.getElementById('scene-canvas');
+const ctx = canvas.getContext('2d');
+
+// =============================================
+// GLOBAL STATE
+// =============================================
+let time = 0;
+
+// Host: 3 states only
+let hostState = 'idle'; // idle | speaking | reacting
+let reactTimer = 0;
+
+// Animation
+let blinkTimer = 0;
+let isBlinking = false;
+let breathOffset = 0;
+
+// Ecosystem data for left rail
+let ecosystemData = { baseTvl: '--', ethPrice: '--', gas: '--', blockNumber: '--', dailyTxn: '--', mood: 'Neutral' };
+let ecosystemFlash = { baseTvl: 0, ethPrice: 0, gas: 0, blockNumber: 0, dailyTxn: 0 };
+
+// Current segment type for top bar
+let currentSegmentType = 'monitoring';
+
+// =============================================
+// PIXEL ART — VESPOLAK (PX = 8, no cigarette)
+// =============================================
+const PX = 8;
+
+function px(n) { return n * PX; }
+
+const COLORS = {
+  skin:   '#8B5E3C',
+  skin2:  '#7A5030',
+  hair:   '#F5D44A',
+  hair2:  '#E8C020',
+  shirt:  '#1a1a2e',
+  shirt2: '#12122a',
+  blue:   '#0052FF',
+  blue2:  '#003ecc',
+  pants:  '#1c1c2e',
+  pants2: '#141426',
+  belt:   '#2a2020',
+  shoe:   '#111118',
+  shoeS:  '#0044dd',
+  white:  '#f0f0f0',
+  eye:    '#0a0a0a',
+};
+
+function buildCharacterPixels() {
+  const pixels = [];
+  function row(r, segments) {
+    for (const [c0, c1, col] of segments) {
+      for (let c = c0; c <= c1; c++) pixels.push([c, r, col]);
+    }
+  }
+
+  // HAIR — messy blond
+  row(0,  [[8,11,'hair2'],[12,20,'hair'],[21,23,'hair2']]);
+  row(1,  [[6,9,'hair2'],[10,22,'hair'],[23,25,'hair2'],[7,7,'hair2']]);
+  row(2,  [[5,7,'hair2'],[8,11,'hair'],[12,22,'hair'],[23,26,'hair2']]);
+  row(3,  [[6,8,'hair2'],[9,10,'hair'],[11,21,'hair'],[22,25,'hair2'],[24,24,'hair']]);
+  row(4,  [[7,9,'hair2'],[10,11,'skin'],[12,20,'skin'],[21,22,'hair2'],[23,26,'hair2']]);
+  row(5,  [[8,9,'hair2'],[10,11,'skin'],[12,21,'skin'],[22,24,'hair']]);
+  // Stray hair spikes
+  row(0, [[4,5,'hair2'],[26,27,'hair2']]);
+  row(1, [[3,4,'hair2'],[27,28,'hair']]);
+  row(2, [[4,5,'hair']]);
+
+  // FACE — rows 4-13
+  row(6,  [[10,21,'skin']]);
+  row(7,  [[9,22,'skin']]);
+  row(8,  [[9,22,'skin']]);
+  row(9,  [[9,22,'skin']]);
+  row(10, [[9,22,'skin']]);
+  row(11, [[9,22,'skin']]);
+  row(12, [[9,22,'skin']]);
+  row(13, [[10,21,'skin']]);
+
+  // Eyes — tiny black dots
+  row(8,  [[12,13,'eye'],[19,20,'eye']]);
+  row(9,  [[12,13,'eye'],[19,20,'eye']]);
+
+  // Mouth area — no cigarette, just subtle skin shadow
+  row(12, [[14,14,'skin2'],[15,17,'skin2'],[18,18,'skin2']]);
+
+  // NECK
+  row(14, [[13,19,'skin']]);
+  row(15, [[13,19,'skin']]);
+
+  // SHOULDERS / SHIRT
+  row(16, [[7,9,'shirt'],[10,12,'skin'],[13,19,'shirt'],[20,22,'skin'],[23,25,'shirt']]);
+  row(17, [[6,9,'shirt'],[10,11,'shirt2'],[12,20,'shirt'],[21,22,'shirt2'],[23,26,'shirt']]);
+  row(18, [[5,8,'shirt'],[9,23,'shirt'],[24,27,'shirt']]);
+  row(19, [[5,27,'shirt']]);
+  row(20, [[5,27,'shirt']]);
+  // Blue collar accent
+  row(16, [[13,14,'blue'],[17,18,'blue']]);
+  // Blue patches
+  row(20, [[7,11,'blue'],[21,25,'blue2']]);
+  row(21, [[5,27,'shirt']]);
+  row(22, [[5,27,'shirt2']]);
+  row(23, [[5,27,'shirt']]);
+  row(24, [[5,27,'shirt']]);
+  row(25, [[5,27,'shirt2']]);
+
+  // ARMS — at rest
+  row(17, [[3,5,'skin'],[27,29,'skin']]);
+  row(18, [[3,5,'skin'],[27,29,'skin']]);
+  row(19, [[3,5,'skin'],[27,29,'skin']]);
+  row(20, [[3,5,'skin'],[27,29,'skin']]);
+  row(21, [[3,5,'skin'],[27,29,'skin']]);
+  row(22, [[3,5,'skin'],[27,29,'skin']]);
+  row(23, [[3,5,'skin'],[27,29,'skin']]);
+  row(24, [[4,5,'skin'],[27,28,'skin']]);
+  row(25, [[4,5,'skin'],[27,28,'skin']]);
+  // Hands
+  row(26, [[3,6,'skin'],[26,29,'skin']]);
+  row(27, [[3,6,'skin'],[26,29,'skin']]);
+  row(28, [[3,5,'skin'],[26,28,'skin']]);
+
+  // BELT
+  row(26, [[5,27,'belt']]);
+  row(27, [[5,27,'belt']]);
+  row(26, [[14,18,'skin2']]);
+  row(27, [[14,18,'skin2']]);
+
+  // PANTS
+  for (let r = 28; r <= 36; r++) row(r, [[6,26,'pants']]);
+  for (let r = 28; r <= 36; r++) row(r, [[15,16,'pants2']]);
+  row(37, [[6,14,'pants'],[17,26,'pants']]);
+  row(38, [[6,14,'pants'],[17,26,'pants']]);
+  row(39, [[6,14,'pants'],[17,26,'pants']]);
+  row(40, [[6,14,'pants'],[17,26,'pants']]);
+
+  // SHOES
+  row(41, [[5,14,'shoe'],[16,26,'shoe']]);
+  row(42, [[4,15,'shoe'],[15,27,'shoe']]);
+  row(43, [[3,16,'shoe'],[14,28,'shoe']]);
+  row(44, [[3,16,'shoeS'],[14,28,'shoeS']]);
+  row(45, [[4,15,'shoeS'],[15,27,'shoeS']]);
+
+  return pixels;
+}
+
+const CHARACTER_PIXELS = buildCharacterPixels();
+const CHAR_W = 32;
+const CHAR_H = 46;
+
+// Mouth frames for speaking: 0=closed, 1=slightly open, 2=open
+let mouthFrame = 0;
+let mouthTimer = 0;
+
+// Eyebrow raise for reacting
+let browRaise = 0;
+let browRaiseTarget = 0;
+
+function drawVespolak(cx, bottomY) {
+  const breath = Math.sin(time * 1.3) * 1.2;
+  const sway = Math.sin(time * 0.5) * 1.5; // subtle idle sway
+
+  const ox = cx - (CHAR_W / 2) * PX + sway;
+  const oy = bottomY - CHAR_H * PX + breath;
+
+  ctx.save();
+
+  // Draw pixels
+  for (const [col, row, colorKey] of CHARACTER_PIXELS) {
+    let pixX = ox + col * PX;
+    let pixY = oy + row * PX;
+    // Subtle head micro-nod when speaking
+    if (row < 16 && hostState === 'speaking') {
+      pixY += Math.sin(time * 3) * 0.8;
+    }
+    ctx.fillStyle = COLORS[colorKey] || '#ff00ff';
+    ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
+  }
+
+  // Draw eyes (with blink + looking left toward Zone B)
+  drawEyes(ox, oy);
+
+  // Draw mouth based on state
+  drawMouth(ox, oy);
+
+  // Draw eyebrow raise for reacting
+  if (browRaise > 0.1) {
+    drawBrowRaise(ox, oy);
+  }
+
+  ctx.restore();
+
+  // Subtle ambient glow under character
+  const glowGrad = ctx.createRadialGradient(cx + sway, bottomY - 10, 10, cx + sway, bottomY - 10, 200);
+  glowGrad.addColorStop(0, 'rgba(0,82,255,0.05)');
+  glowGrad.addColorStop(1, 'rgba(0,82,255,0)');
+  ctx.fillStyle = glowGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx + sway, bottomY - 10, 200, 60, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawEyes(ox, oy) {
+  const eyeRows = [8, 9];
+  const leftCols = [12, 13];
+  const rightCols = [19, 20];
+  // Eyes look slightly left (toward Zone B content)
+  const lookOffset = -1;
+
+  const drawEye = (cols, rows) => {
+    for (const r of rows) {
+      for (const c of cols) {
+        const pixX = ox + (c + lookOffset) * PX;
+        const pixY = oy + r * PX;
+        if (isBlinking) {
+          ctx.fillStyle = COLORS.skin;
+          ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
+          if (r === 8) {
+            ctx.fillStyle = COLORS.skin2;
+            ctx.fillRect(Math.round(pixX), Math.round(pixY + PX * 0.4), PX, PX * 0.3);
+          }
+        } else {
+          ctx.fillStyle = COLORS.eye;
+          ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
+        }
+      }
+    }
+  };
+
+  drawEye(leftCols, eyeRows);
+  drawEye(rightCols, eyeRows);
+}
+
+function drawMouth(ox, oy) {
+  // Mouth at rows 12-13, cols 14-18
+  if (hostState === 'speaking' && mouthFrame > 0) {
+    // Open mouth
+    const mouthCols = mouthFrame === 2 ? [14,15,16,17,18] : [15,16,17];
+    for (const c of mouthCols) {
+      const pixX = ox + c * PX;
+      const pixY = oy + 12 * PX;
+      ctx.fillStyle = '#3a2018'; // dark mouth interior
+      ctx.fillRect(Math.round(pixX), Math.round(pixY), PX, PX);
+    }
+  }
+}
+
+function drawBrowRaise(ox, oy) {
+  // Draw raised eyebrows above eyes (row 7)
+  const browY = oy + (7 - browRaise * 1.2) * PX;
+  ctx.fillStyle = COLORS.hair2;
+  // Left brow
+  ctx.fillRect(Math.round(ox + 11 * PX), Math.round(browY), PX * 3, PX * 0.6);
+  // Right brow
+  ctx.fillRect(Math.round(ox + 18 * PX), Math.round(browY), PX * 3, PX * 0.6);
+}
+
+// =============================================
+// HOST STATE UPDATES
+// =============================================
+function updateHost() {
+  // Blink
+  blinkTimer += 0.016;
+  if (!isBlinking && blinkTimer > 3 + Math.random() * 4) {
+    isBlinking = true;
+    blinkTimer = 0;
+    setTimeout(() => { isBlinking = false; }, 120);
+  }
+
+  // Mouth animation when speaking
+  if (hostState === 'speaking') {
+    mouthTimer += 0.016;
+    if (mouthTimer > 0.1) {
+      mouthTimer = 0;
+      // Proportional to amplitude
+      if (currentAmplitude > 0.15) mouthFrame = 2;
+      else if (currentAmplitude > 0.05) mouthFrame = 1;
+      else mouthFrame = 0;
+    }
+  } else {
+    mouthFrame = 0;
+  }
+
+  // Reacting state — eyebrow raise for 0.5s then return
+  if (hostState === 'reacting') {
+    reactTimer -= 0.016;
+    browRaiseTarget = 1;
+    if (reactTimer <= 0) {
+      hostState = 'idle';
+      browRaiseTarget = 0;
+    }
+  } else {
+    browRaiseTarget = 0;
+  }
+  browRaise += (browRaiseTarget - browRaise) * 0.15;
+}
+
+// =============================================
+// LEFT DATA RAIL (Zone A) — drawn on canvas
+// =============================================
+function drawLeftRail() {
+  const railX = 0;
+  const railY = 65;
+  const railW = 346;
+  const railH = 691;
+
+  // Subtle background
+  ctx.fillStyle = 'rgba(6,8,16,0.6)';
+  ctx.fillRect(railX, railY, railW, railH);
+
+  // Right border
+  ctx.strokeStyle = 'rgba(0,82,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(railX + railW, railY);
+  ctx.lineTo(railX + railW, railY + railH);
+  ctx.stroke();
+
+  // Section header
+  ctx.fillStyle = 'rgba(0,82,255,0.4)';
+  ctx.font = '800 9px Inter';
+  ctx.letterSpacing = '2px';
+  ctx.fillText('ECOSYSTEM', railX + 24, railY + 32);
+  ctx.letterSpacing = '0px';
+
+  // Metrics
+  const metrics = [
+    { label: 'TVL', value: ecosystemData.baseTvl, key: 'baseTvl' },
+    { label: 'ETH', value: ecosystemData.ethPrice, key: 'ethPrice' },
+    { label: 'GAS', value: ecosystemData.gas, key: 'gas' },
+    { label: 'BLOCK', value: ecosystemData.blockNumber, key: 'blockNumber' },
+    { label: 'DAILY TXN', value: ecosystemData.dailyTxn, key: 'dailyTxn' },
+    { label: 'MOOD', value: ecosystemData.mood || 'Neutral', key: 'mood' },
+  ];
+
+  let my = railY + 56;
+  for (const m of metrics) {
+    const flash = ecosystemFlash[m.key] || 0;
+    if (flash > 0) ecosystemFlash[m.key] = Math.max(0, flash - 0.02);
+
+    // Label
+    ctx.fillStyle = `rgba(0,82,255,${0.35 + flash * 0.4})`;
+    ctx.font = '700 9px Inter';
+    ctx.letterSpacing = '1px';
+    ctx.fillText(m.label, railX + 24, my);
+    ctx.letterSpacing = '0px';
+
+    // Value
+    ctx.fillStyle = `rgba(200,215,240,${0.7 + flash * 0.3})`;
+    ctx.font = '600 18px JetBrains Mono';
+    ctx.fillText(m.value || '--', railX + 24, my + 22);
+
+    // Subtle separator
+    ctx.strokeStyle = 'rgba(0,82,255,0.05)';
+    ctx.beginPath();
+    ctx.moveTo(railX + 24, my + 36);
+    ctx.lineTo(railX + railW - 24, my + 36);
+    ctx.stroke();
+
+    my += 100;
+  }
+
+  // Subtle data wave at bottom
+  const waveY = railY + railH - 60;
+  ctx.strokeStyle = 'rgba(0,82,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < railW - 48; i += 2) {
+    const wx = railX + 24 + i;
+    const wy = waveY + Math.sin((i + time * 20) * 0.04) * 15 + Math.sin((i + time * 10) * 0.02) * 8;
+    if (i === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+  }
+  ctx.stroke();
+}
+
+// =============================================
+// BACKGROUND
+// =============================================
+function drawBackground() {
+  const bgGrad = ctx.createRadialGradient(960, 400, 0, 960, 400, 1100);
+  bgGrad.addColorStop(0, 'rgba(10,14,26,1)');
+  bgGrad.addColorStop(0.5, 'rgba(7,9,18,1)');
+  bgGrad.addColorStop(1, 'rgba(4,5,10,1)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  // Vignette
+  const vig = ctx.createRadialGradient(960, 540, 200, 960, 540, 960);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, 1920, 1080);
+}
+
+// =============================================
+// TRANSITION EFFECTS
+// =============================================
+let transitionAlpha = 0;
+
+function drawEffects() {
+  if (transitionAlpha > 0) {
+    ctx.fillStyle = `rgba(0,52,200,${transitionAlpha * 0.08})`;
+    ctx.fillRect(0, 0, 1920, 1080);
+    transitionAlpha = Math.max(0, transitionAlpha - 0.04);
+  }
+}
+
+// =============================================
+// MAIN RENDER LOOP
+// =============================================
+function drawScene() {
+  time += 0.016;
+  updateHost();
+
+  drawBackground();
+  drawLeftRail();
+
+  // Host in Zone C (right 24%, x: 1460-1920), vertically centered
+  // Center of Zone C = 1690, vertical center of main area = 65 + 691/2 = 410
+  // Bottom of character at ~756 (bottom of main content area)
+  drawVespolak(1690, 750);
+
+  drawEffects();
+
+  requestAnimationFrame(drawScene);
+}
+
+// =============================================
+// UTILITY
+// =============================================
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function getSegmentTag(type) {
+  const tags = {
+    social_pulse: 'SOCIAL SIGNAL',
+    builder_spotlight: 'BUILDER SIGNAL',
+    chain_radar: 'ONCHAIN READ',
+    signal_analysis: 'MARKET RADAR',
+    market_scan: 'MARKET RADAR',
+    opening: 'BASE PULSE',
+    closing: 'BASE PULSE',
+    pulse_check: 'BASE PULSE',
+    monitoring: 'BASE PULSE',
+  };
+  return tags[type] || 'BASE PULSE';
+}
+
+function getSegmentColor(type) {
+  const colors = {
+    social_pulse: '#ec4899',
+    builder_spotlight: '#8b5cf6',
+    chain_radar: '#0052FF',
+    signal_analysis: '#22c55e',
+    market_scan: '#22c55e',
+    monitoring: '#0052FF',
+  };
+  return colors[type] || '#0052FF';
+}
+
+// =============================================
+// SEGMENT CARD SYSTEM — Zone B
+// =============================================
+function hideAllCards() {
+  document.querySelectorAll('.segment-card').forEach(el => {
+    el.classList.remove('visible');
+  });
+}
+
+function drawSignalVisual(canvasId, type, text) {
+  const cvs = document.getElementById(canvasId);
+  if (!cvs) return;
+  const vctx = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  vctx.clearRect(0, 0, w, h);
+
+  if (type === 'launch' || /launch|live|deploy|ship|drop/i.test(text || '')) {
+    for (let i = 0; i < Math.floor(w / 20); i++) {
+      const bh = 10 + Math.random() * (h - 20);
+      vctx.fillStyle = `rgba(34,197,94,${0.12 + Math.random() * 0.22})`;
+      vctx.fillRect(i * 20 + 2, h - bh, 16, bh);
+    }
+  } else if (type === 'builder' || /build|dev|ship|code/i.test(text || '')) {
+    for (let r = 0; r < 4; r++) for (let c = 0; c < Math.floor(w / 42); c++) {
+      if (Math.random() > 0.4) {
+        vctx.fillStyle = `rgba(139,92,246,${0.08 + Math.random() * 0.28})`;
+        vctx.fillRect(c * 42 + 4, r * (h / 4) + 2, 38, h / 4 - 4);
+      }
+    }
+  } else if (type === 'metric' || type === 'onchain' || /tvl|price|volume|market/i.test(text || '')) {
+    vctx.strokeStyle = 'rgba(0,82,255,0.5)'; vctx.lineWidth = 2;
+    vctx.beginPath();
+    for (let x = 0; x < w; x += 2) {
+      const y = h/2 + Math.sin(x * 0.032) * (h * 0.35) + Math.sin(x * 0.072) * (h * 0.15);
+      x === 0 ? vctx.moveTo(x, y) : vctx.lineTo(x, y);
+    }
+    vctx.stroke();
+    vctx.lineTo(w, h); vctx.lineTo(0, h); vctx.closePath();
+    vctx.fillStyle = 'rgba(0,82,255,0.05)'; vctx.fill();
+  } else if (type === 'market') {
+    // Price bars
+    vctx.strokeStyle = 'rgba(34,197,94,0.5)'; vctx.lineWidth = 2;
+    vctx.beginPath();
+    let prev = h / 2;
+    for (let x = 0; x < w; x += 4) {
+      prev += (Math.random() - 0.48) * 6;
+      prev = Math.max(10, Math.min(h - 10, prev));
+      x === 0 ? vctx.moveTo(x, prev) : vctx.lineTo(x, prev);
+    }
+    vctx.stroke();
+  } else {
+    for (let i = 0; i < 8; i++) {
+      vctx.fillStyle = `rgba(0,82,255,${0.04 + Math.random() * 0.1})`;
+      vctx.fillRect(20, i * (h / 8) + 2, 80 + Math.random() * (w * 0.5), h / 8 - 4);
+    }
+  }
+}
+
+// =============================================
+// SHOW SEGMENT CARD — main API
+// =============================================
+window.__showSegmentCard = function(type, data) {
+  hideAllCards();
+
+  if (type === 'social') {
+    const card = document.getElementById('social-card');
+    card.querySelector('.card-header-type').textContent = 'SOCIAL SIGNAL';
+    card.querySelector('.card-header-icon').textContent = data.platform === 'farcaster' ? '◈ Farcaster' : '𝕏';
+    card.querySelector('.social-avatar').textContent = (data.displayName || '?')[0].toUpperCase();
+    card.querySelector('.social-display-name').textContent = data.displayName || data.username || 'Unknown';
+    card.querySelector('.social-username').textContent = '@' + (data.username || 'unknown');
+    card.querySelector('.social-text').textContent = data.text || '';
+
+    const engParts = [];
+    if (data.likes) engParts.push(`♡ <span>${data.likes}</span>`);
+    if (data.retweets) engParts.push(`↻ <span>${data.retweets}</span>`);
+    if (data.replies) engParts.push(`💬 <span>${data.replies}</span>`);
+    card.querySelector('.social-engagement').innerHTML = engParts.join('  ') || '';
+
+    // Tag
+    const tagEl = card.querySelector('.social-tag');
+    const tagMap = { builder: 'BUILDER', launch: 'LAUNCH', culture: 'CULTURE', market: 'MARKET', commentary: 'COMMENTARY' };
+    const tagClass = { builder: 'tag-builder', launch: 'tag-launch', culture: 'tag-culture', market: 'tag-market', commentary: 'tag-commentary' };
+    const st = data.signalType || 'commentary';
+    tagEl.textContent = tagMap[st] || st.toUpperCase();
+    tagEl.className = 'social-tag ' + (tagClass[st] || 'tag-commentary');
+
+    // Signal type color on avatar
+    const avatarColors = {
+      builder: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+      launch: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+      culture: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+      market: 'linear-gradient(135deg, #0052FF 0%, #003bb5 100%)',
+    };
+    card.querySelector('.social-avatar').style.background = avatarColors[st] || avatarColors.market;
+
+    drawSignalVisual('social-visual-canvas', st, data.text);
+
+    requestAnimationFrame(() => card.classList.add('visible'));
+
+  } else if (type === 'builder') {
+    const card = document.getElementById('builder-card');
+    card.querySelector('.card-header-type').textContent = 'BUILDER SIGNAL';
+    card.querySelector('.builder-name').textContent = data.name || data.headline || '';
+    card.querySelector('.builder-tagline').textContent = data.tagline || data.subheadline || '';
+    card.querySelector('.builder-body').textContent = data.body || data.text || '';
+    card.querySelector('.builder-details').innerHTML =
+      `Stage: <span>${data.stage || 'LIVE'}</span><br>` +
+      `Traction: <span>${data.traction || 'early signal'}</span><br>` +
+      `Layer: <span>${data.layer || 'DeFi'}</span>`;
+
+    drawSignalVisual('builder-visual-canvas', 'builder', data.name);
+
+    requestAnimationFrame(() => card.classList.add('visible'));
+
+  } else if (type === 'onchain') {
+    const card = document.getElementById('onchain-card');
+    card.querySelector('.card-header-type').textContent = 'ONCHAIN READ';
+    card.querySelector('.onchain-metric').textContent = data.metric || '--';
+    const changeHtml = data.changeDir === 'up'
+      ? `<span class="change-up">▲ ${data.change || ''}</span>`
+      : data.changeDir === 'down'
+      ? `<span class="change-down">▼ ${data.change || ''}</span>`
+      : (data.change || '');
+    card.querySelector('.onchain-label').innerHTML = (data.label || '') + ' — ' + changeHtml;
+    card.querySelector('.onchain-context').textContent = data.context || '';
+    card.querySelector('.onchain-supporting').textContent = data.supporting || '';
+
+    drawSignalVisual('onchain-chart-canvas', 'onchain', data.metric);
+
+    requestAnimationFrame(() => card.classList.add('visible'));
+
+  } else if (type === 'market') {
+    const card = document.getElementById('market-card');
+    card.querySelector('.card-header-type').textContent = 'MARKET RADAR';
+    card.querySelector('.market-symbol').textContent = data.symbol || '';
+    card.querySelector('.market-price').textContent = data.price || '';
+    const changeEl = card.querySelector('.market-change');
+    changeEl.textContent = data.change || '';
+    changeEl.style.color = (data.change || '').includes('▲') ? '#22c55e' : '#ef4444';
+    card.querySelector('.market-analysis').textContent = data.analysis || data.text || '';
+    card.querySelector('.market-link').textContent = data.ecosystemLink || '';
+
+    drawSignalVisual('market-chart-canvas', 'market', data.symbol);
+
+    requestAnimationFrame(() => card.classList.add('visible'));
+  }
+};
+
+window.__hideSegmentCard = function() {
+  hideAllCards();
+};
+
+// =============================================
+// BACKWARD-COMPAT: __showSignalCard maps to social card
+// =============================================
+window.__showSignalCard = function(opts) {
+  window.__showSegmentCard('social', {
+    displayName: opts.displayName,
+    username: opts.username,
+    text: opts.text,
+    platform: opts.platform,
+    signalType: opts.signalType,
+    likes: opts.likes,
+    retweets: opts.retweets,
+    replies: opts.replies,
+  });
+};
+
+window.__hideSignalCard = function() {
+  hideAllCards();
+};
+
+// =============================================
+// WINDOW API
+// =============================================
+window.__setExpression = function(expr, brow) {
+  // Simplified — just trigger react if excited/curious
+  if (expr === 'excited' || expr === 'impressed') {
+    hostState = 'reacting';
+    reactTimer = 0.5;
+  }
+};
+
+window.__setMainScreen = function(type, headline, sub) {
+  currentSegmentType = type;
+  // Update top bar
+  const tag = document.getElementById('top-segment-tag');
+  const text = document.getElementById('top-headline-text');
+  tag.textContent = getSegmentTag(type);
+  tag.style.background = getSegmentColor(type);
+  text.textContent = headline || '';
+};
+
+window.__showLowerThird = function(headline, sub) {
+  const el = document.getElementById('lower-third');
+  document.getElementById('lt-headline').textContent = headline;
+  document.getElementById('lt-sub').textContent = sub || '';
+  const typeMap = {
+    builder_spotlight: 'BUILDER', chain_radar: 'ONCHAIN',
+    social_pulse: 'SOCIAL', signal_analysis: 'MARKET', market_scan: 'MARKET',
+  };
+  document.getElementById('lt-tag').textContent = typeMap[currentSegmentType] || 'SIGNAL';
+  el.classList.add('visible');
+};
+
+window.__hideLowerThird = function() {
+  document.getElementById('lower-third').classList.remove('visible');
+};
+
+window.__updateTicker = function(items) {
+  const track = document.getElementById('ticker-track');
+  const html = items.map(item => {
+    const parts = item.match(/^(.+?)\s+\$?([\d,.]+)\s*([▲▼])(.+)$/);
+    if (parts) {
+      const isUp = parts[3] === '▲';
+      return `<span class="ticker-item">
+        <span class="symbol">${parts[1]}</span>
+        <span class="price">$${parts[2]}</span>
+        <span class="${isUp ? 'change-up' : 'change-down'}">${parts[3]}${parts[4]}</span>
+      </span><span class="ticker-sep">│</span>`;
+    }
+    return `<span class="ticker-item"><span class="symbol">${item}</span></span><span class="ticker-sep">│</span>`;
+  }).join('');
+  track.innerHTML = html + html;
+};
+
+window.__updateBottomStrip = function(tags) {
+  const track = document.getElementById('bottom-strip-track');
+  const html = tags.map(t =>
+    `<span class="bottom-tag"><span class="tag-name">${t}</span></span>`
+  ).join('');
+  track.innerHTML = html + html;
+};
+
+window.__showEndCard = function() {
+  document.getElementById('end-card').classList.add('visible');
+};
+window.__hideEndCard = function() {
+  document.getElementById('end-card').classList.remove('visible');
+};
+
+window.__updateEcosystem = function(data) {
+  const keys = ['baseTvl', 'ethPrice', 'gas', 'blockNumber', 'dailyTxn'];
+  for (const k of keys) {
+    if (data[k] && data[k] !== ecosystemData[k]) {
+      ecosystemData[k] = data[k];
+      ecosystemFlash[k] = 1.0;
+    }
+  }
+};
+
+window.__pushSignal = function(text, type) {
+  // No-op — signal feed removed (was part of back screen)
+};
+
+window.__setBodyState = function(state) {
+  // Map old states to new 3-state system
+  if (state === 'speaking_normal' || state === 'speaking_emphasis') {
+    hostState = 'speaking';
+    isSpeaking = true;
+  } else if (state === 'idle_monitoring' || state === 'idle') {
+    hostState = 'idle';
+  } else if (state === 'leaning_in' || state === 'nodding') {
+    hostState = 'reacting';
+    reactTimer = 0.5;
+  } else {
+    hostState = 'idle';
+  }
+};
+
+window.__pointAtScreen = function() {
+  // No pointing — just react briefly
+  hostState = 'reacting';
+  reactTimer = 0.5;
+};
+
+window.__emphasize = function() {
+  hostState = 'reacting';
+  reactTimer = 0.5;
+};
+
+window.__dismiss = function() {
+  hostState = 'idle';
+};
+
+window.__nod = function() {
+  hostState = 'reacting';
+  reactTimer = 0.5;
+};
+
+window.__segmentTransition = function(type) {
+  transitionAlpha = 1.0;
+};
+
+window.__environmentPulse = function(intensity) {
+  // Subtle — just a brief transition flash
+  transitionAlpha = Math.max(0, Math.min(1, (intensity || 0.3) * 0.5));
+};
+
+window.__setSegmentProgress = function(p) {
+  // No-op — progress bar removed with back screen
+};
+
+// =============================================
+// INTRO ANIMATION
+// =============================================
+window.__playIntro = function(episodeNumber) {
+  const ic = document.getElementById('intro-canvas');
+  ic.style.display = 'block';
+  const ictx = ic.getContext('2d');
+  let t = 0;
+  const totalFrames = 180;
+
+  function introFrame() {
+    t++;
+    ictx.clearRect(0, 0, 1920, 1080);
+
+    const progress = t / totalFrames;
+    const fadeIn = Math.min(1, t / 30);
+    const alpha = fadeIn * (t > totalFrames - 30 ? (1 - (t - (totalFrames - 30)) / 30) : 1);
+
+    ictx.fillStyle = `rgba(4,5,12,${alpha * 0.95})`;
+    ictx.fillRect(0, 0, 1920, 1080);
+
+    const radius = progress * 1400;
+    const circAlpha = alpha * (1 - progress) * 0.3;
+    ictx.strokeStyle = `rgba(0,82,255,${circAlpha})`;
+    ictx.lineWidth = 2;
+    ictx.beginPath();
+    ictx.arc(960, 540, radius, 0, Math.PI * 2);
+    ictx.stroke();
+
+    if (t > 20) {
+      const logoAlpha = Math.min(1, (t - 20) / 30) * alpha;
+      ictx.globalAlpha = logoAlpha;
+      ictx.fillStyle = '#0052FF';
+      ictx.font = '900 96px Inter';
+      ictx.textAlign = 'center';
+      ictx.shadowColor = 'rgba(0,82,255,0.5)';
+      ictx.shadowBlur = 40;
+      ictx.fillText('BASE PULSE', 960, 500);
+      ictx.shadowBlur = 0;
+      ictx.fillStyle = 'rgba(255,255,255,0.5)';
+      ictx.font = '400 22px Inter';
+      if (episodeNumber) ictx.fillText(`EPISODE ${episodeNumber}`, 960, 560);
+      ictx.textAlign = 'left';
+      ictx.globalAlpha = 1;
+    }
+
+    if (t < totalFrames) {
+      requestAnimationFrame(introFrame);
+    } else {
+      ic.style.display = 'none';
+    }
+  }
+  requestAnimationFrame(introFrame);
+};
+
+// =============================================
+// START
+// =============================================
+drawScene();
+
+// =============================================
+// TEST DATA
+// =============================================
+window.__updateTicker([
+  'ETH $3,241 ▲2.1%',
+  'AERO $1.84 ▲5.3%',
+  'VIRTUAL $2.10 ▼1.2%',
+  'DEGEN $0.0031 ▲8.4%',
+  'BRETT $0.174 ▲3.7%',
+  'CBBTC $97,420 ▲1.1%',
+  'USDC $1.00 ▲0.0%',
+  'BALD $0.0024 ▼2.2%',
+  'MOG $0.00028 ▲12.1%',
+  'TOSHI $0.00018 ▲6.3%',
+  'HIGHER $0.042 ▲4.8%',
+  'BASE $0.87 ▲2.9%',
+]);
+
+window.__updateBottomStrip([
+  'DeFi', 'Aerodrome', 'Base', 'L2', 'NFT', 'Builder',
+  'Memecoin', 'Governance', 'Social', 'Onchain',
+  'DeFi', 'Aerodrome', 'Base', 'L2', 'NFT', 'Builder',
+]);
+
+window.__setMainScreen('monitoring', 'Monitoring Base ecosystem activity...', '');
+
+// Ecosystem data
+window.__updateEcosystem({
+  ethPrice: '3,241',
+  baseTvl: '$4.15B',
+  gas: '< 0.01 gwei',
+  blockNumber: '43,500,000',
+  dailyTxn: '3.2M',
+});
+
+// Demo: cycle through segment cards
+const demoSegments = [
+  () => {
+    window.__setMainScreen('social_pulse', 'Jesse Pollak posts thread on Base roadmap', '');
+    window.__showLowerThird('Jesse Pollak posts thread on Base roadmap', 'Base lead dev active on X');
+    window.__showSegmentCard('social', {
+      displayName: 'Jesse Pollak',
+      username: 'jessepollak',
+      text: 'Base is the home for builders. New DEX launching this week — the ecosystem keeps shipping. This is what onchain summer looks like.',
+      platform: 'twitter',
+      signalType: 'builder',
+      likes: '4.2K',
+      retweets: '891',
+      replies: '234',
+    });
+    hostState = 'speaking';
+  },
+  () => {
+    window.__setMainScreen('builder_spotlight', 'Aerodrome Finance hits new TVL milestone', '');
+    window.__showLowerThird('Aerodrome Finance hits new TVL milestone', 'Base DeFi backbone');
+    window.__showSegmentCard('builder', {
+      name: 'AERODROME FINANCE',
+      tagline: 'Central liquidity hub for Base ecosystem',
+      body: 'Aerodrome has become the de facto liquidity backbone of Base, concentrating over 40% of all DEX volume. Their ve(3,3) model continues to attract sticky liquidity.',
+      stage: 'LIVE',
+      traction: 'dominant',
+      layer: 'DeFi',
+    });
+    hostState = 'speaking';
+  },
+  () => {
+    window.__setMainScreen('chain_radar', 'Base TVL trending down — 3rd consecutive day', '');
+    window.__showLowerThird('Base TVL trending down', '3rd consecutive day of outflows');
+    window.__showSegmentCard('onchain', {
+      metric: '$4.15B',
+      label: 'Base TVL',
+      change: '4.3% (24h)',
+      changeDir: 'down',
+      context: '3rd consecutive day of outflows. Gas remains < 0.01 gwei, suggesting low network stress despite capital movement.',
+      supporting: 'Block 43.5M | 3.2M txn/d',
+    });
+    hostState = 'speaking';
+  },
+  () => {
+    window.__setMainScreen('signal_analysis', 'AERO crossing new TVL milestone', '');
+    window.__showLowerThird('AERO crossing new TVL milestone', 'Liquidity concentrating on Base');
+    window.__showSegmentCard('market', {
+      symbol: 'AERO',
+      price: '$0.32',
+      change: '▲ 8.1%',
+      analysis: 'Aerodrome crossing new TVL milestone as liquidity concentrates on Base. Protocol fees trending up week-over-week.',
+      ecosystemLink: 'Ecosystem link: Base DeFi backbone',
+    });
+    hostState = 'speaking';
+  },
+];
+
+let demoIdx = 0;
+function cycleDemoSegment() {
+  window.__segmentTransition();
+  setTimeout(() => {
+    demoSegments[demoIdx % demoSegments.length]();
+    demoIdx++;
+    setTimeout(() => {
+      window.__hideLowerThird();
+    }, 5000);
+  }, 300);
+}
+
+setInterval(cycleDemoSegment, 12000);
+cycleDemoSegment();
+
+// Simulate speaking
+setInterval(() => {
+  if (hostState !== 'speaking') {
+    isSpeaking = true;
+    hostState = 'speaking';
+    currentAmplitude = 0.1 + Math.random() * 0.4;
+    setTimeout(() => {
+      isSpeaking = false;
+      currentAmplitude = 0;
+      hostState = 'idle';
+    }, 2000 + Math.random() * 3000);
+  }
+}, 8000);
+
+// Ecosystem updates
+setInterval(() => {
+  window.__updateEcosystem({
+    ethPrice: '$' + (3200 + Math.random() * 200).toFixed(0),
+    baseTvl: '$' + (3.8 + Math.random() * 0.6).toFixed(2) + 'B',
+    gas: (0.001 + Math.random() * 0.005).toFixed(4) + ' gwei',
+    blockNumber: (43500000 + Math.floor(Math.random() * 10000)).toLocaleString(),
+    dailyTxn: (2.8 + Math.random() * 0.8).toFixed(1) + 'M',
+  });
+}, 6000);
+</script>
+</body>
+</html>

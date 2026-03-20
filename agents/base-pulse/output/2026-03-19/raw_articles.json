@@ -1,0 +1,453 @@
+[
+  {
+    "id": "7d3f73207980",
+    "title": "Base TVL: $4.15B (-3.9% 24h)",
+    "summary": "Base chain total value locked is $4.15 billion, down 3.9% in the last 24 hours.",
+    "url": "https://defillama.com/chain/Base",
+    "source": "DeFiLlama",
+    "publishedAt": "2026-03-19T22:21:08.724Z",
+    "category": "onchain",
+    "layer": "onchain",
+    "signalType": "metric"
+  },
+  {
+    "id": "6e3983ab7a7e",
+    "title": "FBI warns of fake tokens impersonating agency on the Tron network",
+    "summary": "The Federal Bureau of Investigation warned the public on Thursday not to trust tokens claiming to be affiliated with the agency.tron",
+    "url": "https://www.theblock.co/post/394441/fbi-warns-fake-tokens-impersonating-agency-tron-network?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T21:57:57.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "fee59d2d32a0",
+    "title": "Gemini Shares Rise After Hours as Investors Back Shift Beyond Crypto Trading",
+    "summary": "Investors focused on a shift toward steadier revenue streams and a push into prediction markets, even as trading volumes declined.",
+    "url": "https://decrypt.co/361849/gemini-shares-rise-after-hours-investors-back-shift-beyond-crypto",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T21:57:38.000Z",
+    "category": "market",
+    "layer": "official"
+  },
+  {
+    "id": "55f5e4eeebeb",
+    "title": "Anchorage Digital rolls out collateral management services on institutional Atlas platform",
+    "summary": "Collateral management is the administration, monitoring, and oversight of assets pledged to a counterparty during a financial transaction.",
+    "url": "https://www.theblock.co/post/394436/anchorage-digital-rolls-out-collateral-management-services-institutional-atlas?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T21:23:10.000Z",
+    "category": "onchain",
+    "layer": "official"
+  },
+  {
+    "id": "c4fa8104138f",
+    "title": "Microsoft Launches MAI-Image-2 Text-to-Image Model—And It's Better Than Expected",
+    "summary": "Microsoft's AI image generator offers impressive realism and text rendering, but strict content limits and 1:1-only output hold it back.",
+    "url": "https://decrypt.co/361791/microsoft-mai-image-2-text-image-model-review",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T21:14:17.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "ea4793cd5d33",
+    "title": "Fake FBI Crypto Tokens Are Being Used to Threaten Tron Users, Authorities Warn",
+    "summary": "The FBI warned of a new threat emerging on Tron’s network, with users receiving tokens that aren’t actually from federal law enforcement.",
+    "url": "https://decrypt.co/361819/fake-fbi-crypto-tokens-used-threaten-tron-users-authorities-warn",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T20:53:01.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "e1a3e63d790d",
+    "title": "Solana Treasury Forward Industries Uses Loan to Buy Back Shares After 89% Price Dive",
+    "summary": "Solana treasury firm Forward Industries bought back more than 6 million shares for $27.4 million as it seeks to add shareholder value.",
+    "url": "https://decrypt.co/361789/solana-treasury-forward-industries-loan-buy-back-shares",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T20:48:29.000Z",
+    "category": "market",
+    "layer": "official"
+  },
+  {
+    "id": "ef48d6732630",
+    "title": "Telling Your Chatbot You Have a Mental Health Condition Can Change the Answer You Get",
+    "summary": "A study finds that mentioning a mental health condition can increase AI refusals, including on legitimate tasks.",
+    "url": "https://decrypt.co/361790/ai-chatbot-mental-health-change-answers",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T20:38:59.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "9700124ab364",
+    "title": "Kentucky crypto ATM bill adds hardware wallet clause critics say would &#8216;outlaw self-custody&#8217;",
+    "summary": "The provision targets hardware wallet design, raising questions about whether non-custodial products could operate under the proposed rules.",
+    "url": "https://www.theblock.co/post/394426/kentucky-crypto-atm-bill-hardware-wallet-clause-critics-outlaw-self-custody?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T20:26:05.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "71058ab87aa2",
+    "title": "Morgan Stanley Prepares Bitcoin ETF for NYSE Arca Launch, Picking MSBT Ticker",
+    "summary": "Morgan Stanley updated its Bitcoin ETF S-1 filing, adding Fidelity as custodian and revealing the NYSE Arca ticker MSBT.",
+    "url": "https://decrypt.co/361769/morgan-stanley-prepares-bitcoin-etf-nyse-arca-launch-msbt",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T20:08:19.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "50c20e3585cd",
+    "title": "XRP Treasury Firm Evernorth Inches Closer to Public Listing With $685 Million Stash",
+    "summary": "Evernorth aims to become the largest publicly traded XRP treasury firm and is expected to launch with more than 473 million XRP.",
+    "url": "https://decrypt.co/361771/xrp-treasury-firm-evernorth-public-listing-685-million-stash",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T19:51:47.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "215572b16d1a",
+    "title": "First Working Quantum Battery Proves Bigger Really Does Mean Faster",
+    "summary": "Australian researchers built a battery that charges in femtoseconds, stores energy for nanoseconds, and gets faster the larger it grows—defying every rule conventional batteries follow.",
+    "url": "https://decrypt.co/361772/first-working-quantum-battery-csiro-australia",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T19:41:29.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "11c21e478977",
+    "title": "ETF Giant Challenges Tether and Paxos With Framework for Tokenized Gold",
+    "summary": "The World Gold Council, established in 1987, counts 29 members across the gold mining industry.",
+    "url": "https://decrypt.co/361750/etf-giant-challenges-tether-paxos-framework-tokenized-gold",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T18:26:16.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "0301968aa8d2",
+    "title": "BlackRock Staked Ethereum Fund Tops $250 Million in Its First Week",
+    "summary": "BlackRock's iShares Staked Ethereum Trust (ETHB) has hit $254 million in assets under management just one week after launch.",
+    "url": "https://decrypt.co/361719/blackrock-staked-ethereum-fund-tops-250-million-in-its-first-week",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T18:07:35.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "36ebbe6f1b2f",
+    "title": "The Daily: Bitcoin OG sells $72M in BTC as another whale scoops $111M in ETH, XRP treasury firm Evernorth files to go public, and more",
+    "summary": "The following article is adapted from The Block’s newsletter, The Daily, which comes out on weekday afternoons.",
+    "url": "https://www.theblock.co/post/394386/the-daily-bitcoin-og-sells-72m-in-btc-as-another-whale-scoops-111m-in-eth-xrp-treasury-firm-evernorth-files-to-go-public-and-more?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T18:01:18.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "82698277f1ef",
+    "title": "JPMorgan notes Hyperliquid gaining traction as traders seek 24/7 oil trading",
+    "summary": "Traction in such decentralized exchanges is likely to grow over time and extend beyond commodities to other assets, JPMorgan said.",
+    "url": "https://www.theblock.co/post/394380/jpmorgan-hyperliquid-crypto-traction-24-7-oil-trading?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T17:40:35.000Z",
+    "category": "market",
+    "layer": "official"
+  },
+  {
+    "id": "4412700a7c48",
+    "title": "MLB Signs Exclusive Polymarket Deal, 'Integrity Framework' Agreement With CFTC",
+    "summary": "Major League Baseball named Polymarket its exclusive prediction markets partner while inking an &#34;integrity framework&#34; with the CFTC.",
+    "url": "https://decrypt.co/361727/mlb-exclusive-polymarket-deal-integrity-framework-agreement-cftc",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T17:40:22.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "6c28044fef78",
+    "title": "What Are Coin Mixers and How Do They Work?",
+    "summary": "Coin mixers obfuscate the source and destination of crypto transactions—sparking conflict between regulators and privacy advocates.",
+    "url": "https://decrypt.co/resources/what-are-coin-mixers-tornado-cash-how-do-they-work",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T17:10:46.000Z",
+    "category": "onchain",
+    "layer": "official"
+  },
+  {
+    "id": "862c88ee4f35",
+    "title": "DDC adds 200 bitcoin as corporate treasuries lean into BTC price weakness",
+    "summary": "DDC is continuing to build its bitcoin position despite falling short of earlier, more aggressive accumulation targets.",
+    "url": "https://www.theblock.co/post/394375/ddc-adds-200-bitcoin-corporate-treasuries-btc-price-weakness?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T16:51:10.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "3b30fbced1ec",
+    "title": "UK to Dissolve Crypto Exchange Accused of Aiding Iranian Sanctions Evasion",
+    "summary": "The UK’s Companies House has moved to strike off Zedxion Exchange, a crypto firm accused of processing funds for Iran’s Revolutionary Guard.",
+    "url": "https://decrypt.co/361725/uk-to-dissolve-crypto-exchange-accused-of-aiding-iranian-sanctions-evasion",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T16:49:34.000Z",
+    "category": "market",
+    "layer": "official"
+  },
+  {
+    "id": "74c7eaa61b0f",
+    "title": "Prediction Market Myriad Closes ‘Milestone’ Seed Round Investment",
+    "summary": "Investors in the round include MoonPay Ventures, Auros, EVG, Verda Ventures and Fundstrat co-founder Tom Lee.",
+    "url": "https://decrypt.co/357169/prediction-market-myriad-closes-milestone-seed-round-investment",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T16:24:00.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "cb3a8aebdf51",
+    "title": "'Extreme Fear' Hits Crypto Markets After Bitcoin Gives Up $75K Spike",
+    "summary": "Crypto market sentiment is fading as Bitcoin dipped below $69,000. But predictors on Myriad don't expect a return to all-time low fears.",
+    "url": "https://decrypt.co/361721/extreme-fear-hits-crypto-markets-after-bitcoin-gives-up-75k-spike",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T16:08:27.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "75d36eaab461",
+    "title": "Celo floats one-time 160 million token grant to Opera to strengthen longterm alliance",
+    "summary": "In 2023, Celo voted to pay quarterly CELO grants to Opera to fund its deployment across the web browser's Mini App ecosystem.",
+    "url": "https://www.theblock.co/post/394367/celo-token-grant-opera?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T15:54:26.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "f422c6cc86c2",
+    "title": "Forward Industries buys back $27 million in stock using Galaxy loan as SOL treasury faces drawdown",
+    "summary": "The structure has Forward industries leaning on short-term, low-cost debt to amplify exposure to SOL per share.",
+    "url": "https://www.theblock.co/post/394346/forward-industries-buys-back-27-million-stock-galaxy-loan-sol-treasury-drawdown?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T14:56:49.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "996496c898a0",
+    "title": "MLB taps Polymarket as exclusive partner, teams with CFTC on betting integrity after last year&#8217;s scandal",
+    "summary": "The prediction market and MLB will exclusively work together \"to restrict markets that present an integrity risk.\"",
+    "url": "https://www.theblock.co/post/394342/mlb-polymarket-exclusive-partner-teams-with-cftc-betting-integrity-last-years-scandal?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T14:49:27.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "90a10efc25fa",
+    "title": "Europe’s largest asset manager Amundi debuts $100 million tokenized fund on Ethereum, Stellar",
+    "summary": "Amundi launched the $100 million Spiko Amundi Overnight Swap Fund on Ethereum and Stellar with Chainlink support.",
+    "url": "https://www.theblock.co/post/394348/europes-largest-asset-manager-amundi-debuts-100-million-tokenized-fund-on-ethereum-stellar?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T14:38:01.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "f3f32468a5f3",
+    "title": "Vivek Ramaswamy&#8217;s Strive adds 317 BTC, enters top 10 public treasury holders as Q4 results show bitcoin-driven losses",
+    "summary": "The firm reported a $393.6 million net loss in Q4, largely driven by declines in the fair value of its bitcoin holdings.",
+    "url": "https://www.theblock.co/post/394336/vivek-ramaswamys-strive-adds-317-btc-enters-top-10-public-treasury-holders-as-q4-results-show-bitcoin-driven-losses?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T13:41:12.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "c068d8d30d81",
+    "title": "Zenith links Canton and Ethereum through atomic swaps",
+    "summary": "Canton developers said supporting programming languages outside of its native Daml could open the network to a wider pool of developers.",
+    "url": "https://www.theblock.co/post/394288/zenith-links-canton-ethereum-through-atomic-swaps?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T13:05:02.000Z",
+    "category": "defi",
+    "layer": "official"
+  },
+  {
+    "id": "f85b7073a01c",
+    "title": "Apex Group unit Tokeny taps Polygon for its interoperable tokenization platform T-REX Ledger",
+    "summary": "The Polygon-based T-REX Ledger will serve as the official reference chain for permissioned ERC-3643 tokens.",
+    "url": "https://www.theblock.co/post/394284/apex-group-taps-polygon-trex-ledger?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T13:00:00.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "06e3d55d4e4f",
+    "title": "Crypto hacks average $25 million as largest exploits skew industry losses: Immunefi",
+    "summary": "Crypto hacks have become more uneven, with smaller typical losses but increasingly massive exploits that often kneecap projects.",
+    "url": "https://www.theblock.co/post/394147/crypto-hacks-average-25-million-largest-exploits-skew-industry-losses-immunefi?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T13:00:00.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "179638b31149",
+    "title": "Crypto.com Slashes Workforce by 12% in 'Enterprise-Wide AI' Pivot",
+    "summary": "Cryptocurrency exchange Crypto.com is laying off around 180 employees as it shifts focus to AI-driven operations.",
+    "url": "https://decrypt.co/361693/crypto-com-slashes-workforce-by-12-in-enterprise-wide-ai-pivot",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T12:59:39.000Z",
+    "category": "market",
+    "layer": "official"
+  },
+  {
+    "id": "223caccae859",
+    "title": "Morning Minute: Markets Tumble as Iran War Escalates",
+    "summary": "Bitcoin, gold and stocks all tumbled after several strikes on energy infrastructure. Hyperliquid just brought the S&#038;P 500 onchain. And Kraken has put its IPO on ice.",
+    "url": "https://decrypt.co/361685/morning-minute-markets-tumble-as-iran-war-escalates",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T12:25:54.000Z",
+    "category": "onchain",
+    "layer": "official"
+  },
+  {
+    "id": "cbc6ab3da8ee",
+    "title": "Bitcoin, ether ETFs snap multi-day inflow streaks with $219 million in combined outflows",
+    "summary": "Bitcoin and ether ETFs posted $219.2 million in combined net outflows on March 18, ending week-long inflow streaks.",
+    "url": "https://www.theblock.co/post/394323/bitcoin-ether-etfs-snap-week-long-inflow-streaks-with-219-million-usd-outflow?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T12:24:18.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "0172c4653993",
+    "title": "Bitcoin Dips Under $70K as Stocks Tumble on Hawkish Fed Hold—What’s Next?",
+    "summary": "Analysts remain cautiously optimistic after the Fed’s hawkish stance, expecting a low volatility regime ahead of the quarterly options expiry.",
+    "url": "https://decrypt.co/361683/bitcoin-dips-under-70k-as-stocks-tumble-on-hawkish-fed-hold-whats-next",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T12:12:29.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "b6053434f50d",
+    "title": "Can Bitcoin Really Do DeFi? A New Protocol Aims to Find Out",
+    "summary": "OP_NET is a new protocol that aims to bring smart contracts and decentralized finance directly to Bitcoin transactions.",
+    "url": "https://decrypt.co/361321/can-bitcoin-really-do-defi-new-protocol",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T12:01:04.000Z",
+    "category": "defi",
+    "layer": "official"
+  },
+  {
+    "id": "310691bcc8e1",
+    "title": "Animoca Brands invests in AVAX token, aims to expand Avalanche in Asia and Middle East",
+    "summary": "Animoca Brands has made an investment in the AVAX token and entered a strategic partnership with Ava Labs to grow the Avalanche ecosystem.",
+    "url": "https://www.theblock.co/post/394236/animoca-brands-invests-avax-token-expand-avalanche-asia-middle-east?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T12:00:03.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "854346e07af5",
+    "title": "LA Rideshare Driver Charged With Using $2M in COVID Relief Funds to Buy Crypto",
+    "summary": "Authorities seized almost 40 BTC as part of the investigation, in which a rideshare driver is accused of wire fraud and money laundering.",
+    "url": "https://decrypt.co/361680/la-rideshare-driver-charged-with-using-2m-in-covid-relief-funds-to-buy-crypto",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T11:45:25.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "5392e478774c",
+    "title": "Quantum-Ready Bitcoin Prototype Debuts, but Adoption Hurdles Loom",
+    "summary": "Adopting the model would require miners and users to migrate to a separate “Bitcoin Quantum” blockchain rather than upgrade the existing network.",
+    "url": "https://decrypt.co/361639/quantum-ready-bitcoin-prototype-debuts-adoption-hurdles-loom",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T11:31:03.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "de7eee19ba21",
+    "title": "Crypto.com cuts around 12% of staff as CEO pushes enterprise-wide AI integration",
+    "summary": "Crypto.com cut 12% of its staff, or about 180 roles based on a prior headcount, as CEO Kris Marszalek pointed to an AI integration shift.",
+    "url": "https://www.theblock.co/post/394318/crypto-com-cuts-around-12-of-staff-as-ceo-pushes-ai-integration?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T10:43:15.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "bc2df13f7b77",
+    "title": "Bitcoin wobbles around $70,000 as macro headwinds weigh on crypto",
+    "summary": "Bitcoin fell 5.5% to around $70,000 on Thursday afternoon in Asia, tracking a broader risk-off move across global markets.",
+    "url": "https://www.theblock.co/post/394303/bitcoin-wobbles-around-70000?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T09:51:44.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "1016ab8c7d98",
+    "title": "South Korean lawmakers push to abolish upcoming 22% crypto tax",
+    "summary": "They argue that crypto investors would be treated unfairly, citing an earlier repeal of the tax on gains from traditional financial products.",
+    "url": "https://www.theblock.co/post/394298/south-korean-lawmakers-abolish-crypto-tax?utm_source=rss&utm_medium=rss",
+    "source": "The Block",
+    "publishedAt": "2026-03-19T09:33:01.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "2ba882249a71",
+    "title": "Nasdaq Wins SEC Approval to Trade Tokenized Securities in Pilot Program",
+    "summary": "The approval lets Nasdaq test tokenized versions of some stocks and ETFs without moving beyond existing market rails.",
+    "url": "https://decrypt.co/361654/nasdaq-wins-sec-approval-tokenized-securities-pilot-program",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T05:35:26.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  },
+  {
+    "id": "307328fd6160",
+    "title": "OpenClaw Developers Lured in GitHub Phishing Campaign Targeting Crypto Wallets",
+    "summary": "The phishing campaign lures OpenClaw developers with fake $5,000 token airdrops, then drains wallets through a cloned site with a hidden connection prompt.",
+    "url": "https://decrypt.co/361646/openclaw-developers-lured-github-phishing-campaign",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T05:07:25.000Z",
+    "category": "builder",
+    "layer": "official"
+  },
+  {
+    "id": "0d4694d4ac6f",
+    "title": "Why Bitcoin Is Falling Despite $1.1 Billion in ETF Inflows",
+    "summary": "Persistent inflation signals and surging oil prices are weighing on risk appetite, even as institutional money has continued to flow.",
+    "url": "https://decrypt.co/361644/why-bitcoin-falling-despite-1-1-billion-etf-inflows",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-19T03:23:37.000Z",
+    "category": "market",
+    "layer": "official"
+  },
+  {
+    "id": "7f9c13c72dc0",
+    "title": "Coalition Urges OpenAI to Scrap AI Ballot Measure Over Child Safety Concerns",
+    "summary": "Advocacy groups say the OpenAI-backed measure would limit legal accountability and lock in narrow protections for children.",
+    "url": "https://decrypt.co/361638/coalition-openai-scrap-ai-ballot-measure-child-safety",
+    "source": "Decrypt",
+    "publishedAt": "2026-03-18T23:32:31.000Z",
+    "category": "base_ecosystem",
+    "layer": "official"
+  }
+]
