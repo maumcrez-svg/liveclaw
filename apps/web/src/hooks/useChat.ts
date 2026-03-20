@@ -153,7 +153,6 @@ export function useChat(streamId: string, agentId?: string) {
     });
 
     return () => {
-      socket.emit('leave_stream', { streamId });
       socket.disconnect();
       if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
     };

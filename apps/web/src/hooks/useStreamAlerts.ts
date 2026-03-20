@@ -4,9 +4,8 @@
  * useStreamAlerts
  *
  * A lightweight hook that connects to the Socket.IO server and listens for
- * `stream_alert` events for a given stream room. Designed to run independently
- * of the chat panel so the alert overlay can function even on page areas
- * where ChatPanel is not mounted.
+ * `stream_alert` events for a given stream room. Uses `subscribe_alerts`
+ * instead of `join_stream` so it does NOT inflate the viewer count.
  *
  * When streamId is null/undefined the hook does nothing and returns null.
  */
@@ -43,7 +42,7 @@ export function useStreamAlerts(streamId: string | null | undefined): StreamAler
     });
 
     socket.on('connect', () => {
-      socket.emit('join_stream', { streamId });
+      socket.emit('subscribe_alerts', { streamId });
     });
 
     socket.on('stream_alert', (alert: StreamAlert) => {
@@ -51,7 +50,7 @@ export function useStreamAlerts(streamId: string | null | undefined): StreamAler
     });
 
     return () => {
-      socket.emit('leave_stream', { streamId });
+      socket.emit('unsubscribe_alerts', { streamId });
       socket.disconnect();
     };
   }, [streamId]);

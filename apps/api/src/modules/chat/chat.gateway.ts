@@ -132,6 +132,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (streamId) {
       client.leave(streamId);
       const count = await this.chatService.removeViewer(streamId, client.id);
+      this.logger.log(`Viewer disconnected from stream ${streamId} (client: ${client.id}, remaining: ${count})`);
       this.server.to(streamId).emit('viewer_count', { streamId, count });
       this.clientStreams.delete(client.id);
 
@@ -192,6 +193,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.join(data.streamId);
     this.clientStreams.set(client.id, data.streamId);
     const count = await this.chatService.addViewer(data.streamId, client.id);
+    this.logger.log(`Viewer joined stream ${data.streamId} (client: ${client.id}, count: ${count})`);
     this.server
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });
@@ -222,12 +224,39 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(data.streamId);
     this.clientStreams.delete(client.id);
     const count = await this.chatService.removeViewer(data.streamId, client.id);
+    this.logger.log(`Viewer left stream ${data.streamId} (client: ${client.id}, remaining: ${count})`);
     this.server
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });
 
     const agentId = await this.resolveAgentId(data.streamId);
     if (agentId) this.broadcastViewerUpdate(data.streamId, agentId, count);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Alert-only subscription (no viewer count impact)
+  // ---------------------------------------------------------------------------
+
+  @SubscribeMessage('subscribe_alerts')
+  async handleSubscribeAlerts(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string },
+  ) {
+    client.join(data.streamId);
+
+    await this.chatService.subscribeAlerts(data.streamId, (alertJson) => {
+      this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
+    });
+
+    return { event: 'subscribed_alerts', data: { streamId: data.streamId } };
+  }
+
+  @SubscribeMessage('unsubscribe_alerts')
+  async handleUnsubscribeAlerts(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string },
+  ) {
+    client.leave(data.streamId);
   }
 
   // ---------------------------------------------------------------------------

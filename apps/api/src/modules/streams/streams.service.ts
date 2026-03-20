@@ -1,8 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, Optional, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StreamEntity } from './stream.entity';
 import { AgentsService } from '../agents/agents.service';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class StreamsService {
@@ -12,6 +13,8 @@ export class StreamsService {
     @InjectRepository(StreamEntity)
     private readonly streamRepo: Repository<StreamEntity>,
     private readonly agentsService: AgentsService,
+    @Optional() @Inject(forwardRef(() => ChatService))
+    private readonly chatService: ChatService,
   ) {}
 
   async findLive(opts?: { category?: string; sort?: string }): Promise<StreamEntity[]> {
@@ -66,8 +69,12 @@ export class StreamsService {
     const stream = await this.getCurrentStream(agentId);
     if (!stream) return null;
     stream.isLive = false;
+    stream.currentViewers = 0;
     stream.endedAt = new Date();
     await this.agentsService.updateStatus(agentId, 'offline');
+    if (this.chatService) {
+      await this.chatService.clearViewers(stream.id);
+    }
     return this.streamRepo.save(stream);
   }
 

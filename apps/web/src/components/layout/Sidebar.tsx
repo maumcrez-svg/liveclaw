@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useViewerCounts } from '@/hooks/useViewerCounts';
+import { useLiveViewerCounts } from '@/components/LiveViewerCounts';
 import { SearchBar } from './SearchBar';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -79,7 +79,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const [agents, setAgents] = useState<any[]>([]);
   const [followedAgentIds, setFollowedAgentIds] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(false);
-  const viewerCounts = useViewerCounts();
+  const viewerCounts = useLiveViewerCounts();
 
   useEffect(() => {
     async function fetchAgents() {

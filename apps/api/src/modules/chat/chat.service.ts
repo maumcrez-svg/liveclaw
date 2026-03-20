@@ -107,6 +107,10 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     return this.pub.scard(`viewers:${streamId}`);
   }
 
+  async clearViewers(streamId: string): Promise<void> {
+    await this.pub.del(`viewers:${streamId}`);
+  }
+
   async setRedisKey(key: string, value: string, ttlSeconds?: number): Promise<void> {
     if (ttlSeconds !== undefined) {
       await this.pub.set(key, value, 'EX', ttlSeconds);

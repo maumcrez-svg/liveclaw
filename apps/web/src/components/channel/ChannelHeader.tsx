@@ -6,7 +6,7 @@ import { SubscribeButton } from '@/components/stream/SubscribeButton';
 import { useState } from 'react';
 import { DonationForm } from '@/components/chat/DonationForm';
 import { useUser } from '@/contexts/UserContext';
-import { useViewerCounts } from '@/hooks/useViewerCounts';
+import { useLiveViewerCounts } from '@/components/LiveViewerCounts';
 
 interface ChannelHeaderProps {
   agent: {
@@ -109,7 +109,7 @@ const SOCIAL_ICONS: Record<string, { label: string; icon: JSX.Element }> = {
 export function ChannelHeader({ agent, stream }: ChannelHeaderProps) {
   const { isLoggedIn, setShowLoginModal } = useUser();
   const [showDonation, setShowDonation] = useState(false);
-  const viewerCounts = useViewerCounts();
+  const viewerCounts = useLiveViewerCounts();
 
   const handleDonateClick = () => {
     if (!isLoggedIn) { setShowLoginModal(true); return; }
