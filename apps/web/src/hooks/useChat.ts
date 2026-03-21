@@ -48,13 +48,18 @@ export function useChat(streamId: string, agentId?: string) {
   }, [agentId]);
 
   useEffect(() => {
-    const onConnect = () => {
+    let chatJoined = false;
+
+    const doJoinChat = () => {
+      if (chatJoined) return;
+      chatJoined = true;
       setConnected(true);
-      console.info(`[Chat] Connected, joining chat for stream ${streamId}`);
+      console.info(`[Chat] Joining chat for stream ${streamId}`);
       socket.emit('join_chat', { streamId });
     };
 
     const onDisconnect = () => {
+      chatJoined = false;
       setConnected(false);
       console.info('[Chat] Disconnected');
     };
@@ -127,10 +132,17 @@ export function useChat(streamId: string, agentId?: string) {
 
     // If already connected, join immediately
     if (socket.connected) {
-      onConnect();
+      doJoinChat();
     }
 
-    socket.on('connect', onConnect);
+    // Safety net: retry after short delay in case socket is mid-handshake
+    const retryTimer = setTimeout(() => {
+      if (socket.connected && !chatJoined) {
+        doJoinChat();
+      }
+    }, 1000);
+
+    socket.on('connect', doJoinChat);
     socket.on('disconnect', onDisconnect);
     socket.on('new_message', onNewMessage);
     socket.on('message_deleted', onMessageDeleted);
@@ -142,7 +154,8 @@ export function useChat(streamId: string, agentId?: string) {
     socket.on('slow_mode_wait', onSlowModeWait);
 
     return () => {
-      socket.off('connect', onConnect);
+      clearTimeout(retryTimer);
+      socket.off('connect', doJoinChat);
       socket.off('disconnect', onDisconnect);
       socket.off('new_message', onNewMessage);
       socket.off('message_deleted', onMessageDeleted);

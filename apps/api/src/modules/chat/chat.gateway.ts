@@ -113,9 +113,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       (client.handshake.query?.token as string | undefined);
 
     if (!token) {
-      // Allow unauthenticated connections for viewer count subscriptions only.
-      // They can subscribe_counts but cannot join_stream or send_message.
+      // Allow unauthenticated connections — they can join_stream (viewer count)
+      // and subscribe_counts but cannot send_message.
       client.data.anonymous = true;
+      this.logger.log(`Anonymous client connected: ${client.id}`);
       return;
     }
 

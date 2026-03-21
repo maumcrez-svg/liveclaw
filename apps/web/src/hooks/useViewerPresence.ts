@@ -15,8 +15,12 @@ export function useViewerPresence(streamId: string | null) {
   useEffect(() => {
     if (!streamId) return;
 
-    const onConnect = () => {
-      console.info(`[Presence] Connected, joining stream ${streamId}`);
+    let joined = false;
+
+    const doJoin = () => {
+      if (joined) return;
+      joined = true;
+      console.info(`[Presence] Joining stream ${streamId}`);
       socket.emit('join_stream', { streamId });
     };
 
@@ -26,12 +30,19 @@ export function useViewerPresence(streamId: string | null) {
       }
     };
 
-    // If already connected, join immediately
+    // Join immediately if connected, otherwise wait for connect event
     if (socket.connected) {
-      onConnect();
+      doJoin();
     }
-    socket.on('connect', onConnect);
+    socket.on('connect', doJoin);
     socket.on('viewer_count', onViewerCount);
+
+    // Safety net: if socket is mid-handshake, retry after a short delay
+    const retryTimer = setTimeout(() => {
+      if (socket.connected && !joined) {
+        doJoin();
+      }
+    }, 1000);
 
     // Heartbeat: tell server this viewer is still actively watching
     const heartbeat = setInterval(() => {
@@ -41,11 +52,14 @@ export function useViewerPresence(streamId: string | null) {
     }, 30_000);
 
     return () => {
+      clearTimeout(retryTimer);
       clearInterval(heartbeat);
-      socket.off('connect', onConnect);
+      socket.off('connect', doJoin);
       socket.off('viewer_count', onViewerCount);
       // Leave stream instead of disconnecting — socket is shared
-      socket.emit('leave_stream', { streamId });
+      if (joined) {
+        socket.emit('leave_stream', { streamId });
+      }
     };
   }, [streamId, socket]);
 
