@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './categories.dto';
 import { JwtAuthGuard } from '../auth/auth.guard';
@@ -12,11 +13,13 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
+  @SkipThrottle()
   findAll(@Query('sort') sort?: string) {
     return this.categoriesService.findAll(sort);
   }
 
   @Get(':slug')
+  @SkipThrottle()
   findBySlug(@Param('slug') slug: string) {
     return this.categoriesService.findBySlug(slug);
   }

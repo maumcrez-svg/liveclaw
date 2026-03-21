@@ -67,13 +67,39 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastAlert]);
 
-  // ─── Initial load ───
+  // ─── Initial load with retry ───
   useEffect(() => {
+    async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const res = await fetch(url);
+          // 404 = definitive, don't retry
+          if (res.status === 404) return res;
+          // Success = done
+          if (res.ok) return res;
+          // Transient (429, 5xx) = retry
+          if (attempt < retries) {
+            await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+            continue;
+          }
+          return res;
+        } catch (err) {
+          if (attempt >= retries) throw err;
+          await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+        }
+      }
+      throw new Error('Fetch failed');
+    }
+
     async function loadAgent() {
       try {
-        const res = await fetch(`${API_URL}/agents/${params.agentSlug}`);
-        if (!res.ok) {
+        const res = await fetchWithRetry(`${API_URL}/agents/${params.agentSlug}`);
+        if (res.status === 404) {
           setError('Agent not found');
+          return;
+        }
+        if (!res.ok) {
+          setError('Failed to load — please refresh');
           return;
         }
         const agentData = await res.json();

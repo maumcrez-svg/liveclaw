@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { StreamsService } from './streams.service';
 import { ChatService } from '../chat/chat.service';
 import { WebhookSecretGuard } from '../../common/webhook-secret.guard';
@@ -15,6 +16,7 @@ export class StreamsController {
   ) {}
 
   @Get('live')
+  @SkipThrottle()
   async findLive(
     @Query('category') category?: string,
     @Query('sort') sort?: string,
@@ -24,18 +26,21 @@ export class StreamsController {
   }
 
   @Get('agent/:agentId')
+  @SkipThrottle()
   async findByAgent(@Param('agentId') agentId: string) {
     const streams = await this.streamsService.findByAgent(agentId);
     return streams.map(stripAgentSensitive);
   }
 
   @Get('agent/:agentId/current')
+  @SkipThrottle()
   async getCurrentStream(@Param('agentId') agentId: string) {
     const stream = await this.streamsService.getCurrentStream(agentId);
     return stream ? stripAgentSensitive(stream) : null;
   }
 
   @Get('agent/:agentId/viewers')
+  @SkipThrottle()
   async getViewerCount(@Param('agentId') agentId: string) {
     const stream = await this.streamsService.getCurrentStream(agentId);
     if (!stream) return { count: 0 };

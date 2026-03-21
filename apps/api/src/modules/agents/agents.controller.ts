@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ForbiddenException,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AgentsService } from './agents.service';
 import { CreateAgentDto, UpdateAgentDto, HeartbeatDto } from './agents.dto';
 import { JwtAuthGuard } from '../auth/auth.guard';
@@ -18,6 +19,7 @@ export class AgentsController {
   constructor(private readonly agentsService: AgentsService) {}
 
   @Get()
+  @SkipThrottle()
   async findAll(@Query('category') categorySlug?: string) {
     const agents = categorySlug
       ? await this.agentsService.findByCategory(categorySlug)
@@ -26,6 +28,7 @@ export class AgentsController {
   }
 
   @Get('live')
+  @SkipThrottle()
   async findLive() {
     const agents = await this.agentsService.findLive();
     return agents.map(stripSensitive);
@@ -44,6 +47,7 @@ export class AgentsController {
   }
 
   @Get('search')
+  @SkipThrottle()
   async search(@Query('q') query: string) {
     if (!query || query.length < 2) return [];
     const agents = await this.agentsService.search(query);
@@ -51,6 +55,7 @@ export class AgentsController {
   }
 
   @Get(':slug')
+  @SkipThrottle()
   async findBySlug(@Param('slug') slug: string) {
     const agent = await this.agentsService.findBySlug(slug);
     return stripSensitive(agent);
