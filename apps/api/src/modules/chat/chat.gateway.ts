@@ -74,15 +74,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const now = Date.now();
     const staleThreshold = 90_000; // 90s without activity = stale
     let evicted = 0;
+    const evictedIds: string[] = [];
     for (const [clientId, streamId] of this.clientStreams.entries()) {
       const lastSeen = this.clientLastSeen.get(clientId) ?? 0;
-      // Check if socket is still connected
+      // Check if socket is still connected in the server's socket map
       const socket = this.server?.sockets?.sockets?.get(clientId);
       if (!socket || !socket.connected) {
-        // Socket is gone but wasn't cleaned up — evict
+        // Double-check: if we just saw this client very recently, skip eviction.
+        // This prevents race conditions where a socket reconnects right as eviction runs.
+        if (lastSeen > 0 && now - lastSeen < 10_000) {
+          this.logger.debug(`Skipping eviction of recently-seen viewer ${clientId} on stream ${streamId}`);
+          continue;
+        }
+        // Socket is truly gone — evict
         await this.chatService.removeViewer(streamId, clientId);
         this.clientStreams.delete(clientId);
         this.clientLastSeen.delete(clientId);
+        evictedIds.push(clientId);
         evicted++;
       } else if (now - lastSeen > staleThreshold && lastSeen > 0) {
         // Socket connected but no heartbeat response in 90s
@@ -91,7 +99,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     }
     if (evicted > 0) {
-      this.logger.log(`Evicted ${evicted} stale viewer(s)`);
+      this.logger.log(`Evicted ${evicted} stale viewer(s): ${evictedIds.join(', ')}`);
     }
   }
 
