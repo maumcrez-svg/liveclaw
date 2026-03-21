@@ -77,30 +77,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private async evictStaleViewers(): Promise<void> {
     const now = Date.now();
-    const staleThreshold = 180_000; // 3 min — must exceed pingInterval+pingTimeout (2.5min)
+    // Only evict viewers who haven't sent a heartbeat or joined in 5 minutes.
+    // Do NOT rely on this.server.sockets.sockets — it's unreliable and returns
+    // null for sockets that are still alive and emitting events.
+    // Socket.IO's own ping/pong (pingTimeout: 120s) handles truly dead sockets
+    // via handleDisconnect. This eviction is purely a last-resort cleanup.
+    const staleThreshold = 300_000; // 5 minutes
     let evicted = 0;
     const evictedIds: string[] = [];
     for (const [clientId, streamId] of this.clientStreams.entries()) {
       const lastSeen = this.clientLastSeen.get(clientId) ?? 0;
-      // Check if socket is still connected in the server's socket map
-      const socket = this.server?.sockets?.sockets?.get(clientId);
-      if (!socket || !socket.connected) {
-        // Double-check: if we just saw this client very recently, skip eviction.
-        // This prevents race conditions where a socket reconnects right as eviction runs.
-        if (lastSeen > 0 && now - lastSeen < 10_000) {
-          this.logger.debug(`Skipping eviction of recently-seen viewer ${clientId} on stream ${streamId}`);
-          continue;
-        }
-        // Socket is truly gone — evict
+      if (lastSeen > 0 && now - lastSeen > staleThreshold) {
         await this.chatService.removeViewer(streamId, clientId);
         this.clientStreams.delete(clientId);
         this.clientLastSeen.delete(clientId);
         evictedIds.push(clientId);
         evicted++;
-      } else if (now - lastSeen > staleThreshold && lastSeen > 0) {
-        // Socket connected but no heartbeat response in 90s
-        // Don't evict — just log. Socket.IO's own ping/pong handles truly dead connections.
-        this.logger.debug(`Stale viewer ${clientId} on stream ${streamId} (${Math.round((now - lastSeen) / 1000)}s)`);
       }
     }
     if (evicted > 0) {
