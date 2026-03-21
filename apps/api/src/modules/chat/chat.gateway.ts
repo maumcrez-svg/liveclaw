@@ -36,6 +36,11 @@ const RATE_LIMIT_WINDOW_MS = 10_000;
       : ['http://localhost:3000'],
     credentials: true,
   },
+  // Lenient ping so background tabs aren't killed instantly.
+  // Default pingTimeout is 20s — far too aggressive for background tabs
+  // where browsers throttle JS and Socket.IO pong can't fire in time.
+  pingInterval: 30_000,  // 30s between pings
+  pingTimeout: 120_000,  // 2 minutes to respond — survives browser throttling
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
@@ -72,7 +77,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private async evictStaleViewers(): Promise<void> {
     const now = Date.now();
-    const staleThreshold = 90_000; // 90s without activity = stale
+    const staleThreshold = 180_000; // 3 min — must exceed pingInterval+pingTimeout (2.5min)
     let evicted = 0;
     const evictedIds: string[] = [];
     for (const [clientId, streamId] of this.clientStreams.entries()) {

@@ -1,34 +1,28 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+import { useEffect, useState } from 'react';
+import { useSocket } from './useSocket';
 
 /**
  * Global real-time viewer counts for all live streams.
- * Connects to Socket.IO without auth (anonymous) and subscribes to viewer_count_update events.
+ * Uses the shared singleton socket and subscribes to viewer_count_update events.
  * Returns a Map<agentId, viewerCount> that updates in real-time.
  */
 export function useViewerCounts(): Map<string, number> {
   const [counts, setCounts] = useState<Map<string, number>>(new Map());
-  const socketRef = useRef<Socket | null>(null);
+  const socket = useSocket();
 
   useEffect(() => {
-    const socket = io(WS_URL, {
-      transports: ['websocket'],
-      auth: {},
-    });
-    socketRef.current = socket;
+    let subscribed = false;
 
-    socket.on('connect', () => {
-      console.info('[ViewerCounts] Connected, subscribing to counts');
+    const doSubscribe = () => {
+      if (subscribed) return;
+      subscribed = true;
+      console.info('[ViewerCounts] Subscribing to counts');
       socket.emit('subscribe_counts');
-    });
+    };
 
-    // Initial snapshot of all current viewer counts
-    socket.on('viewer_count_snapshot', (entries: Array<{ agentId: string; count: number }>) => {
-      console.info(`[ViewerCounts] Snapshot received: ${entries.length} streams`);
+    const onSnapshot = (entries: Array<{ agentId: string; count: number }>) => {
       setCounts(() => {
         const next = new Map<string, number>();
         for (const e of entries) {
@@ -36,10 +30,9 @@ export function useViewerCounts(): Map<string, number> {
         }
         return next;
       });
-    });
+    };
 
-    // Real-time updates after snapshot
-    socket.on('viewer_count_update', (data: { agentId: string; count: number }) => {
+    const onUpdate = (data: { agentId: string; count: number }) => {
       setCounts((prev) => {
         const next = new Map(prev);
         if (data.count > 0) {
@@ -49,12 +42,25 @@ export function useViewerCounts(): Map<string, number> {
         }
         return next;
       });
-    });
+    };
+
+    if (socket.connected) {
+      doSubscribe();
+    }
+    socket.on('connect', doSubscribe);
+    socket.on('viewer_count_snapshot', onSnapshot);
+    socket.on('viewer_count_update', onUpdate);
+
+    // Retry in case socket is mid-handshake
+    const retryTimer = setTimeout(doSubscribe, 500);
 
     return () => {
-      socket.disconnect();
+      clearTimeout(retryTimer);
+      socket.off('connect', doSubscribe);
+      socket.off('viewer_count_snapshot', onSnapshot);
+      socket.off('viewer_count_update', onUpdate);
     };
-  }, []);
+  }, [socket]);
 
   return counts;
 }

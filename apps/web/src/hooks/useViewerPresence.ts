@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSocket } from './useSocket';
 
 /**
@@ -11,17 +11,17 @@ import { useSocket } from './useSocket';
 export function useViewerPresence(streamId: string | null) {
   const [viewerCount, setViewerCount] = useState(0);
   const socket = useSocket();
+  const joinedStreamRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!streamId) return;
 
-    let joined = false;
-
     const doJoin = () => {
-      if (joined) return;
-      joined = true;
-      console.info(`[Presence] Joining stream ${streamId}`);
+      if (!socket.connected) return;
+      if (joinedStreamRef.current === streamId) return; // already joined this stream
+      console.info(`[Presence] Joining stream ${streamId} (socket ${socket.id})`);
       socket.emit('join_stream', { streamId });
+      joinedStreamRef.current = streamId;
     };
 
     const onViewerCount = (data: { streamId: string; count: number }) => {
@@ -30,19 +30,16 @@ export function useViewerPresence(streamId: string | null) {
       }
     };
 
-    // Join immediately if connected, otherwise wait for connect event
-    if (socket.connected) {
-      doJoin();
-    }
+    // Try to join immediately
+    doJoin();
+
+    // Also join on (re)connect
     socket.on('connect', doJoin);
     socket.on('viewer_count', onViewerCount);
 
-    // Safety net: if socket is mid-handshake, retry after a short delay
-    const retryTimer = setTimeout(() => {
-      if (socket.connected && !joined) {
-        doJoin();
-      }
-    }, 1000);
+    // Retry: covers the case where socket is mid-handshake when effect runs
+    const retryTimer = setTimeout(doJoin, 500);
+    const retryTimer2 = setTimeout(doJoin, 2000);
 
     // Heartbeat: tell server this viewer is still actively watching
     const heartbeat = setInterval(() => {
@@ -53,12 +50,14 @@ export function useViewerPresence(streamId: string | null) {
 
     return () => {
       clearTimeout(retryTimer);
+      clearTimeout(retryTimer2);
       clearInterval(heartbeat);
       socket.off('connect', doJoin);
       socket.off('viewer_count', onViewerCount);
       // Leave stream instead of disconnecting — socket is shared
-      if (joined) {
+      if (joinedStreamRef.current === streamId) {
         socket.emit('leave_stream', { streamId });
+        joinedStreamRef.current = null;
       }
     };
   }, [streamId, socket]);
