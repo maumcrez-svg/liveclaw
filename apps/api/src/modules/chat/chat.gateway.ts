@@ -171,7 +171,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (streamId) {
       client.leave(streamId);
       const count = await this.chatService.removeViewer(streamId, client.id);
-      this.logger.log(`Viewer disconnected from stream ${streamId} (client: ${client.id}, remaining: ${count})`);
+      this.logger.log(`[DISCONNECT] socket=${client.id} stream=${streamId} remaining=${count}`);
       this.server.to(streamId).emit('viewer_count', { streamId, count });
       this.clientStreams.delete(client.id);
       this.clientLastSeen.delete(client.id);
@@ -258,8 +258,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.join(data.streamId);
     this.clientStreams.set(client.id, data.streamId);
     this.clientLastSeen.set(client.id, Date.now());
+    const countBefore = await this.chatService.getViewerCount(data.streamId);
     const count = await this.chatService.addViewer(data.streamId, client.id);
-    this.logger.log(`Viewer joined stream ${data.streamId} (client: ${client.id}, count: ${count})`);
+    this.logger.log(
+      `[JOIN] stream=${data.streamId} socket=${client.id} ` +
+      `anon=${!!client.data.anonymous} user=${client.data.username ?? 'none'} ` +
+      `prevStream=${prevStream ?? 'none'} countBefore=${countBefore} countAfter=${count}`,
+    );
     this.server
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });
@@ -320,7 +325,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(data.streamId);
     this.clientStreams.delete(client.id);
     const count = await this.chatService.removeViewer(data.streamId, client.id);
-    this.logger.log(`Viewer left stream ${data.streamId} (client: ${client.id}, remaining: ${count})`);
+    this.logger.log(`[LEAVE] stream=${data.streamId} socket=${client.id} remaining=${count}`);
     this.server
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });

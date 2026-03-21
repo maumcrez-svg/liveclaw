@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSocket } from './useSocket';
 
 /**
@@ -11,54 +11,53 @@ import { useSocket } from './useSocket';
 export function useViewerPresence(streamId: string | null) {
   const [viewerCount, setViewerCount] = useState(0);
   const socket = useSocket();
-  const joinedStreamRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!streamId) return;
+    let active = true;
+    let acked = false;
 
     const doJoin = () => {
-      if (!socket.connected) return;
-      if (joinedStreamRef.current === streamId) return; // already joined this stream
-      console.info(`[Presence] Joining stream ${streamId} (socket ${socket.id})`);
-      socket.emit('join_stream', { streamId });
-      joinedStreamRef.current = streamId;
+      if (!active || acked || !socket.connected) return;
+      console.info(`[Presence] join_stream emit → ${streamId} (socket: ${socket.id})`);
+      socket.emit('join_stream', { streamId }, (response: any) => {
+        if (!active) return;
+        acked = true;
+        console.info(`[Presence] join_stream ACK ← count: ${response?.data?.viewerCount}`);
+        if (response?.data?.viewerCount != null) {
+          setViewerCount(response.data.viewerCount);
+        }
+      });
     };
 
+    // Try immediately, on connect, and every 3s until ACK
+    doJoin();
+    socket.on('connect', doJoin);
+    const retryInterval = setInterval(() => {
+      if (!acked) doJoin();
+    }, 3000);
+
+    // Listen for broadcast updates (other viewers joining/leaving)
     const onViewerCount = (data: { streamId: string; count: number }) => {
       if (data.streamId === streamId) {
+        console.info(`[Presence] viewer_count event ← count: ${data.count}`);
         setViewerCount(data.count);
       }
     };
-
-    // Try to join immediately
-    doJoin();
-
-    // Also join on (re)connect
-    socket.on('connect', doJoin);
     socket.on('viewer_count', onViewerCount);
 
-    // Retry: covers the case where socket is mid-handshake when effect runs
-    const retryTimer = setTimeout(doJoin, 500);
-    const retryTimer2 = setTimeout(doJoin, 2000);
-
-    // Heartbeat: tell server this viewer is still actively watching
+    // Heartbeat
     const heartbeat = setInterval(() => {
-      if (socket.connected) {
-        socket.emit('viewer_heartbeat');
-      }
+      if (socket.connected) socket.emit('viewer_heartbeat');
     }, 30_000);
 
     return () => {
-      clearTimeout(retryTimer);
-      clearTimeout(retryTimer2);
+      active = false;
+      clearInterval(retryInterval);
       clearInterval(heartbeat);
       socket.off('connect', doJoin);
       socket.off('viewer_count', onViewerCount);
-      // Leave stream instead of disconnecting — socket is shared
-      if (joinedStreamRef.current === streamId) {
-        socket.emit('leave_stream', { streamId });
-        joinedStreamRef.current = null;
-      }
+      if (acked) socket.emit('leave_stream', { streamId });
     };
   }, [streamId, socket]);
 

@@ -321,6 +321,7 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
               category: agent.defaultCategory || agent.category || null,
             }}
             stream={stream}
+            viewerCount={viewerCount}
           />
         </div>
 

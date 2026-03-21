@@ -48,14 +48,18 @@ export function useChat(streamId: string, agentId?: string) {
   }, [agentId]);
 
   useEffect(() => {
+    let active = true;
     let chatJoined = false;
 
     const doJoinChat = () => {
-      if (chatJoined) return;
-      chatJoined = true;
-      setConnected(true);
-      console.info(`[Chat] Joining chat for stream ${streamId}`);
-      socket.emit('join_chat', { streamId });
+      if (!active || chatJoined || !socket.connected) return;
+      console.info(`[Chat] join_chat emit → ${streamId} (socket: ${socket.id})`);
+      socket.emit('join_chat', { streamId }, (response: any) => {
+        if (!active) return;
+        chatJoined = true;
+        console.info(`[Chat] join_chat ACK ← ${response?.event}`);
+        setConnected(true);
+      });
     };
 
     const onDisconnect = () => {
@@ -130,17 +134,11 @@ export function useChat(streamId: string, agentId?: string) {
       );
     };
 
-    // If already connected, join immediately
-    if (socket.connected) {
-      doJoinChat();
-    }
-
-    // Safety net: retry after short delay in case socket is mid-handshake
-    const retryTimer = setTimeout(() => {
-      if (socket.connected && !chatJoined) {
-        doJoinChat();
-      }
-    }, 1000);
+    // Try immediately, on connect, and every 3s until ACK
+    doJoinChat();
+    const retryInterval = setInterval(() => {
+      if (!chatJoined) doJoinChat();
+    }, 3000);
 
     socket.on('connect', doJoinChat);
     socket.on('disconnect', onDisconnect);
@@ -154,7 +152,8 @@ export function useChat(streamId: string, agentId?: string) {
     socket.on('slow_mode_wait', onSlowModeWait);
 
     return () => {
-      clearTimeout(retryTimer);
+      active = false;
+      clearInterval(retryInterval);
       socket.off('connect', doJoinChat);
       socket.off('disconnect', onDisconnect);
       socket.off('new_message', onNewMessage);
