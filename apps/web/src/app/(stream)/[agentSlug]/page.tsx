@@ -10,6 +10,7 @@ import { AgentPageSkeleton } from '@/components/ui/Skeleton';
 import { AlertOverlay } from '@/components/alerts/AlertOverlay';
 import { useAlertQueue } from '@/hooks/useAlertQueue';
 import { useStreamAlerts } from '@/hooks/useStreamAlerts';
+import { useViewerPresence } from '@/hooks/useViewerPresence';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const HLS_URL = process.env.NEXT_PUBLIC_HLS_URL || '/hls';
@@ -53,6 +54,9 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
       window.location.href = '/?auth=true';
     }
   }, [params.agentSlug]);
+
+  // Viewer presence — runs at page level, independent of chat visibility
+  const { viewerCount } = useViewerPresence(stream?.id ?? null);
 
   // Alert system
   const { currentAlert, phase, enqueue, dismiss } = useAlertQueue();
@@ -280,7 +284,7 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
 
         {/* Tabs — mobile */}
         <div className="lg:hidden">
-          <ChannelTabs agent={agent} stream={stream} pastStreams={pastStreams} mobileOnly />
+          <ChannelTabs agent={agent} stream={stream} pastStreams={pastStreams} mobileOnly viewerCount={viewerCount} />
         </div>
 
         {/* Channel Header */}
@@ -296,14 +300,14 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
 
         {/* Tabs — desktop */}
         <div className="hidden lg:block">
-          <ChannelTabs agent={agent} stream={stream} pastStreams={pastStreams} mobileOnly={false} />
+          <ChannelTabs agent={agent} stream={stream} pastStreams={pastStreams} mobileOnly={false} viewerCount={viewerCount} />
         </div>
       </div>
 
       {/* Chat sidebar */}
       {stream ? (
         <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-[85vh] self-start">
-          <ChatPanel streamId={stream.id} agentId={agent.id} agentName={agent.name} />
+          <ChatPanel streamId={stream.id} agentId={agent.id} agentName={agent.name} viewerCount={viewerCount} />
         </div>
       ) : (
         <div className="hidden lg:flex w-[340px] border-l border-claw-border flex-shrink-0 flex-col h-[85vh] self-start bg-claw-surface">

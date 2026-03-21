@@ -10,6 +10,7 @@ interface ChatPanelProps {
   streamId: string;
   agentId: string;
   agentName: string;
+  viewerCount?: number;
 }
 
 const BADGE_STYLES: Record<string, { color: string; icon: string }> = {
@@ -54,8 +55,8 @@ function renderMessageContent(
   return parts.length > 0 ? parts : content;
 }
 
-export function ChatPanel({ streamId, agentId, agentName }: ChatPanelProps) {
-  const { messages, viewerCount, sendMessage, connected, slowMode, rateLimited } = useChat(streamId, agentId);
+export function ChatPanel({ streamId, agentId, agentName, viewerCount = 0 }: ChatPanelProps) {
+  const { messages, sendMessage, connected, slowMode, rateLimited } = useChat(streamId, agentId);
   const { user, isLoggedIn, setShowLoginModal } = useUser();
   const [input, setInput] = useState('');
   const [showDonation, setShowDonation] = useState(false);

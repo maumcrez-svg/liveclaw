@@ -276,6 +276,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
+  /**
+   * Join a stream room for chat messages only — no viewer counting.
+   * Used by the chat socket so it receives new_message broadcasts
+   * without inflating the viewer count (presence is handled separately).
+   */
+  @SubscribeMessage('join_chat')
+  async handleJoinChat(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string },
+  ) {
+    client.join(data.streamId);
+    this.logger.log(`Chat-only join for stream ${data.streamId} (client: ${client.id})`);
+
+    // Subscribe to Redis pub/sub so messages flow to this room
+    await this.chatService.subscribe(data.streamId, (message) => {
+      this.server.to(data.streamId).emit('new_message', JSON.parse(message));
+    });
+
+    await this.chatService.subscribeAlerts(data.streamId, (alertJson) => {
+      this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
+    });
+
+    return { event: 'joined_chat', data: { streamId: data.streamId } };
+  }
+
   @SubscribeMessage('viewer_heartbeat')
   handleViewerHeartbeat(@ConnectedSocket() client: Socket) {
     this.clientLastSeen.set(client.id, Date.now());

@@ -36,7 +36,6 @@ function getAuthToken(): string | null {
 
 export function useChat(streamId: string, agentId?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [viewerCount, setViewerCount] = useState(0);
   const [connected, setConnected] = useState(false);
   const [slowMode, setSlowMode] = useState(0);
   const [rateLimited, setRateLimited] = useState(false);
@@ -73,8 +72,8 @@ export function useChat(streamId: string, agentId?: string) {
 
     socket.on('connect', () => {
       setConnected(true);
-      console.info(`[Chat] Connected, joining stream ${streamId}`);
-      socket.emit('join_stream', { streamId });
+      console.info(`[Chat] Connected, joining chat for stream ${streamId}`);
+      socket.emit('join_chat', { streamId });
     });
 
     socket.on('disconnect', () => {
@@ -88,13 +87,6 @@ export function useChat(streamId: string, agentId?: string) {
         if (prev.some((m) => m.id === message.id)) return prev;
         return [...prev.slice(-200), message];
       });
-    });
-
-    socket.on('viewer_count', (data: { streamId: string; count: number }) => {
-      if (data.streamId === streamId) {
-        console.info(`[Chat] Viewer count: ${data.count}`);
-        setViewerCount(data.count);
-      }
     });
 
     socket.on('message_deleted', (data: { messageId: string }) => {
@@ -155,15 +147,7 @@ export function useChat(streamId: string, agentId?: string) {
       );
     });
 
-    // Heartbeat: tell server this viewer is still actively watching
-    const heartbeat = setInterval(() => {
-      if (socket.connected) {
-        socket.emit('viewer_heartbeat');
-      }
-    }, 30_000);
-
     return () => {
-      clearInterval(heartbeat);
       socket.disconnect();
       if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
     };
@@ -178,5 +162,5 @@ export function useChat(streamId: string, agentId?: string) {
     [streamId],
   );
 
-  return { messages, viewerCount, sendMessage, connected, slowMode, rateLimited, lastAlert };
+  return { messages, sendMessage, connected, slowMode, rateLimited, lastAlert };
 }

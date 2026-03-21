@@ -28,9 +28,10 @@ interface ChannelTabsProps {
   } | null;
   pastStreams?: PastStream[];
   mobileOnly?: boolean;
+  viewerCount?: number;
 }
 
-export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = false }: ChannelTabsProps) {
+export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = false, viewerCount = 0 }: ChannelTabsProps) {
   // Live: chat (mobile), emotes (desktop) — live experience takes priority
   // Offline: videos if any exist, otherwise emotes
   const getDefaultTab = (): TabId => {
@@ -120,6 +121,7 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
               streamId={stream.id}
               agentId={agent.id}
               agentName={agent.name}
+              viewerCount={viewerCount}
             />
           </div>
         )}
