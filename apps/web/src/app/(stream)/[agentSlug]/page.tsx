@@ -191,6 +191,15 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
           setPastStreams((prev) => [{ ...stream, isLive: false }, ...prev].slice(0, 20));
           setStream(null);
         }
+      } else if (nowLive && wasLive && !stream) {
+        // ─── LIVE but no stream record yet — keep retrying ───
+        try {
+          const streamRes = await fetch(`${API_URL}/streams/agent/${data.id}/current`);
+          if (streamRes.ok) {
+            const current = await streamRes.json();
+            if (current) setStream(current);
+          }
+        } catch {}
       } else if (!nowLive && !wasLive && streamStatus === 'reconnecting') {
         // Still offline after reconnecting state — keep waiting
       }
