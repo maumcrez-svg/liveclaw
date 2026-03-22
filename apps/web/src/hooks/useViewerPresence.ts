@@ -30,9 +30,16 @@ export function useViewerPresence(streamId: string | null) {
       });
     };
 
+    // On reconnect, server lost us — reset acked so we re-join
+    const onDisconnect = () => {
+      acked = false;
+      console.info(`[Presence] disconnected — will re-join on reconnect`);
+    };
+
     // Try immediately, on connect, and every 3s until ACK
     doJoin();
     socket.on('connect', doJoin);
+    socket.on('disconnect', onDisconnect);
     const retryInterval = setInterval(() => {
       if (!acked) doJoin();
     }, 3000);
@@ -56,6 +63,7 @@ export function useViewerPresence(streamId: string | null) {
       clearInterval(retryInterval);
       clearInterval(heartbeat);
       socket.off('connect', doJoin);
+      socket.off('disconnect', onDisconnect);
       socket.off('viewer_count', onViewerCount);
       if (acked) socket.emit('leave_stream', { streamId });
     };

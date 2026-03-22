@@ -63,9 +63,9 @@ export function useChat(streamId: string, agentId?: string) {
     };
 
     const onDisconnect = () => {
-      chatJoined = false;
+      chatJoined = false; // Reset so we re-join on reconnect
       setConnected(false);
-      console.info('[Chat] Disconnected');
+      console.info('[Chat] Disconnected — will re-join on reconnect');
     };
 
     const onNewMessage = (message: ChatMessage) => {
