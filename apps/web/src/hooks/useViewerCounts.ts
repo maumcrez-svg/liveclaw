@@ -16,10 +16,15 @@ export function useViewerCounts(): Map<string, number> {
     let subscribed = false;
 
     const doSubscribe = () => {
-      if (subscribed) return;
+      if (subscribed || !socket.connected) return;
       subscribed = true;
       console.info('[ViewerCounts] Subscribing to counts');
       socket.emit('subscribe_counts');
+    };
+
+    const onDisconnect = () => {
+      subscribed = false;
+      console.info('[ViewerCounts] Disconnected — will re-subscribe on reconnect');
     };
 
     const onSnapshot = (entries: Array<{ agentId: string; count: number }>) => {
@@ -50,15 +55,19 @@ export function useViewerCounts(): Map<string, number> {
       doSubscribe();
     }
     socket.on('connect', doSubscribe);
+    socket.on('disconnect', onDisconnect);
     socket.on('viewer_count_snapshot', onSnapshot);
     socket.on('viewer_count_update', onUpdate);
 
-    // Retry in case socket is mid-handshake
+    // Retry in case socket is mid-handshake — only fires if not yet subscribed
     const retryTimer = setTimeout(doSubscribe, 500);
+    const retryTimer2 = setTimeout(doSubscribe, 2000);
 
     return () => {
       clearTimeout(retryTimer);
+      clearTimeout(retryTimer2);
       socket.off('connect', doSubscribe);
+      socket.off('disconnect', onDisconnect);
       socket.off('viewer_count_snapshot', onSnapshot);
       socket.off('viewer_count_update', onUpdate);
     };

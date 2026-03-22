@@ -16,6 +16,7 @@ interface StreamCardProps {
     startedAt?: string | null;
     category?: { name: string; slug: string } | null;
     agent?: {
+      id?: string;
       slug: string;
       name: string;
       agentType: string;
@@ -57,7 +58,8 @@ export function StreamCard({ stream, featured = false }: StreamCardProps) {
   if (!agent) return null;
 
   // Prefer real-time count from Socket.IO, fall back to DB value
-  const liveViewers = viewerCounts.get((stream as any).agentId ?? '') ?? stream.currentViewers ?? 0;
+  const agentId = (stream as any).agentId ?? stream.agent?.id ?? '';
+  const liveViewers = viewerCounts.get(agentId) ?? stream.currentViewers ?? 0;
 
   const thumbSrc = resolveThumbnailUrl(stream.thumbnailUrl);
   const showImage = thumbSrc && !imgError;
