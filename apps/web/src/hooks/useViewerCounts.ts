@@ -54,7 +54,11 @@ export function useViewerCounts(): Map<string, number> {
     if (socket.connected) {
       doSubscribe();
     }
-    socket.on('connect', doSubscribe);
+    const onConnect = () => {
+      subscribed = false;
+      doSubscribe();
+    };
+    socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('viewer_count_snapshot', onSnapshot);
     socket.on('viewer_count_update', onUpdate);
@@ -66,7 +70,7 @@ export function useViewerCounts(): Map<string, number> {
     return () => {
       clearTimeout(retryTimer);
       clearTimeout(retryTimer2);
-      socket.off('connect', doSubscribe);
+      socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('viewer_count_snapshot', onSnapshot);
       socket.off('viewer_count_update', onUpdate);

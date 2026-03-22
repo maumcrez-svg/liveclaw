@@ -16,9 +16,11 @@ export function useViewerPresence(streamId: string | null) {
     if (!streamId) return;
     let active = true;
     let acked = false;
+    let joinEmitted = false;
 
     const doJoin = () => {
       if (!active || acked || !socket.connected) return;
+      joinEmitted = true;
       console.info(`[Presence] join_stream emit → ${streamId} (socket: ${socket.id})`);
       socket.emit('join_stream', { streamId }, (response: any) => {
         if (!active) return;
@@ -35,6 +37,7 @@ export function useViewerPresence(streamId: string | null) {
     // On reconnect, server lost us — reset acked so we re-join
     const onDisconnect = () => {
       acked = false;
+      joinEmitted = false;
       console.info('[Presence] disconnected — will re-join on reconnect');
     };
 
@@ -49,7 +52,6 @@ export function useViewerPresence(streamId: string | null) {
     // Listen for broadcast updates (other viewers joining/leaving)
     const onViewerCount = (data: { streamId: string; count: number }) => {
       if (data.streamId === streamId) {
-        console.info(`[Presence] viewer_count event ← count: ${data.count}`);
         setViewerCount(data.count);
       }
     };
@@ -67,7 +69,10 @@ export function useViewerPresence(streamId: string | null) {
       socket.off('connect', doJoin);
       socket.off('disconnect', onDisconnect);
       socket.off('viewer_count', onViewerCount);
-      if (acked) socket.emit('leave_stream', { streamId });
+      // ALWAYS emit leave if join was sent — Socket.IO preserves order
+      if (joinEmitted && socket.connected) {
+        socket.emit('leave_stream', { streamId });
+      }
     };
   }, [streamId, socket]);
 
