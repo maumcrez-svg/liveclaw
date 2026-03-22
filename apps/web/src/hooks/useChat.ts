@@ -57,7 +57,7 @@ export function useChat(streamId: string, agentId?: string) {
       socket.emit('join_chat', { streamId }, (response: any) => {
         if (!active) return;
         chatJoined = true;
-        console.info(`[Chat] join_chat ACK ← ${response?.event}`);
+        console.info(`[Chat] join_chat ACK ← streamId: ${response?.streamId}`);
         setConnected(true);
       });
     };

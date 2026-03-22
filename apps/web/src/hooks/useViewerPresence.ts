@@ -23,9 +23,11 @@ export function useViewerPresence(streamId: string | null) {
       socket.emit('join_stream', { streamId }, (response: any) => {
         if (!active) return;
         acked = true;
-        console.info(`[Presence] join_stream ACK ← count: ${response?.data?.viewerCount}`);
-        if (response?.data?.viewerCount != null) {
-          setViewerCount(response.data.viewerCount);
+        // NestJS ACK returns raw object (no event wrapper)
+        const count = response?.viewerCount ?? response?.data?.viewerCount;
+        console.info(`[Presence] join_stream ACK ← count: ${count}`);
+        if (count != null) {
+          setViewerCount(count);
         }
       });
     };
@@ -33,7 +35,7 @@ export function useViewerPresence(streamId: string | null) {
     // On reconnect, server lost us — reset acked so we re-join
     const onDisconnect = () => {
       acked = false;
-      console.info(`[Presence] disconnected — will re-join on reconnect`);
+      console.info('[Presence] disconnected — will re-join on reconnect');
     };
 
     // Try immediately, on connect, and every 3s until ACK

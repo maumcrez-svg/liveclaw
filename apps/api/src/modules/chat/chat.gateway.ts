@@ -213,7 +213,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.warn('Failed to send viewer count snapshot', err);
     }
 
-    return { event: 'subscribed_counts' };
+    return { subscribed: true };
   }
 
   /** Broadcast a viewer count update to the global counts room */
@@ -248,6 +248,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     // Allow anonymous viewers to join streams (they count as viewers but can't chat)
     const prevStream = this.clientStreams.get(client.id);
+
+    // Idempotent: same socket re-joining same stream — just refresh lastSeen
+    if (prevStream === data.streamId) {
+      this.clientLastSeen.set(client.id, Date.now());
+      const count = await this.chatService.getViewerCount(data.streamId);
+      this.logger.log(`[JOIN-NOOP] stream=${data.streamId} socket=${client.id} count=${count}`);
+      return { streamId: data.streamId, viewerCount: count };
+    }
+
     if (prevStream) {
       client.leave(prevStream);
       const prevCount = await this.chatService.removeViewer(prevStream, client.id);
@@ -281,10 +290,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
     });
 
-    return {
-      event: 'joined',
-      data: { streamId: data.streamId, viewerCount: count },
-    };
+    // Return WITHOUT `event` property so NestJS calls the client ACK callback
+    return { streamId: data.streamId, viewerCount: count };
   }
 
   /**
@@ -309,7 +316,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
     });
 
-    return { event: 'joined_chat', data: { streamId: data.streamId } };
+    // Return WITHOUT `event` property so NestJS calls the client ACK callback
+    return { streamId: data.streamId };
   }
 
   @SubscribeMessage('viewer_heartbeat')
@@ -349,7 +357,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
     });
 
-    return { event: 'subscribed_alerts', data: { streamId: data.streamId } };
+    return { streamId: data.streamId };
   }
 
   @SubscribeMessage('unsubscribe_alerts')
