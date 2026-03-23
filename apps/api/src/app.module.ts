@@ -19,6 +19,7 @@ import { ModerationModule } from './modules/chat/moderation/moderation.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { ClipsModule } from './modules/clips/clips.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { PlatformModule } from './modules/platform/platform.module';
     AdminModule,
     CryptoModule,
     PlatformModule,
+    ClipsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

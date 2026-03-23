@@ -25,6 +25,9 @@ RUN cd apps/api && npx nest build
 # --- Production stage ---
 FROM node:20-alpine AS runner
 
+# FFmpeg is required for clip processing
+RUN apk add --no-cache ffmpeg
+
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app

@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { EmotesTab } from './EmotesTab';
 import { VideosTab } from './VideosTab';
+import { ClipsTab } from '@/components/clips/ClipsTab';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 
-type TabId = 'chat' | 'videos' | 'emotes' | 'schedule';
+type TabId = 'chat' | 'videos' | 'clips' | 'emotes' | 'schedule';
 
 interface PastStream {
   id: string;
@@ -61,6 +62,16 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
       icon: (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'clips' as TabId,
+      label: 'Clips',
+      icon: (
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="10 8 16 12 10 16 10 8" />
         </svg>
       ),
     },
@@ -128,6 +139,11 @@ export function ChannelTabs({ agent, stream, pastStreams = [], mobileOnly = fals
         {activeTab === 'videos' && (
           <div className="px-4 md:px-6 max-w-5xl py-5">
             <VideosTab streams={pastStreams} agentName={agent.name} />
+          </div>
+        )}
+        {activeTab === 'clips' && (
+          <div className="px-4 md:px-6 max-w-5xl py-5">
+            <ClipsTab agentId={agent.id} agentName={agent.name} />
           </div>
         )}
         {activeTab === 'emotes' && (

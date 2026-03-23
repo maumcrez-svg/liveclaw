@@ -14,6 +14,7 @@ const nextConfig = {
   async rewrites() {
     const hlsOrigin = process.env.HLS_ORIGIN || 'http://165.227.91.241:8888';
     const thumbOrigin = process.env.THUMBNAIL_ORIGIN || 'http://165.227.91.241:8889';
+    const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     return [
       {
         source: '/hls/:path*',
@@ -22,6 +23,10 @@ const nextConfig = {
       {
         source: '/thumbnails/:path*',
         destination: `${thumbOrigin}/:path*`,
+      },
+      {
+        source: '/clips-media/:path*',
+        destination: `${apiOrigin}/clips-media/:path*`,
       },
     ];
   },

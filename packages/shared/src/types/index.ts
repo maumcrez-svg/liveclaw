@@ -162,6 +162,37 @@ export interface Donation {
   createdAt: string;
 }
 
+// Clip types
+export type ClipStatus = 'pending' | 'processing' | 'ready' | 'failed';
+
+export interface Clip {
+  id: string;
+  shareId: string;
+  agentId: string;
+  streamId: string | null;
+  creatorUserId: string;
+  title: string;
+  description: string | null;
+  durationSeconds: number;
+  videoPath: string | null;
+  thumbnailPath: string | null;
+  status: ClipStatus;
+  viewCount: number;
+  createdAt: string;
+  agent?: {
+    id: string;
+    slug: string;
+    name: string;
+    avatarUrl: string | null;
+    status: string;
+  };
+  creator?: {
+    id: string;
+    username: string;
+    avatarUrl: string | null;
+  };
+}
+
 // User types
 export interface User {
   id: string;
