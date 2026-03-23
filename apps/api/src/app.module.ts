@@ -36,6 +36,7 @@ import { ClipsModule } from './modules/clips/clips.module';
         database: config.get('DATABASE_NAME', 'liveclaw'),
         autoLoadEntities: true,
         synchronize: false,
+        migrationsRun: true,
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
       }),
     }),
