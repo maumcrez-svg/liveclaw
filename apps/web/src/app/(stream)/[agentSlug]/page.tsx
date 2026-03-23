@@ -12,6 +12,9 @@ import { useAlertQueue } from '@/hooks/useAlertQueue';
 import { useStreamAlerts } from '@/hooks/useStreamAlerts';
 import { useViewerPresence } from '@/hooks/useViewerPresence';
 import { useLiveViewerCounts } from '@/components/LiveViewerCounts';
+import { CreateClipModal } from '@/components/clips/CreateClipModal';
+import { ClipStatusToast } from '@/components/clips/ClipStatusToast';
+import { useUser } from '@/contexts/UserContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const HLS_URL = process.env.NEXT_PUBLIC_HLS_URL || '/hls';
@@ -55,6 +58,11 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
       window.location.href = '/?auth=true';
     }
   }, [params.agentSlug]);
+
+  // Clip editor state (mobile floating button)
+  const { isLoggedIn, setShowLoginModal } = useUser();
+  const [showMobileClip, setShowMobileClip] = useState(false);
+  const [mobileClipToast, setMobileClipToast] = useState<string | null>(null);
 
   // Viewer presence — per-stream count with global fallback
   const { viewerCount: presenceCount } = useViewerPresence(stream?.id ?? null);
@@ -250,6 +258,22 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
         <div className={`relative flex-shrink-0 ${isLive ? 'sticky top-0 z-30 lg:static' : ''}`}>
           <div className="w-full aspect-video bg-claw-bg relative">
             <AlertOverlay currentAlert={currentAlert} phase={phase} onDismiss={dismiss} />
+            {/* Mobile clip button — floating on player */}
+            {isLive && hlsSrc && (
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) { setShowLoginModal(true); return; }
+                  setShowMobileClip(true);
+                }}
+                className="lg:hidden absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-black/60 text-white border border-white/20 backdrop-blur-sm active:scale-95 transition-transform"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="10 8 16 12 10 16 10 8" />
+                </svg>
+                Clip
+              </button>
+            )}
             {hlsSrc ? (
               <StreamPlayer key={playerKey} src={hlsSrc} onStreamEnded={handlePlayerDied} />
             ) : streamStatus === 'reconnecting' ? (
@@ -381,6 +405,24 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile clip editor */}
+      {showMobileClip && hlsSrc && (
+        <CreateClipModal
+          hlsSrc={hlsSrc}
+          agentId={agent.id}
+          streamId={stream?.id ?? null}
+          agentName={agent.name}
+          onClose={() => setShowMobileClip(false)}
+          onCreated={(shareId) => {
+            setShowMobileClip(false);
+            setMobileClipToast(shareId);
+          }}
+        />
+      )}
+      {mobileClipToast && (
+        <ClipStatusToast shareId={mobileClipToast} onClose={() => setMobileClipToast(null)} />
       )}
     </div>
   );

@@ -220,8 +220,8 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
   const headPct = pct(ct, sStart, span);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget && !submitting) onClose(); }}>
-      <div className="bg-claw-surface border border-claw-border rounded-xl w-full max-w-3xl shadow-2xl shadow-black/60 flex flex-col max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm sm:p-4" onClick={(e) => { if (e.target === e.currentTarget && !submitting) onClose(); }}>
+      <div className="bg-claw-surface border-t sm:border border-claw-border rounded-t-xl sm:rounded-xl w-full sm:max-w-3xl shadow-2xl shadow-black/60 flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-claw-border flex-shrink-0">
           <div className="flex items-center gap-2.5">
@@ -245,8 +245,8 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
           </div>
 
           {/* Transport */}
-          <div className="flex items-center gap-3">
-            <button onClick={() => seekTo(Math.max(inPt, ct - 5))} className="p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button onClick={() => seekTo(Math.max(inPt, ct - 5))} className="p-2 sm:p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg active:bg-claw-bg transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 19 2 12 11 5 11 19" /><polygon points="22 19 13 12 22 5 22 19" /></svg>
             </button>
             <button onClick={togglePlay} className="p-2 rounded-lg bg-claw-accent text-white hover:bg-claw-accent/90 transition-colors">
@@ -256,7 +256,7 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
               )}
             </button>
-            <button onClick={() => seekTo(Math.min(outPt, ct + 5))} className="p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">
+            <button onClick={() => seekTo(Math.min(outPt, ct + 5))} className="p-2 sm:p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg active:bg-claw-bg transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 19 22 12 13 5 13 19" /><polygon points="2 19 11 12 2 5 2 19" /></svg>
             </button>
             <div className="flex-1" />
@@ -267,7 +267,7 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
           <div>
             <div
               ref={trackRef}
-              className="relative h-12 bg-claw-bg rounded-lg cursor-pointer select-none border border-claw-border/60 overflow-hidden"
+              className="relative h-14 sm:h-12 bg-claw-bg rounded-lg cursor-pointer select-none border border-claw-border/60 overflow-hidden"
               onClick={trackClick}
             >
               {/* Dimmed regions outside selection */}
@@ -296,7 +296,7 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
               {/* Left handle */}
               <div
                 className="absolute top-0 bottom-0 z-30 cursor-ew-resize touch-none"
-                style={{ left: `calc(${inPct}% - 10px)`, width: '20px' }}
+                style={{ left: `calc(${inPct}% - 16px)`, width: '32px' }}
                 onMouseDown={(e) => { e.stopPropagation(); setDragging('in'); }}
                 onTouchStart={(e) => { e.stopPropagation(); setDragging('in'); }}
               >
@@ -308,7 +308,7 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
               {/* Right handle */}
               <div
                 className="absolute top-0 bottom-0 z-30 cursor-ew-resize touch-none"
-                style={{ left: `calc(${outPct}% - 10px)`, width: '20px' }}
+                style={{ left: `calc(${outPct}% - 16px)`, width: '32px' }}
                 onMouseDown={(e) => { e.stopPropagation(); setDragging('out'); }}
                 onTouchStart={(e) => { e.stopPropagation(); setDragging('out'); }}
               >
