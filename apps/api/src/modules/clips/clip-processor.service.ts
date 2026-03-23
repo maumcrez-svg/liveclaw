@@ -8,10 +8,8 @@ import { ClipEntity } from './clip.entity';
 
 const MAX_CONCURRENT = 2;
 const MAX_QUEUE_SIZE = 20;
-const FFMPEG_TIMEOUT_MS = 120_000;
+const FFMPEG_TIMEOUT_MS = 60_000;
 const HLS_SEGMENT_DURATION = 2;
-const HLS_SEGMENT_COUNT = 90;
-const APPROX_BUFFER = HLS_SEGMENT_COUNT * HLS_SEGMENT_DURATION;
 
 interface ClipJob {
   clipId: string;
@@ -66,7 +64,13 @@ export class ClipProcessorService {
       });
       return;
     }
-    const job: ClipJob = { clipId, streamKey, duration, shareId, offsetFromEnd };
+    const job: ClipJob = {
+      clipId,
+      streamKey,
+      duration,
+      shareId,
+      offsetFromEnd,
+    };
     this.queue.push(job);
     this.processNext();
   }
@@ -114,44 +118,27 @@ export class ClipProcessorService {
     try {
       this.logger.log(`Processing clip ${shareId}: ${duration}s`);
 
-      const inputArgs: string[] = [];
+      // Jump directly to the right HLS segment — skip downloading the whole buffer
+      const off = offsetFromEnd ?? duration;
+      const segmentsFromEnd = Math.ceil(off / HLS_SEGMENT_DURATION) + 1;
 
-      if (offsetFromEnd != null && offsetFromEnd > 0) {
-        // Precise mode: seek into the HLS buffer
-        const seekFromStart = Math.max(0, APPROX_BUFFER - offsetFromEnd);
-        inputArgs.push('-i', hlsUrl, '-ss', String(seekFromStart));
-      } else {
-        // Legacy preset mode: grab from near the end
-        const segmentsNeeded = Math.ceil(duration / HLS_SEGMENT_DURATION);
-        inputArgs.push(
-          '-live_start_index',
-          String(-segmentsNeeded),
-          '-i',
-          hlsUrl,
-        );
-      }
-
+      // Stream copy (no re-encode) — remux TS→MP4 in seconds
       await this.runFfmpeg([
-        ...inputArgs,
+        '-live_start_index',
+        String(-segmentsFromEnd),
+        '-i',
+        hlsUrl,
         '-t',
         String(duration),
-        '-c:v',
-        'libx264',
-        '-preset',
-        'fast',
-        '-crf',
-        '23',
-        '-c:a',
-        'aac',
-        '-b:a',
-        '128k',
+        '-c',
+        'copy',
         '-movflags',
         '+faststart',
         '-y',
         videoPath,
       ]);
 
-      // Generate thumbnail from clip midpoint
+      // Thumbnail from clip midpoint
       const thumbSeek = Math.min(1, duration / 2);
       await this.runFfmpeg([
         '-i',
