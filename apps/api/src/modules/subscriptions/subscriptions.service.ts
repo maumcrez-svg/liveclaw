@@ -28,9 +28,9 @@ export class SubscriptionsService {
   async checkNoActiveSubscription(userId: string, agentId: string): Promise<void> {
     const existing = await this.subRepo
       .createQueryBuilder('s')
-      .where('s.user_id = :userId', { userId })
-      .andWhere('s.agent_id = :agentId', { agentId })
-      .andWhere('s.is_active = true')
+      .where('s.userId = :userId', { userId })
+      .andWhere('s.agentId = :agentId', { agentId })
+      .andWhere('s.isActive = true')
       .getOne();
     if (existing) {
       throw new ConflictException('Active subscription already exists');
@@ -61,9 +61,9 @@ export class SubscriptionsService {
   ): Promise<SubscriptionEntity | null> {
     return this.subRepo
       .createQueryBuilder('s')
-      .where('s.user_id = :userId', { userId })
-      .andWhere('s.agent_id = :agentId', { agentId })
-      .andWhere('s.is_active = true')
+      .where('s.userId = :userId', { userId })
+      .andWhere('s.agentId = :agentId', { agentId })
+      .andWhere('s.isActive = true')
       .getOne();
   }
 
@@ -79,9 +79,9 @@ export class SubscriptionsService {
     return this.subRepo
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.agent', 'agent')
-      .where('s.user_id = :userId', { userId })
-      .andWhere('s.is_active = true')
-      .orderBy('s.started_at', 'DESC')
+      .where('s.userId = :userId', { userId })
+      .andWhere('s.isActive = true')
+      .orderBy('s.startedAt', 'DESC')
       .getMany();
   }
 
@@ -93,8 +93,8 @@ export class SubscriptionsService {
     const activeSubs = await this.subRepo
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.user', 'user')
-      .where('s.agent_id = :agentId', { agentId })
-      .andWhere('s.is_active = true')
+      .where('s.agentId = :agentId', { agentId })
+      .andWhere('s.isActive = true')
       .getMany();
 
     let mrr = 0;
@@ -105,8 +105,8 @@ export class SubscriptionsService {
     const recent = await this.subRepo
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.user', 'user')
-      .where('s.agent_id = :agentId', { agentId })
-      .orderBy('s.created_at', 'DESC')
+      .where('s.agentId = :agentId', { agentId })
+      .orderBy('s.createdAt', 'DESC')
       .take(20)
       .getMany();
 
@@ -123,11 +123,11 @@ export class SubscriptionsService {
     // Find expiring subscriptions BEFORE updating, so we know which agents to decrement
     const expiring = await this.subRepo
       .createQueryBuilder('s')
-      .select('s.agent_id', 'agentId')
+      .select('s.agentId', 'agentId')
       .addSelect('COUNT(*)', 'count')
-      .where('s.is_active = true')
-      .andWhere('s.expires_at < NOW()')
-      .groupBy('s.agent_id')
+      .where('s.isActive = true')
+      .andWhere('s.expiresAt < NOW()')
+      .groupBy('s.agentId')
       .getRawMany<{ agentId: string; count: string }>();
 
     if (expiring.length === 0) return;

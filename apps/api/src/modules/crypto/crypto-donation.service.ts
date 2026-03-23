@@ -171,15 +171,15 @@ export class CryptoDonationService {
   }> {
     const confirmedResult = await this.donationRepo
       .createQueryBuilder('d')
-      .select('COALESCE(SUM(d.amount_usd), 0)', 'total')
-      .where('d.agent_id = :agentId', { agentId })
+      .select('COALESCE(SUM(d.amountUsd), 0)', 'total')
+      .where('d.agentId = :agentId', { agentId })
       .andWhere('d.status = :status', { status: 'confirmed' })
       .getRawOne();
 
     const pendingResult = await this.donationRepo
       .createQueryBuilder('d')
-      .select('COALESCE(SUM(d.amount_usd), 0)', 'total')
-      .where('d.agent_id = :agentId', { agentId })
+      .select('COALESCE(SUM(d.amountUsd), 0)', 'total')
+      .where('d.agentId = :agentId', { agentId })
       .andWhere('d.status IN (:...statuses)', {
         statuses: ['pending', 'confirming'],
       })

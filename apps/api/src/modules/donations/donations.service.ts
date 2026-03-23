@@ -32,16 +32,16 @@ export class DonationsService {
       .createQueryBuilder('d')
       .select('COALESCE(SUM(d.amount), 0)', 'totalAmount')
       .addSelect('COUNT(*)::int', 'totalCount')
-      .where('d.agent_id = :agentId', { agentId })
-      .andWhere('d.payment_status = :status', { status: 'completed' })
+      .where('d.agentId = :agentId', { agentId })
+      .andWhere('d.paymentStatus = :status', { status: 'completed' })
       .getRawOne();
 
     const recent = await this.donationRepo
       .createQueryBuilder('d')
       .leftJoinAndSelect('d.user', 'user')
-      .where('d.agent_id = :agentId', { agentId })
-      .andWhere('d.payment_status = :status', { status: 'completed' })
-      .orderBy('d.created_at', 'DESC')
+      .where('d.agentId = :agentId', { agentId })
+      .andWhere('d.paymentStatus = :status', { status: 'completed' })
+      .orderBy('d.createdAt', 'DESC')
       .take(20)
       .getMany();
 

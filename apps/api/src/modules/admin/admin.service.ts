@@ -53,13 +53,13 @@ export class AdminService {
       qb.andWhere('u.role = :role', { role: opts.role });
     }
     if (opts.banned !== undefined) {
-      qb.andWhere('u.is_banned = :banned', { banned: opts.banned });
+      qb.andWhere('u.isBanned = :banned', { banned: opts.banned });
     }
 
     if (opts.sort === 'oldest') {
-      qb.orderBy('u.created_at', 'ASC');
+      qb.orderBy('u.createdAt', 'ASC');
     } else {
-      qb.orderBy('u.created_at', 'DESC');
+      qb.orderBy('u.createdAt', 'DESC');
     }
 
     qb.select([
@@ -92,7 +92,7 @@ export class AdminService {
     const qb = this.userRepo
       .createQueryBuilder('u')
       .where('u.username ILIKE :q', { q: `%${query}%` })
-      .orderBy('u.created_at', 'DESC');
+      .orderBy('u.createdAt', 'DESC');
 
     qb.select([
       'u.id', 'u.username', 'u.role', 'u.avatarUrl', 'u.walletAddress',
@@ -243,16 +243,16 @@ export class AdminService {
       .where('d.status = :status', { status: 'confirmed' });
 
     if (opts.agentId) {
-      qb.andWhere('d.agent_id = :agentId', { agentId: opts.agentId });
+      qb.andWhere('d.agentId = :agentId', { agentId: opts.agentId });
     }
     if (opts.userId) {
-      qb.andWhere('d.viewer_user_id = :userId', { userId: opts.userId });
+      qb.andWhere('d.viewerUserId = :userId', { userId: opts.userId });
     }
 
     if (opts.sort === 'amount') {
-      qb.orderBy('d.amount_usd', 'DESC');
+      qb.orderBy('d.amountUsd', 'DESC');
     } else {
-      qb.orderBy('d.created_at', 'DESC');
+      qb.orderBy('d.createdAt', 'DESC');
     }
 
     const total = await qb.getCount();
@@ -285,22 +285,22 @@ export class AdminService {
 ;
 
     if (opts.agentId) {
-      qb.andWhere('s.agent_id = :agentId', { agentId: opts.agentId });
+      qb.andWhere('s.agentId = :agentId', { agentId: opts.agentId });
     }
     if (opts.userId) {
-      qb.andWhere('s.user_id = :userId', { userId: opts.userId });
+      qb.andWhere('s.userId = :userId', { userId: opts.userId });
     }
     if (opts.active !== undefined) {
-      qb.andWhere('s.is_active = :active', { active: opts.active });
+      qb.andWhere('s.isActive = :active', { active: opts.active });
     }
     if (opts.tier) {
       qb.andWhere('s.tier = :tier', { tier: opts.tier });
     }
 
     if (opts.sort === 'oldest') {
-      qb.orderBy('s.created_at', 'ASC');
+      qb.orderBy('s.createdAt', 'ASC');
     } else {
-      qb.orderBy('s.created_at', 'DESC');
+      qb.orderBy('s.createdAt', 'DESC');
     }
 
     const total = await qb.getCount();
@@ -330,18 +330,18 @@ export class AdminService {
       .leftJoinAndSelect('s.category', 'category');
 
     if (opts.live !== undefined) {
-      qb.andWhere('s.is_live = :live', { live: opts.live });
+      qb.andWhere('s.isLive = :live', { live: opts.live });
     }
     if (opts.agentId) {
-      qb.andWhere('s.agent_id = :agentId', { agentId: opts.agentId });
+      qb.andWhere('s.agentId = :agentId', { agentId: opts.agentId });
     }
 
     if (opts.sort === 'viewers') {
-      qb.orderBy('s.current_viewers', 'DESC');
+      qb.orderBy('s.currentViewers', 'DESC');
     } else if (opts.sort === 'oldest') {
-      qb.orderBy('s.started_at', 'ASC');
+      qb.orderBy('s.startedAt', 'ASC');
     } else {
-      qb.orderBy('s.started_at', 'DESC');
+      qb.orderBy('s.startedAt', 'DESC');
     }
 
     const total = await qb.getCount();

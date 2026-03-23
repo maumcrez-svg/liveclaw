@@ -129,6 +129,9 @@ export class ReconciliationService implements OnModuleInit {
     const liveAgents = allAgents.filter((a) => a.status === 'live');
 
     for (const agent of liveAgents) {
+      // External agents stream from outside — they don't go through this MediaMTX instance
+      if (agent.streamingMode === 'external') continue;
+
       if (!activePaths.has(agent.streamKey)) {
         this.logger.warn(
           `[STREAM WITHOUT PATH] Agent "${agent.slug}" is live in DB but no active path in MediaMTX for streamKey — ending stream`,
