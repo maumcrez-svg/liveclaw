@@ -29,7 +29,9 @@ function getOrCreateSocket(): Socket {
     return sharedSocket;
   }
   if (sharedSocket) {
-    // Socket exists but disconnected — reuse instance, it will auto-reconnect
+    // Socket exists but disconnected — refresh auth token before reconnect
+    const freshToken = getAuthToken();
+    sharedSocket.auth = freshToken ? { token: freshToken } : {};
     return sharedSocket;
   }
 

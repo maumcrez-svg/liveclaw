@@ -41,13 +41,24 @@ export function useViewerPresence(streamId: string | null) {
       console.info('[Presence] disconnected — will re-join on reconnect');
     };
 
-    // Try immediately, on connect, and every 3s until ACK
-    doJoin();
+    // Register connect listener FIRST, then try immediately
     socket.on('connect', doJoin);
     socket.on('disconnect', onDisconnect);
-    const retryInterval = setInterval(() => {
-      if (!acked) doJoin();
-    }, 3000);
+    doJoin();
+
+    // Retry: fast first attempts, then slow down
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const scheduleRetry = () => {
+      if (acked || !active) return;
+      const delay = retryCount < 5 ? 500 : 3000;
+      retryTimer = setTimeout(() => {
+        retryCount++;
+        doJoin();
+        scheduleRetry();
+      }, delay);
+    };
+    scheduleRetry();
 
     // Listen for broadcast updates (other viewers joining/leaving)
     const onViewerCount = (data: { streamId: string; count: number }) => {
@@ -64,7 +75,7 @@ export function useViewerPresence(streamId: string | null) {
 
     return () => {
       active = false;
-      clearInterval(retryInterval);
+      if (retryTimer) clearTimeout(retryTimer);
       clearInterval(heartbeat);
       socket.off('connect', doJoin);
       socket.off('disconnect', onDisconnect);

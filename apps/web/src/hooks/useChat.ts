@@ -134,13 +134,25 @@ export function useChat(streamId: string, agentId?: string) {
       );
     };
 
-    // Try immediately, on connect, and every 3s until ACK
-    doJoinChat();
-    const retryInterval = setInterval(() => {
-      if (!chatJoined) doJoinChat();
-    }, 3000);
-
+    // Register connect listener FIRST (before any emit attempt)
     socket.on('connect', doJoinChat);
+
+    // Then try immediately (in case socket is already connected)
+    doJoinChat();
+
+    // Retry with fast initial attempts, then slow down
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const scheduleRetry = () => {
+      if (chatJoined || !active) return;
+      const delay = retryCount < 5 ? 500 : 3000;
+      retryTimer = setTimeout(() => {
+        retryCount++;
+        doJoinChat();
+        scheduleRetry();
+      }, delay);
+    };
+    scheduleRetry();
     socket.on('disconnect', onDisconnect);
     socket.on('new_message', onNewMessage);
     socket.on('message_deleted', onMessageDeleted);
@@ -153,7 +165,7 @@ export function useChat(streamId: string, agentId?: string) {
 
     return () => {
       active = false;
-      clearInterval(retryInterval);
+      if (retryTimer) clearTimeout(retryTimer);
       socket.off('connect', doJoinChat);
       socket.off('disconnect', onDisconnect);
       socket.off('new_message', onNewMessage);

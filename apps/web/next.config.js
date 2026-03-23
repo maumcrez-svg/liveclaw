@@ -36,6 +36,13 @@ const nextConfig = {
     const hlsUrl = (process.env.NEXT_PUBLIC_HLS_URL || 'http://localhost:8888').trim();
     return [
       {
+        // HTML pages: never cache — hard refresh always gets fresh content
+        source: '/((?!_next/static|_next/image|favicon|logo|clips-media).*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           {
