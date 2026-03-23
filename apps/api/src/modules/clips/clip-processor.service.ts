@@ -9,12 +9,16 @@ import { ClipEntity } from './clip.entity';
 const MAX_CONCURRENT = 2;
 const MAX_QUEUE_SIZE = 20;
 const FFMPEG_TIMEOUT_MS = 120_000;
+const HLS_SEGMENT_DURATION = 2;
+const HLS_SEGMENT_COUNT = 90;
+const APPROX_BUFFER = HLS_SEGMENT_COUNT * HLS_SEGMENT_DURATION;
 
 interface ClipJob {
   clipId: string;
   streamKey: string;
   duration: number;
   shareId: string;
+  offsetFromEnd?: number;
 }
 
 @Injectable()
@@ -53,6 +57,7 @@ export class ClipProcessorService {
     streamKey: string,
     duration: number,
     shareId: string,
+    offsetFromEnd?: number,
   ): void {
     if (this.queue.length >= MAX_QUEUE_SIZE) {
       void this.clipRepo.update(clipId, {
@@ -61,7 +66,7 @@ export class ClipProcessorService {
       });
       return;
     }
-    const job: ClipJob = { clipId, streamKey, duration, shareId };
+    const job: ClipJob = { clipId, streamKey, duration, shareId, offsetFromEnd };
     this.queue.push(job);
     this.processNext();
   }
@@ -98,9 +103,8 @@ export class ClipProcessorService {
   }
 
   private async processJob(job: ClipJob): Promise<void> {
-    const { clipId, streamKey, duration, shareId } = job;
+    const { clipId, streamKey, duration, shareId, offsetFromEnd } = job;
 
-    // Mark as processing
     await this.clipRepo.update(clipId, { status: 'processing' });
 
     const hlsUrl = `${this.mediamtxHlsUrl}/${streamKey}/index.m3u8`;
@@ -108,13 +112,27 @@ export class ClipProcessorService {
     const thumbPath = join(this.clipsDir, `${shareId}.jpg`);
 
     try {
-      // Step 1: Capture clip from live HLS stream
       this.logger.log(`Processing clip ${shareId}: ${duration}s`);
+
+      const inputArgs: string[] = [];
+
+      if (offsetFromEnd != null && offsetFromEnd > 0) {
+        // Precise mode: seek into the HLS buffer
+        const seekFromStart = Math.max(0, APPROX_BUFFER - offsetFromEnd);
+        inputArgs.push('-i', hlsUrl, '-ss', String(seekFromStart));
+      } else {
+        // Legacy preset mode: grab from near the end
+        const segmentsNeeded = Math.ceil(duration / HLS_SEGMENT_DURATION);
+        inputArgs.push(
+          '-live_start_index',
+          String(-segmentsNeeded),
+          '-i',
+          hlsUrl,
+        );
+      }
+
       await this.runFfmpeg([
-        '-live_start_index',
-        String(-Math.ceil(duration / 2)),
-        '-i',
-        hlsUrl,
+        ...inputArgs,
         '-t',
         String(duration),
         '-c:v',
@@ -133,12 +151,13 @@ export class ClipProcessorService {
         videoPath,
       ]);
 
-      // Step 2: Generate thumbnail from the clip
+      // Generate thumbnail from clip midpoint
+      const thumbSeek = Math.min(1, duration / 2);
       await this.runFfmpeg([
         '-i',
         videoPath,
         '-ss',
-        '1',
+        String(thumbSeek),
         '-vframes',
         '1',
         '-vf',
@@ -149,7 +168,6 @@ export class ClipProcessorService {
         thumbPath,
       ]);
 
-      // Step 3: Mark as ready
       await this.clipRepo.update(clipId, {
         status: 'ready',
         videoPath: `${shareId}.mp4`,
@@ -164,14 +182,18 @@ export class ClipProcessorService {
         status: 'failed',
         errorMessage: message.slice(0, 500),
       });
-      // Clean up partial files
       this.deleteFiles(shareId);
     }
   }
 
   private runFfmpeg(args: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
-      const proc = spawn('ffmpeg', ['-hide_banner', '-loglevel', 'warning', ...args]);
+      const proc = spawn('ffmpeg', [
+        '-hide_banner',
+        '-loglevel',
+        'warning',
+        ...args,
+      ]);
 
       let stderr = '';
       proc.stderr.on('data', (chunk: Buffer) => {

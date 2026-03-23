@@ -62,7 +62,13 @@ export class ClipsService {
     const saved = await this.clipRepo.save(clip);
 
     // Fire-and-forget processing
-    this.processor.enqueue(saved.id, agent.streamKey, dto.duration, shareId);
+    this.processor.enqueue(
+      saved.id,
+      agent.streamKey,
+      dto.duration,
+      shareId,
+      dto.offsetFromEnd,
+    );
 
     this.logger.log(
       `Clip ${shareId} queued for agent ${agent.slug} (${dto.duration}s)`,

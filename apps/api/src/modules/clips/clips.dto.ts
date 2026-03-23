@@ -1,8 +1,10 @@
 import {
   IsString,
   IsUUID,
-  IsIn,
+  IsNumber,
   IsOptional,
+  Min,
+  Max,
   MinLength,
   MaxLength,
 } from 'class-validator';
@@ -20,6 +22,14 @@ export class CreateClipDto {
   @MaxLength(100)
   title: string;
 
-  @IsIn([15, 30, 60])
+  @IsNumber()
+  @Min(5)
+  @Max(120)
   duration: number;
+
+  @IsNumber()
+  @Min(5)
+  @Max(300)
+  @IsOptional()
+  offsetFromEnd?: number;
 }

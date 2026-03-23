@@ -331,6 +331,7 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
             }}
             stream={stream}
             viewerCount={viewerCount}
+            hlsSrc={hlsSrc}
           />
         </div>
 

@@ -34,6 +34,7 @@ interface ChannelHeaderProps {
     startedAt?: string;
   } | null;
   viewerCount?: number;
+  hlsSrc?: string | null;
 }
 
 function formatUptime(startedAt: string): string {
@@ -108,7 +109,7 @@ const SOCIAL_ICONS: Record<string, { label: string; icon: JSX.Element }> = {
   },
 };
 
-export function ChannelHeader({ agent, stream, viewerCount }: ChannelHeaderProps) {
+export function ChannelHeader({ agent, stream, viewerCount, hlsSrc }: ChannelHeaderProps) {
   const { isLoggedIn, setShowLoginModal } = useUser();
   const [showDonation, setShowDonation] = useState(false);
   const [showClipModal, setShowClipModal] = useState(false);
@@ -346,8 +347,9 @@ export function ChannelHeader({ agent, stream, viewerCount }: ChannelHeaderProps
         />
       )}
 
-      {showClipModal && (
+      {showClipModal && hlsSrc && (
         <CreateClipModal
+          hlsSrc={hlsSrc}
           agentId={agent.id}
           streamId={stream?.id ?? null}
           agentName={agent.name}
