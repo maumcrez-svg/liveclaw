@@ -11,6 +11,7 @@ import { AlertOverlay } from '@/components/alerts/AlertOverlay';
 import { useAlertQueue } from '@/hooks/useAlertQueue';
 import { useStreamAlerts } from '@/hooks/useStreamAlerts';
 import { useViewerPresence } from '@/hooks/useViewerPresence';
+import { useLiveViewerCounts } from '@/components/LiveViewerCounts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const HLS_URL = process.env.NEXT_PUBLIC_HLS_URL || '/hls';
@@ -55,8 +56,10 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
     }
   }, [params.agentSlug]);
 
-  // Viewer presence — runs at page level, independent of chat visibility
-  const { viewerCount } = useViewerPresence(stream?.id ?? null);
+  // Viewer presence — per-stream count with global fallback
+  const { viewerCount: presenceCount } = useViewerPresence(stream?.id ?? null);
+  const globalCounts = useLiveViewerCounts();
+  const viewerCount = presenceCount || (agent ? globalCounts.get(agent.id) : undefined) || 0;
 
   // Alert system
   const { currentAlert, phase, enqueue, dismiss } = useAlertQueue();
