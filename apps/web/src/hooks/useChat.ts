@@ -6,6 +6,10 @@ import { useSocket } from './useSocket';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Module-level dedup: prevents duplicate join_chat when multiple ChatPanels
+// are mounted simultaneously (desktop sidebar + mobile tabs both in DOM)
+const activeJoins = new Map<string, number>();
+
 export interface ChatMessage {
   id: string;
   streamId: string;
@@ -50,14 +54,16 @@ export function useChat(streamId: string, agentId?: string) {
   useEffect(() => {
     let active = true;
     let chatJoined = false;
-    let joining = false;
+
+    // Ref-count: first instance joins, subsequent instances piggyback
+    const refs = (activeJoins.get(streamId) ?? 0) + 1;
+    activeJoins.set(streamId, refs);
+    const isOwner = refs === 1; // Only first mount emits join_chat
 
     const doJoinChat = () => {
-      if (!active || chatJoined || joining || !socket.connected) return;
-      joining = true;
+      if (!active || chatJoined || !isOwner || !socket.connected) return;
       console.info(`[Chat] join_chat emit → ${streamId} (socket: ${socket.id})`);
       socket.emit('join_chat', { streamId }, (response: any) => {
-        joining = false;
         if (!active) return;
         chatJoined = true;
         console.info(`[Chat] join_chat ACK ← streamId: ${response?.streamId}`);
@@ -65,8 +71,13 @@ export function useChat(streamId: string, agentId?: string) {
       });
     };
 
+    // Non-owner instances still listen and show connected state
+    if (!isOwner) {
+      setConnected(true);
+    }
+
     const onDisconnect = () => {
-      chatJoined = false; // Reset so we re-join on reconnect
+      chatJoined = false;
       setConnected(false);
       console.info('[Chat] Disconnected — will re-join on reconnect');
     };
@@ -169,6 +180,15 @@ export function useChat(streamId: string, agentId?: string) {
     return () => {
       active = false;
       if (retryTimer) clearTimeout(retryTimer);
+
+      // Decrement ref count
+      const remaining = (activeJoins.get(streamId) ?? 1) - 1;
+      if (remaining <= 0) {
+        activeJoins.delete(streamId);
+      } else {
+        activeJoins.set(streamId, remaining);
+      }
+
       socket.off('connect', doJoinChat);
       socket.off('disconnect', onDisconnect);
       socket.off('new_message', onNewMessage);
