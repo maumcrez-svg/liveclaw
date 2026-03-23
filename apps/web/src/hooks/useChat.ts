@@ -50,11 +50,14 @@ export function useChat(streamId: string, agentId?: string) {
   useEffect(() => {
     let active = true;
     let chatJoined = false;
+    let joining = false;
 
     const doJoinChat = () => {
-      if (!active || chatJoined || !socket.connected) return;
+      if (!active || chatJoined || joining || !socket.connected) return;
+      joining = true;
       console.info(`[Chat] join_chat emit → ${streamId} (socket: ${socket.id})`);
       socket.emit('join_chat', { streamId }, (response: any) => {
+        joining = false;
         if (!active) return;
         chatJoined = true;
         console.info(`[Chat] join_chat ACK ← streamId: ${response?.streamId}`);

@@ -17,12 +17,15 @@ export function useViewerPresence(streamId: string | null) {
     let active = true;
     let acked = false;
     let joinEmitted = false;
+    let joining = false;
 
     const doJoin = () => {
-      if (!active || acked || !socket.connected) return;
+      if (!active || acked || joining || !socket.connected) return;
+      joining = true;
       joinEmitted = true;
       console.info(`[Presence] join_stream emit → ${streamId} (socket: ${socket.id})`);
       socket.emit('join_stream', { streamId }, (response: any) => {
+        joining = false;
         if (!active) return;
         acked = true;
         // NestJS ACK returns raw object (no event wrapper)
