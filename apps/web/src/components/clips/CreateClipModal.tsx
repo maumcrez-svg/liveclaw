@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { api } from '@/lib/api';
 
@@ -16,27 +16,16 @@ interface CreateClipModalProps {
   onCreated: (shareId: string) => void;
 }
 
-/* ─── Helpers ─── */
-
-function fmtOffset(seekEnd: number, time: number): string {
-  const off = Math.max(0, Math.round(seekEnd - time));
-  const m = Math.floor(off / 60);
-  const s = off % 60;
-  return `-${m}:${String(s).padStart(2, '0')}`;
+function fmtSec(sec: number): string {
+  const s = Math.round(Math.abs(sec));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
 }
 
-function fmtDuration(sec: number): string {
-  const s = Math.round(sec);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
-function pct(time: number, start: number, span: number): number {
+function pct(t: number, start: number, span: number): number {
   if (span <= 0) return 0;
-  return Math.max(0, Math.min(100, ((time - start) / span) * 100));
+  return Math.max(0, Math.min(100, ((t - start) / span) * 100));
 }
-
-/* ─── Component ─── */
 
 export function CreateClipModal({
   hlsSrc,
@@ -50,18 +39,20 @@ export function CreateClipModal({
   const hlsRef = useRef<Hls | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  // Stream state
+  /* ─── state ─── */
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [currentTime, setCt] = useState(0);
+  const [ct, setCt] = useState(0);
+
+  // Frozen timeline bounds — set once, never move
   const [sStart, setSStart] = useState(0);
   const [sEnd, setSEnd] = useState(0);
+  const frozenRef = useRef(false);
 
-  // Selection
+  // Selection handles
   const [inPt, setIn] = useState(0);
   const [outPt, setOut] = useState(0);
   const [dragging, setDragging] = useState<'in' | 'out' | null>(null);
-  const initRef = useRef(false);
 
   // Form
   const [title, setTitle] = useState('');
@@ -70,6 +61,23 @@ export function CreateClipModal({
 
   const span = sEnd - sStart;
   const dur = Math.round(outPt - inPt);
+  const validDur = dur >= MIN_DURATION && dur <= MAX_DURATION;
+
+  /* ─── Mute main player on mount, restore on unmount ─── */
+  useEffect(() => {
+    const others: { el: HTMLVideoElement; wasMuted: boolean }[] = [];
+    document.querySelectorAll('video').forEach((v) => {
+      if (v !== videoRef.current) {
+        others.push({ el: v, wasMuted: v.muted });
+        v.muted = true;
+      }
+    });
+    return () => {
+      others.forEach(({ el, wasMuted }) => {
+        el.muted = wasMuted;
+      });
+    };
+  }, []);
 
   /* ─── HLS setup ─── */
   useEffect(() => {
@@ -89,11 +97,7 @@ export function CreateClipModal({
     hls.loadSource(hlsSrc);
     hls.attachMedia(v);
 
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      setReady(true);
-      v.pause();
-    });
-
+    hls.on(Hls.Events.MANIFEST_PARSED, () => v.pause());
     hls.on(Hls.Events.ERROR, (_, d) => {
       if (d.fatal) setError('Failed to load stream');
     });
@@ -105,51 +109,49 @@ export function CreateClipModal({
     };
   }, [hlsSrc]);
 
-  /* ─── Sync seekable range + current time ─── */
-  const syncRange = useCallback(() => {
-    const v = videoRef.current;
-    if (!v || v.seekable.length === 0) return;
-    const s = v.seekable.start(0);
-    const e = v.seekable.end(0);
-    setSStart(s);
-    setSEnd(e);
-    setCt(v.currentTime);
+  /* ─── Freeze seekable range once ─── */
+  useEffect(() => {
+    if (frozenRef.current) return;
+    const iv = setInterval(() => {
+      const v = videoRef.current;
+      if (!v || v.seekable.length === 0) return;
+      const s = v.seekable.start(0);
+      const e = v.seekable.end(0);
+      if (e - s < 5) return;
 
-    // First time: default to last 30s
-    if (!initRef.current && e - s > 2) {
-      const defDur = Math.min(30, e - s);
+      setSStart(s);
+      setSEnd(e);
+      const def = Math.min(30, e - s);
       setOut(e);
-      setIn(Math.max(s, e - defDur));
-      initRef.current = true;
-    }
+      setIn(Math.max(s, e - def));
+      frozenRef.current = true;
+      setReady(true);
+      v.pause();
+      clearInterval(iv);
+    }, 200);
+    return () => clearInterval(iv);
   }, []);
 
+  /* ─── Current time tracking (only ct, not bounds) ─── */
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    const onTu = () => {
-      setCt(v.currentTime);
-      syncRange();
-    };
+    const upd = () => setCt(v.currentTime);
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
-    v.addEventListener('timeupdate', onTu);
+    v.addEventListener('timeupdate', upd);
     v.addEventListener('play', onPlay);
     v.addEventListener('pause', onPause);
-    // Poll seekable range every 500ms (timeupdate isn't frequent enough)
-    const iv = setInterval(syncRange, 500);
     return () => {
-      v.removeEventListener('timeupdate', onTu);
+      v.removeEventListener('timeupdate', upd);
       v.removeEventListener('play', onPlay);
       v.removeEventListener('pause', onPause);
-      clearInterval(iv);
     };
-  }, [syncRange]);
+  }, []);
 
-  /* ─── Handle drag ─── */
+  /* ─── Drag logic ─── */
   useEffect(() => {
     if (!dragging || !trackRef.current) return;
-
     const move = (cx: number) => {
       const r = trackRef.current!.getBoundingClientRect();
       const ratio = Math.max(0, Math.min(1, (cx - r.left) / r.width));
@@ -161,14 +163,12 @@ export function CreateClipModal({
         setOut(Math.max(inPt + MIN_DURATION, Math.min(t, cap)));
       }
     };
-
     const mm = (e: MouseEvent) => move(e.clientX);
     const tm = (e: TouchEvent) => {
       e.preventDefault();
       move(e.touches[0].clientX);
     };
     const up = () => setDragging(null);
-
     window.addEventListener('mousemove', mm);
     window.addEventListener('mouseup', up);
     window.addEventListener('touchmove', tm, { passive: false });
@@ -181,7 +181,7 @@ export function CreateClipModal({
     };
   }, [dragging, sStart, sEnd, span, inPt, outPt]);
 
-  // Seek video to handle position while dragging
+  // Seek preview while dragging
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !dragging) return;
@@ -192,9 +192,7 @@ export function CreateClipModal({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const v = videoRef.current;
-      if (!v || !ready) return;
-      if (e.target instanceof HTMLInputElement) return;
-
+      if (!v || !ready || e.target instanceof HTMLInputElement) return;
       switch (e.key) {
         case ' ':
           e.preventDefault();
@@ -208,51 +206,25 @@ export function CreateClipModal({
           e.preventDefault();
           v.currentTime = Math.min(sEnd, v.currentTime + 1);
           break;
-        case 'i':
-        case 'I':
-          e.preventDefault();
-          setIn(Math.max(sStart, Math.min(v.currentTime, outPt - MIN_DURATION)));
-          break;
-        case 'o':
-        case 'O':
-          e.preventDefault();
-          setOut(Math.min(sEnd, Math.max(v.currentTime, inPt + MIN_DURATION)));
-          break;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [ready, sStart, sEnd, inPt, outPt]);
+  }, [ready, sStart, sEnd]);
 
   /* ─── Actions ─── */
+  const seekTo = (t: number) => {
+    if (videoRef.current) videoRef.current.currentTime = t;
+  };
 
   const togglePlay = () => {
     const v = videoRef.current;
-    if (!v) return;
-    v.paused ? v.play() : v.pause();
+    if (v) v.paused ? v.play() : v.pause();
   };
 
-  const seekTo = (t: number) => {
-    const v = videoRef.current;
-    if (v) v.currentTime = t;
-  };
-
-  const adjust = (which: 'in' | 'out', delta: number) => {
-    if (which === 'in') {
-      const n = Math.max(sStart, Math.min(inPt + delta, outPt - MIN_DURATION));
-      setIn(n);
-      seekTo(n);
-    } else {
-      const cap = Math.min(inPt + MAX_DURATION, sEnd);
-      const n = Math.max(inPt + MIN_DURATION, Math.min(outPt + delta, cap));
-      setOut(n);
-      seekTo(n);
-    }
-  };
-
-  const preset = (seconds: number) => {
+  const preset = (sec: number) => {
     const e = sEnd;
-    const s = Math.max(sStart, e - seconds);
+    const s = Math.max(sStart, e - sec);
     setIn(s);
     setOut(e);
     seekTo(s);
@@ -271,7 +243,7 @@ export function CreateClipModal({
       setError('Title must be at least 3 characters');
       return;
     }
-    if (dur < MIN_DURATION || dur > MAX_DURATION) {
+    if (!validDur) {
       setError(`Clip must be ${MIN_DURATION}–${MAX_DURATION}s`);
       return;
     }
@@ -296,12 +268,45 @@ export function CreateClipModal({
     }
   };
 
-  /* ─── Render ─── */
-
+  /* ─── Derived ─── */
   const inPct = pct(inPt, sStart, span);
   const outPct = pct(outPt, sStart, span);
-  const headPct = pct(currentTime, sStart, span);
-  const validDur = dur >= MIN_DURATION && dur <= MAX_DURATION;
+  const headPct = pct(ct, sStart, span);
+
+  /* ─── Handle component ─── */
+  const Handle = ({
+    side,
+    pos,
+  }: {
+    side: 'in' | 'out';
+    pos: number;
+  }) => (
+    <div
+      className="absolute top-0 bottom-0 z-30 cursor-ew-resize"
+      style={{
+        left: `calc(${pos}% - 8px)`,
+        width: '16px',
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        setDragging(side);
+      }}
+      onTouchStart={(e) => {
+        e.stopPropagation();
+        setDragging(side);
+      }}
+    >
+      {/* Visible bar */}
+      <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[5px] bg-claw-accent rounded-full shadow-sm shadow-black/40 flex items-center justify-center">
+        {/* Grip dots */}
+        <div className="flex flex-col gap-[3px]">
+          <div className="w-[3px] h-[3px] rounded-full bg-white/70" />
+          <div className="w-[3px] h-[3px] rounded-full bg-white/70" />
+          <div className="w-[3px] h-[3px] rounded-full bg-white/70" />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -319,9 +324,6 @@ export function CreateClipModal({
               <polygon points="10 8 16 12 10 16 10 8" />
             </svg>
             <h3 className="text-lg font-bold">Clip Editor</h3>
-            <span className="text-xs text-claw-text-muted ml-1 hidden sm:inline">
-              {agentName}
-            </span>
           </div>
           <button onClick={onClose} disabled={submitting} className="text-claw-text-muted hover:text-claw-text transition-colors p-1">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -331,9 +333,9 @@ export function CreateClipModal({
           </button>
         </div>
 
-        {/* Body — scrollable */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {/* Video Preview */}
+          {/* Video */}
           <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
             {!ready && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -343,17 +345,12 @@ export function CreateClipModal({
                 </div>
               </div>
             )}
-            <video
-              ref={videoRef}
-              className="w-full h-full object-contain"
-              playsInline
-              muted
-            />
+            <video ref={videoRef} className="w-full h-full object-contain" playsInline />
           </div>
 
-          {/* Transport controls */}
+          {/* Transport */}
           <div className="flex items-center gap-3">
-            <button onClick={() => seekTo(Math.max(sStart, currentTime - 5))} className="p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors" title="-5s">
+            <button onClick={() => seekTo(Math.max(sStart, ct - 5))} className="p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="11 19 2 12 11 5 11 19" />
                 <polygon points="22 19 13 12 22 5 22 19" />
@@ -371,147 +368,96 @@ export function CreateClipModal({
                 </svg>
               )}
             </button>
-            <button onClick={() => seekTo(Math.min(sEnd, currentTime + 5))} className="p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors" title="+5s">
+            <button onClick={() => seekTo(Math.min(sEnd, ct + 5))} className="p-1.5 rounded-md bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="13 19 22 12 13 5 13 19" />
                 <polygon points="2 19 11 12 2 5 2 19" />
               </svg>
             </button>
-
             <div className="flex-1" />
-
             <span className="text-sm font-mono text-claw-text-muted tabular-nums">
-              {fmtOffset(sEnd, currentTime)}
-            </span>
-            <span className="text-xs text-claw-text-muted/40">
-              {Math.round(span)}s available
+              -{fmtSec(sEnd - ct)}
             </span>
           </div>
 
-          {/* Timeline */}
-          <div className="space-y-1">
+          {/* ═══ Timeline bar ═══ */}
+          <div>
             <div
               ref={trackRef}
-              className="relative h-10 bg-claw-bg rounded-lg cursor-pointer select-none border border-claw-border"
+              className="relative h-12 bg-claw-bg rounded-lg cursor-pointer select-none border border-claw-border overflow-hidden"
               onClick={trackClick}
             >
               {/* Selected region */}
               <div
-                className="absolute top-0 bottom-0 bg-claw-accent/20 border-y border-claw-accent/40"
-                style={{ left: `${inPct}%`, width: `${outPct - inPct}%` }}
-              />
+                className="absolute top-0 bottom-0 bg-claw-accent/20"
+                style={{ left: `${inPct}%`, width: `${Math.max(0, outPct - inPct)}%` }}
+              >
+                {/* Top/bottom accent edges */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-claw-accent/60" />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-claw-accent/60" />
+
+                {/* Duration label centered in selection */}
+                {outPct - inPct > 8 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className={`text-xs font-bold tabular-nums px-2 py-0.5 rounded-full ${validDur ? 'bg-claw-accent/30 text-claw-accent' : 'bg-red-500/30 text-red-400'}`}>
+                      {fmtSec(dur)}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {/* Playhead */}
               <div
-                className="absolute top-0 bottom-0 w-0.5 bg-white/80 z-20 pointer-events-none"
+                className="absolute top-0 bottom-0 w-0.5 bg-white z-20 pointer-events-none"
                 style={{ left: `${headPct}%` }}
-              />
-
-              {/* IN handle */}
-              <div
-                className="absolute top-0 bottom-0 w-3 z-30 cursor-ew-resize group"
-                style={{ left: `calc(${inPct}% - 6px)` }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  setDragging('in');
-                }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setDragging('in');
-                }}
               >
-                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 bg-claw-accent rounded-full group-hover:w-1.5 transition-all" />
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono text-claw-accent whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                  IN {fmtOffset(sEnd, inPt)}
-                </div>
+                <div className="absolute -top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white rounded-full shadow" />
               </div>
 
-              {/* OUT handle */}
-              <div
-                className="absolute top-0 bottom-0 w-3 z-30 cursor-ew-resize group"
-                style={{ left: `calc(${outPct}% - 6px)` }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  setDragging('out');
-                }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setDragging('out');
-                }}
-              >
-                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 bg-claw-accent rounded-full group-hover:w-1.5 transition-all" />
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono text-claw-accent whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                  OUT {fmtOffset(sEnd, outPt)}
-                </div>
-              </div>
+              {/* Handles */}
+              <Handle side="in" pos={inPct} />
+              <Handle side="out" pos={outPct} />
             </div>
 
-            {/* Labels below timeline */}
-            <div className="flex justify-between text-[10px] text-claw-text-muted/50 font-mono px-1">
-              <span>{fmtOffset(sEnd, sStart)}</span>
+            {/* Time labels */}
+            <div className="flex justify-between text-[10px] text-claw-text-muted/50 font-mono mt-1 px-0.5">
+              <span>-{fmtSec(span)}</span>
               <span>LIVE</span>
             </div>
           </div>
 
-          {/* Fine controls row */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* IN controls */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-claw-accent w-7">IN</span>
-              <button onClick={() => adjust('in', -1)} className="px-2 py-1 text-xs rounded bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">-1s</button>
-              <span className="text-xs font-mono text-claw-text tabular-nums w-12 text-center">{fmtOffset(sEnd, inPt)}</span>
-              <button onClick={() => adjust('in', 1)} className="px-2 py-1 text-xs rounded bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">+1s</button>
-            </div>
-
-            {/* OUT controls */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-claw-accent w-7">OUT</span>
-              <button onClick={() => adjust('out', -1)} className="px-2 py-1 text-xs rounded bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">-1s</button>
-              <span className="text-xs font-mono text-claw-text tabular-nums w-12 text-center">{fmtOffset(sEnd, outPt)}</span>
-              <button onClick={() => adjust('out', 1)} className="px-2 py-1 text-xs rounded bg-claw-card border border-claw-border hover:bg-claw-bg transition-colors">+1s</button>
-            </div>
-
-            <div className="flex-1" />
-
-            {/* Duration badge */}
-            <div className={`px-3 py-1 rounded-full text-xs font-bold tabular-nums ${validDur ? 'bg-claw-accent/15 text-claw-accent' : 'bg-red-500/15 text-red-400'}`}>
-              {fmtDuration(dur)}
-            </div>
-          </div>
-
-          {/* Presets */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-claw-text-muted">Quick:</span>
+          {/* Presets + duration */}
+          <div className="flex items-center gap-2 flex-wrap">
             {[15, 30, 60].map((s) => (
               <button
                 key={s}
                 onClick={() => preset(s)}
-                className="px-3 py-1 text-xs font-semibold rounded-md bg-claw-card border border-claw-border hover:border-claw-accent/40 hover:bg-claw-bg transition-all"
+                disabled={span < s}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-claw-card border border-claw-border hover:border-claw-accent/40 hover:bg-claw-bg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 Last {s}s
               </button>
             ))}
             <div className="flex-1" />
-            <span className="text-[10px] text-claw-text-muted/40 hidden sm:inline">
-              Shortcuts: Space play · I/O set points · Arrow seek
-            </span>
+            {!validDur && dur > 0 && (
+              <span className="text-xs text-red-400">
+                {dur < MIN_DURATION ? `Min ${MIN_DURATION}s` : `Max ${MAX_DURATION}s`}
+              </span>
+            )}
           </div>
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium mb-1.5">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value.slice(0, 100))}
-              placeholder={`Clip from ${agentName}...`}
-              className="w-full px-3 py-2 bg-claw-bg border border-claw-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-claw-accent/50 focus:border-claw-accent placeholder:text-claw-text-muted/40"
+              placeholder={`Name this clip...`}
+              className="w-full px-3 py-2.5 bg-claw-bg border border-claw-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-claw-accent/50 focus:border-claw-accent placeholder:text-claw-text-muted/40"
               disabled={submitting}
             />
-            <p className="text-xs text-claw-text-muted/50 mt-1 text-right">{title.length}/100</p>
           </div>
 
-          {/* Error */}
           {error && (
             <p className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
               {error}
@@ -521,11 +467,7 @@ export function CreateClipModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-claw-border flex-shrink-0">
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="px-4 py-2 text-sm font-semibold rounded-lg text-claw-text-muted hover:text-claw-text transition-colors"
-          >
+          <button onClick={onClose} disabled={submitting} className="px-4 py-2 text-sm font-semibold rounded-lg text-claw-text-muted hover:text-claw-text transition-colors">
             Cancel
           </button>
           <button
@@ -539,12 +481,7 @@ export function CreateClipModal({
                 Creating...
               </>
             ) : (
-              <>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Create Clip
-              </>
+              'Create Clip'
             )}
           </button>
         </div>
