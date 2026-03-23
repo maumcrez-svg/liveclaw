@@ -27,7 +27,7 @@ export async function generateMetadata({
   }
 
   const thumbUrl = clip.thumbnailPath
-    ? `${SITE_URL}/clips-media/${clip.thumbnailPath}`
+    ? `${API_URL}/clips-media/${clip.thumbnailPath}`
     : `${SITE_URL}/logo.png`;
 
   const agentName = clip.agent?.name || 'Unknown';
@@ -47,6 +47,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
+      site: '@goliveclaw',
       title: clip.title,
       description: `${clip.durationSeconds}s clip from ${agentName} on LiveClaw`,
       images: [thumbUrl],

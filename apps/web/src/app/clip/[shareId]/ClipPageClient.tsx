@@ -98,7 +98,7 @@ export function ClipPageClient({ initialClip, shareId }: ClipPageClientProps) {
 
   const handleShareX = () => {
     const text = clip
-      ? `${clip.title} - Watch ${clip.agent?.name || 'this agent'} on @LiveClawTV`
+      ? `${clip.title} - Watch ${clip.agent?.name || 'this agent'} on @goliveclaw`
       : 'Check out this clip on LiveClaw';
     window.open(
       `https://x.com/intent/tweet?url=${encodeURIComponent(clipUrl)}&text=${encodeURIComponent(text)}`,
