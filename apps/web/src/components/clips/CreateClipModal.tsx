@@ -37,6 +37,7 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
   const [sStart, setSStart] = useState(0);
   const [sEnd, setSEnd] = useState(0);
   const frozenRef = useRef(false);
+  const frozenAtRef = useRef(0); // wall-clock ms when range was frozen
 
   const [inPt, setIn] = useState(0);
   const [outPt, setOut] = useState(0);
@@ -98,6 +99,7 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
       setOut(e);
       setIn(Math.max(s, e - d));
       frozenRef.current = true;
+      frozenAtRef.current = Date.now();
       setReady(true);
       // Seek to start of default selection
       v.currentTime = Math.max(s, e - d);
@@ -205,7 +207,9 @@ export function CreateClipModal({ hlsSrc, agentId, streamId, agentName, onClose,
           streamId: streamId || undefined,
           title: title.trim(),
           duration: dur,
-          offsetFromEnd: Math.round(sEnd - inPt),
+          // Compensate for time elapsed since editor opened —
+          // the live stream advanced, so the content is now further from the edge
+          offsetFromEnd: Math.round((sEnd - inPt) + (Date.now() - frozenAtRef.current) / 1000),
         }),
       });
       onCreated(result.shareId);
