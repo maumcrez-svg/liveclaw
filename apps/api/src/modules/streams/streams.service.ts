@@ -115,11 +115,21 @@ export class StreamsService {
     }
 
     if (event === 'publish') {
-      // One active source per channel: reject if already live
+      // Agent already live — check if stream record exists.
+      // If status is live but no stream record, create one (fixes orphaned state).
       if (agent.status === 'live') {
+        const existingStream = await this.getCurrentStream(agent.id);
+        if (existingStream) {
+          this.logger.log(
+            `[CONFLICT] Publish event for agent "${agent.slug}" but already live with stream — ignoring duplicate`,
+          );
+          return;
+        }
+        // Agent is live but has no stream record — create one to fix the orphaned state
         this.logger.warn(
-          `[CONFLICT] Publish event for agent "${agent.slug}" but already live — ignoring duplicate`,
+          `[REPAIR] Agent "${agent.slug}" is live but has no stream record — creating one`,
         );
+        await this.startStream(agent.id, agent.name);
         return;
       }
 
