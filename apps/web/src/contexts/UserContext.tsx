@@ -275,11 +275,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === 'admin';
   const isCreator = user?.role === 'creator' || isAdmin;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const contextValue = useMemo(() => ({
     user, isLoggedIn: !!user, loginWithWallet, loginWithCredentials,
     logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal,
     isAdmin, isCreator,
-  }), [user, showLoginModal, loginWithWallet, loginWithCredentials, logout, becomeCreator, updateUser]);
+  }), [user, showLoginModal]);
 
   return (
     <UserContext.Provider value={contextValue}>
