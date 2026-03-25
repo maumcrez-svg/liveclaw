@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
@@ -275,15 +275,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === 'admin';
   const isCreator = user?.role === 'creator' || isAdmin;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const contextValue = useMemo(() => ({
-    user, isLoggedIn: !!user, loginWithWallet, loginWithCredentials,
-    logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal,
-    isAdmin, isCreator,
-  }), [user, showLoginModal]);
-
   return (
-    <UserContext.Provider value={contextValue}>
+    <UserContext.Provider
+      value={{ user, isLoggedIn: !!user, loginWithWallet, loginWithCredentials, logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal, isAdmin, isCreator }}
+    >
       {children}
       {showLoginModal && <WalletConnectModal onClose={() => setShowLoginModal(false)} />}
     </UserContext.Provider>
