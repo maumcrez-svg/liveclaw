@@ -73,12 +73,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly moderationService: ModerationService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {
-    // Clear stale viewer sets from previous deploy — Redis persists but
-    // in-memory socket tracking doesn't, so old viewer IDs become ghosts
-    this.chatService.clearAllViewers().catch(() => {});
-
     // Heartbeat: every 60s, evict viewers whose sockets are dead but weren't cleaned up
     this.heartbeatInterval = setInterval(() => this.evictStaleViewers(), 60_000);
+
+    // Clear stale viewer sets 5s after startup — Redis persists but
+    // in-memory socket tracking doesn't, so old viewer IDs become ghosts.
+    // Delay ensures ChatService Redis clients are initialized via onModuleInit.
+    setTimeout(() => {
+      this.chatService.clearAllViewers().catch((err) => {
+        this.logger.warn('Failed to clear stale viewers on startup', err);
+      });
+    }, 5000);
   }
 
   // FIX Bug #16: eviction now broadcasts count changes
