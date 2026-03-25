@@ -88,6 +88,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // FIX Bug #16: eviction now broadcasts count changes
   private async evictStaleViewers(): Promise<void> {
+    if (!this.server) return; // Server not yet injected by WebSocketServer decorator
     const now = Date.now();
     const staleThreshold = 300_000; // 5 minutes
     let evicted = 0;
