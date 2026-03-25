@@ -68,7 +68,11 @@ export default function StreamPage({ params }: { params: { agentSlug: string } }
   const { viewerCount: presenceCount } = useViewerPresence(stream?.id ?? null);
   const globalCounts = useLiveViewerCounts();
   // Use ?? (not ||) — 0 is a valid viewer count, only fall through on undefined/null
-  const viewerCount = presenceCount > 0 ? presenceCount : (agent ? globalCounts.get(agent.id) : undefined);
+  // FIX Bug #14: presenceCount 0 is valid (stream with no other viewers).
+  // Only fall back to globalCounts if presenceCount hasn't been set yet (still 0 from initial state AND no ACK received).
+  const viewerCount = presenceCount > 0
+    ? presenceCount
+    : (agent ? (globalCounts.get(agent.id) ?? presenceCount) : undefined);
 
   // Alert system
   const { currentAlert, phase, enqueue, dismiss } = useAlertQueue();

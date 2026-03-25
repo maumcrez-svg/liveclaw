@@ -62,15 +62,29 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Single batch UPDATE instead of N individual saves
+      // FIX Bug #6: use parameterized queries to prevent SQL injection
       if (updates.length > 0) {
-        const viewerCases = updates.map(u => `WHEN id = '${u.id}' THEN ${u.count}`).join(' ');
-        const peakCases = updates.map(u => `WHEN id = '${u.id}' THEN ${u.peak}`).join(' ');
-        const ids = updates.map(u => `'${u.id}'`).join(',');
+        const params: any[] = [];
+        const viewerCases = updates.map((u, i) => {
+          params.push(u.id, u.count);
+          return `WHEN id = $${i * 2 + 1} THEN $${i * 2 + 2}`;
+        }).join(' ');
+        const offset = params.length;
+        const peakCases = updates.map((u, i) => {
+          params.push(u.id, u.peak);
+          return `WHEN id = $${offset + i * 2 + 1} THEN $${offset + i * 2 + 2}`;
+        }).join(' ');
+        const idsOffset = params.length;
+        const idPlaceholders = updates.map((u, i) => {
+          params.push(u.id);
+          return `$${idsOffset + i + 1}`;
+        }).join(',');
         await this.streamRepo.query(
           `UPDATE streams SET
             current_viewers = CASE ${viewerCases} ELSE current_viewers END,
             peak_viewers = CASE ${peakCases} ELSE peak_viewers END
-          WHERE id IN (${ids})`,
+          WHERE id IN (${idPlaceholders})`,
+          params,
         );
       }
     } catch (err) {

@@ -52,6 +52,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Cache streamId → agentId to avoid repeated DB lookups */
   private streamAgentMap: Map<string, string> = new Map();
 
+  /** Track which Redis channels we've already subscribed to (dedup) */
+  private subscribedChannels: Set<string> = new Set();
+
   /** Track last heartbeat response time per client */
   private clientLastSeen: Map<string, number> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -74,26 +77,33 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.heartbeatInterval = setInterval(() => this.evictStaleViewers(), 60_000);
   }
 
+  // FIX Bug #16: eviction now broadcasts count changes
   private async evictStaleViewers(): Promise<void> {
     const now = Date.now();
-    // Only evict viewers who haven't sent a heartbeat or joined in 5 minutes.
-    // Do NOT rely on this.server.sockets.sockets — it's unreliable and returns
-    // null for sockets that are still alive and emitting events.
-    // Socket.IO's own ping/pong (pingTimeout: 120s) handles truly dead sockets
-    // via handleDisconnect. This eviction is purely a last-resort cleanup.
     const staleThreshold = 300_000; // 5 minutes
     let evicted = 0;
     const evictedIds: string[] = [];
+    const affectedStreams: Map<string, number> = new Map();
+
     for (const [clientId, streamId] of this.clientStreams.entries()) {
       const lastSeen = this.clientLastSeen.get(clientId) ?? 0;
       if (lastSeen > 0 && now - lastSeen > staleThreshold) {
-        await this.chatService.removeViewer(streamId, clientId);
+        const count = await this.chatService.removeViewer(streamId, clientId);
         this.clientStreams.delete(clientId);
         this.clientLastSeen.delete(clientId);
         evictedIds.push(clientId);
+        affectedStreams.set(streamId, count);
         evicted++;
       }
     }
+
+    // Broadcast updated counts for all affected streams
+    for (const [streamId, count] of affectedStreams.entries()) {
+      this.server.to(streamId).emit('viewer_count', { streamId, count });
+      const agentId = await this.resolveAgentId(streamId);
+      if (agentId) this.broadcastViewerUpdate(streamId, agentId, count);
+    }
+
     if (evicted > 0) {
       this.logger.log(`Evicted ${evicted} stale viewer(s): ${evictedIds.join(', ')}`);
     }
@@ -109,8 +119,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       (client.handshake.query?.token as string | undefined);
 
     if (!token) {
-      // Allow unauthenticated connections — they can join_stream (viewer count)
-      // and subscribe_counts but cannot send_message.
       client.data.anonymous = true;
       this.logger.log(`Anonymous client connected: ${client.id}`);
       return;
@@ -160,6 +168,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  // FIX Bug #3, #8: resolveAgentId always logs errors and has robust fallback
   async handleDisconnect(client: Socket) {
     const streamId = this.clientStreams.get(client.id);
     if (streamId) {
@@ -179,17 +188,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Global viewer counts — any client can subscribe to get real-time updates
   // ---------------------------------------------------------------------------
 
+  // FIX Bug #1: populate streamAgentMap for ALL live streams (not just count>0)
+  // so that subsequent broadcastViewerUpdate calls always resolve
   @SubscribeMessage('subscribe_counts')
   async handleSubscribeCounts(@ConnectedSocket() client: Socket) {
     client.join('counts');
 
-    // Send snapshot of all current viewer counts so client starts with full picture
     try {
       const streamRepo = this.agentRepo.manager.getRepository(StreamEntity);
       const liveStreams = await streamRepo.find({
         where: { isLive: true },
         select: ['id', 'agentId'],
       });
+
+      // Always populate streamAgentMap for ALL live streams (FIX Bug #4, #7)
+      for (const s of liveStreams) {
+        this.streamAgentMap.set(s.id, s.agentId);
+      }
+
       if (liveStreams.length > 0) {
         const countMap = await this.chatService.getViewerCountsBatch(
           liveStreams.map(s => s.id),
@@ -197,14 +213,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const entries: Array<{ agentId: string; count: number }> = [];
         for (const s of liveStreams) {
           const count = countMap.get(s.id) ?? 0;
-          if (count > 0) {
-            entries.push({ agentId: s.agentId, count });
-            this.streamAgentMap.set(s.id, s.agentId);
-          }
+          // Include ALL live streams in snapshot, even with 0 viewers (FIX Bug #7)
+          entries.push({ agentId: s.agentId, count });
         }
-        if (entries.length > 0) {
-          client.emit('viewer_count_snapshot', entries);
-        }
+        client.emit('viewer_count_snapshot', entries);
       }
     } catch (err) {
       this.logger.warn('Failed to send viewer count snapshot', err);
@@ -218,19 +230,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to('counts').emit('viewer_count_update', { streamId, agentId, count });
   }
 
-  /** Resolve agentId from streamId, with cache */
+  // FIX Bug #3: resolveAgentId now logs errors instead of swallowing them
   private async resolveAgentId(streamId: string): Promise<string | null> {
     const cached = this.streamAgentMap.get(streamId);
     if (cached) return cached;
     try {
       const stream = await this.agentRepo.manager
-        .getRepository('StreamEntity')
+        .getRepository(StreamEntity)
         .findOne({ where: { id: streamId }, select: ['id', 'agentId'] });
       if (stream) {
-        this.streamAgentMap.set(streamId, (stream as any).agentId);
-        return (stream as any).agentId;
+        this.streamAgentMap.set(streamId, stream.agentId);
+        return stream.agentId;
       }
-    } catch {}
+      this.logger.warn(`[resolveAgentId] No stream found for id=${streamId}`);
+    } catch (err) {
+      this.logger.error(`[resolveAgentId] DB error for stream=${streamId}: ${err.message}`);
+    }
     return null;
   }
 
@@ -243,14 +258,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { streamId: string },
   ) {
-    // Allow anonymous viewers to join streams (they count as viewers but can't chat)
     const prevStream = this.clientStreams.get(client.id);
 
-    // Idempotent: same socket re-joining same stream — just refresh lastSeen
+    // Idempotent: same socket re-joining same stream — refresh lastSeen + broadcast current count
+    // FIX Bug #13: always broadcast on re-join so listeners get fresh data
     if (prevStream === data.streamId) {
       this.clientLastSeen.set(client.id, Date.now());
       const count = await this.chatService.getViewerCount(data.streamId);
-      this.logger.log(`[JOIN-NOOP] stream=${data.streamId} socket=${client.id} count=${count}`);
+      this.server.to(data.streamId).emit('viewer_count', { streamId: data.streamId, count });
       return { streamId: data.streamId, viewerCount: count };
     }
 
@@ -264,37 +279,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.join(data.streamId);
     this.clientStreams.set(client.id, data.streamId);
     this.clientLastSeen.set(client.id, Date.now());
-    const countBefore = await this.chatService.getViewerCount(data.streamId);
     const count = await this.chatService.addViewer(data.streamId, client.id);
     this.logger.log(
       `[JOIN] stream=${data.streamId} socket=${client.id} ` +
       `anon=${!!client.data.anonymous} user=${client.data.username ?? 'none'} ` +
-      `prevStream=${prevStream ?? 'none'} countBefore=${countBefore} countAfter=${count}`,
+      `prevStream=${prevStream ?? 'none'} countAfter=${count}`,
     );
+
+    // Broadcast to stream room AND global counts room
     this.server
       .to(data.streamId)
       .emit('viewer_count', { streamId: data.streamId, count });
 
-    // Broadcast to global counts subscribers
     const agentId = await this.resolveAgentId(data.streamId);
     if (agentId) this.broadcastViewerUpdate(data.streamId, agentId, count);
 
-    await this.chatService.subscribe(data.streamId, (message) => {
-      this.server.to(data.streamId).emit('new_message', JSON.parse(message));
-    });
+    // FIX Bug #9: deduplicate Redis subscriptions — only subscribe once per channel
+    await this.ensureRedisSubscription(data.streamId);
 
-    await this.chatService.subscribeAlerts(data.streamId, (alertJson) => {
-      this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
-    });
-
-    // Return WITHOUT `event` property so NestJS calls the client ACK callback
     return { streamId: data.streamId, viewerCount: count };
   }
 
   /**
    * Join a stream room for chat messages only — no viewer counting.
-   * Used by the chat socket so it receives new_message broadcasts
-   * without inflating the viewer count (presence is handled separately).
    */
   @SubscribeMessage('join_chat')
   async handleJoinChat(
@@ -304,17 +311,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.join(data.streamId);
     this.logger.log(`Chat-only join for stream ${data.streamId} (client: ${client.id})`);
 
-    // Subscribe to Redis pub/sub so messages flow to this room
-    await this.chatService.subscribe(data.streamId, (message) => {
-      this.server.to(data.streamId).emit('new_message', JSON.parse(message));
-    });
+    // FIX Bug #9: deduplicate Redis subscriptions
+    await this.ensureRedisSubscription(data.streamId);
 
-    await this.chatService.subscribeAlerts(data.streamId, (alertJson) => {
-      this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
-    });
-
-    // Return WITHOUT `event` property so NestJS calls the client ACK callback
     return { streamId: data.streamId };
+  }
+
+  // FIX Bug #9: centralized Redis subscription with deduplication
+  private async ensureRedisSubscription(streamId: string): Promise<void> {
+    const chatChannel = `chat:${streamId}`;
+    const alertChannel = `alerts:${streamId}`;
+
+    if (!this.subscribedChannels.has(chatChannel)) {
+      this.subscribedChannels.add(chatChannel);
+      await this.chatService.subscribe(streamId, (message) => {
+        this.server.to(streamId).emit('new_message', JSON.parse(message));
+      });
+    }
+
+    if (!this.subscribedChannels.has(alertChannel)) {
+      this.subscribedChannels.add(alertChannel);
+      await this.chatService.subscribeAlerts(streamId, (alertJson) => {
+        this.server.to(streamId).emit('stream_alert', JSON.parse(alertJson));
+      });
+    }
   }
 
   @SubscribeMessage('viewer_heartbeat')
@@ -349,11 +369,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { streamId: string },
   ) {
     client.join(data.streamId);
-
-    await this.chatService.subscribeAlerts(data.streamId, (alertJson) => {
-      this.server.to(data.streamId).emit('stream_alert', JSON.parse(alertJson));
-    });
-
+    await this.ensureRedisSubscription(data.streamId);
     return { streamId: data.streamId };
   }
 
@@ -429,8 +445,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
         }
 
-        // Record current send time with a TTL so Redis does not accumulate
-        // stale keys indefinitely.
         await this.chatService.setRedisKey(
           lastMsgKey,
           String(now),

@@ -19,6 +19,15 @@ export function useViewerPresence(streamId: string | null) {
     let joinEmitted = false;
     let joining = false;
 
+    // FIX Bug #10: register listener BEFORE emitting join_stream
+    // so we never miss broadcasts that happen during the ACK wait
+    const onViewerCount = (data: { streamId: string; count: number }) => {
+      if (data.streamId === streamId) {
+        setViewerCount(data.count);
+      }
+    };
+    socket.on('viewer_count', onViewerCount);
+
     const doJoin = () => {
       if (!active || acked || joining || !socket.connected) return;
       joining = true;
@@ -28,7 +37,6 @@ export function useViewerPresence(streamId: string | null) {
         joining = false;
         if (!active) return;
         acked = true;
-        // NestJS ACK returns raw object (no event wrapper)
         const count = response?.viewerCount ?? response?.data?.viewerCount;
         console.info(`[Presence] join_stream ACK ← count: ${count}`);
         if (count != null) {
@@ -37,14 +45,12 @@ export function useViewerPresence(streamId: string | null) {
       });
     };
 
-    // On reconnect, server lost us — reset acked so we re-join
     const onDisconnect = () => {
       acked = false;
       joinEmitted = false;
       console.info('[Presence] disconnected — will re-join on reconnect');
     };
 
-    // Register connect listener FIRST, then try immediately
     socket.on('connect', doJoin);
     socket.on('disconnect', onDisconnect);
     doJoin();
@@ -62,14 +68,6 @@ export function useViewerPresence(streamId: string | null) {
       }, delay);
     };
     scheduleRetry();
-
-    // Listen for broadcast updates (other viewers joining/leaving)
-    const onViewerCount = (data: { streamId: string; count: number }) => {
-      if (data.streamId === streamId) {
-        setViewerCount(data.count);
-      }
-    };
-    socket.on('viewer_count', onViewerCount);
 
     // Heartbeat
     const heartbeat = setInterval(() => {
