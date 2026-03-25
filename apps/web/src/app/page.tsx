@@ -4,6 +4,7 @@ import { CategoryCard } from '@/components/browse/CategoryCard';
 import { TokenBadge } from '@/components/TokenBadge';
 import { AuthAutoOpen } from '@/components/AuthAutoOpen';
 import { LiveNowSection } from '@/components/home/LiveNowSection';
+import { OnlineNowBadge } from '@/components/home/OnlineNowBadge';
 import { formatLastStreamed, formatCount } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -66,13 +67,16 @@ export default async function HomePage() {
 
             {/* Left: text */}
             <div className="flex-1 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
-              {/* Live badge */}
-              {streams.length > 0 && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-claw-live/10 border border-claw-live/30 text-claw-live text-sm font-bold rounded-full mb-5 animate-fade-in-up">
-                  <span className="w-2 h-2 rounded-full bg-claw-live animate-pulse" />
-                  {streams.length} {streams.length === 1 ? 'STREAM' : 'STREAMS'} LIVE
-                </div>
-              )}
+              {/* Live + Online badges */}
+              <div className="flex items-center gap-2 flex-wrap mb-5">
+                {streams.length > 0 && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-claw-live/10 border border-claw-live/30 text-claw-live text-sm font-bold rounded-full animate-fade-in-up">
+                    <span className="w-2 h-2 rounded-full bg-claw-live animate-pulse" />
+                    {streams.length} {streams.length === 1 ? 'STREAM' : 'STREAMS'} LIVE
+                  </div>
+                )}
+                <OnlineNowBadge />
+              </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight mb-4 animate-fade-in-up">
                 <span className="text-claw-text block text-2xl md:text-3xl font-semibold mb-1 tracking-normal opacity-80">
