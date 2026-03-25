@@ -1,4 +1,4 @@
-import type { RawArticle } from '../models/types';
+import type { RawArticle, NewsCategory } from '../models/types';
 import { config } from '../config';
 import crypto from 'crypto';
 
@@ -126,7 +126,7 @@ export async function fetchTwitterSignals(): Promise<RawArticle[]> {
 
         // Engagement filter — skip noise
         const engagement = (tweet.likeCount || 0) + (tweet.retweetCount || 0) * 2 + (tweet.replyCount || 0);
-        if (engagement < 3 && (tweet.viewCount || 0) < 100) continue;
+        if (engagement < 1 && (tweet.viewCount || 0) < 50) continue;
 
         const id = crypto.createHash('md5').update(tweet.id).digest('hex').slice(0, 12);
         const author = tweet.author?.userName || 'unknown';
@@ -138,7 +138,7 @@ export async function fetchTwitterSignals(): Promise<RawArticle[]> {
           url: tweet.url || `https://x.com/${author}/status/${tweet.id}`,
           source: `Twitter/@${author}`,
           publishedAt: new Date(tweet.createdAt).toISOString(),
-          category: 'culture',
+          category: detectCategory(tweet.text, author),
           layer: 'social_twitter',
           signalType: detectSignalType(tweet.text),
         });
@@ -162,5 +162,16 @@ function detectSignalType(text: string): 'builder' | 'launch' | 'narrative' | 'c
   if (/deploy|ship|launch|live on|mainnet|just dropped/.test(lower)) return 'launch';
   if (/build|dev|hack|grant|code|commit|pr merged/.test(lower)) return 'builder';
   if (/narrative|trend|alpha|signal|thesis/.test(lower)) return 'narrative';
+  return 'culture';
+}
+
+function detectCategory(text: string, author: string): NewsCategory {
+  const lower = text.toLowerCase();
+  const coreAccounts = ['base', 'coinbase', 'jessepollak', 'buildonbase'];
+  if (coreAccounts.includes(author.toLowerCase())) return 'base_ecosystem';
+  if (/deploy|ship|launch|live on|mainnet/.test(lower)) return 'launch';
+  if (/build|dev|hack|grant|code|commit/.test(lower)) return 'builder';
+  if (/tvl|gas|block|transaction|onchain/.test(lower)) return 'onchain';
+  if (/defi|swap|liquidity|pool|yield/.test(lower)) return 'defi';
   return 'culture';
 }

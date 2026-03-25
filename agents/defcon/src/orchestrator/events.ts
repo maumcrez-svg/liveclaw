@@ -30,7 +30,7 @@ export interface DefconEvents {
   'intel:defcon-change': (newLevel: number, oldLevel: number) => void;
   'intel:osint-update': (count: number) => void;
   'intel:flight-count': (count: number) => void;
-  'intel:vessel-count': (count: number) => void;
+  'intel:seismic-count': (count: number) => void;
   'intel:military-flight': (flight: { callsign: string; type: string; lat: number; lon: number; alt: number; heading: number }) => void;
   'sitrep:request': () => void;
   'mode:change': (mode: string) => void;

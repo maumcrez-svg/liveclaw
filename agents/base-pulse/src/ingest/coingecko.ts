@@ -77,29 +77,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     console.error('[CoinGecko] Prices fetch failed:', err);
   }
 
-  try {
-    const trendRes = await fetch(COINGECKO.trending, {
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (trendRes.ok) {
-      const trending = (await trendRes.json()) as CoinGeckoTrending;
-      const trendingMovers = trending.coins.slice(0, 5).map((c) => ({
-        symbol: c.item.symbol.toUpperCase(),
-        name: c.item.name,
-        change: c.item.data?.price_change_percentage_24h?.usd ?? 0,
-        price: c.item.data?.price ?? 0,
-      }));
-
-      for (const mover of trendingMovers) {
-        if (!snapshot.topMovers.find((m) => m.symbol === mover.symbol)) {
-          snapshot.topMovers.push(mover);
-        }
-      }
-    }
-  } catch (err) {
-    console.error('[CoinGecko] Trending fetch failed:', err);
-  }
+  // Global trending removed — Base Pulse only shows Base ecosystem tokens
 
   // Sort movers by absolute change
   snapshot.topMovers.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));

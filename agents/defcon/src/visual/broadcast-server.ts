@@ -59,13 +59,13 @@ app.get('/api/proxy', async (req, res) => {
   }
 });
 
-// Vessel data proxy (Digitraffic AIS — free, no auth)
-app.get('/api/vessels', async (_req, res) => {
+// Seismic data proxy (USGS Earthquake API — free, no auth)
+app.get('/api/seismic', async (_req, res) => {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     const response = await fetch(
-      'https://meri.digitraffic.fi/api/ais/v1/vessels',
+      'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson',
       {
         signal: controller.signal,
         headers: { 'User-Agent': 'DEFCON-Agent/1.0' },
@@ -78,7 +78,7 @@ app.get('/api/vessels', async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.send(data);
   } catch (err) {
-    console.error('[BroadcastServer] Vessel fetch failed:', err);
+    console.error('[BroadcastServer] Seismic fetch failed:', err);
     res.status(502).json({ error: String(err) });
   }
 });

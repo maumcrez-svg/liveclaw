@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
@@ -275,10 +275,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === 'admin';
   const isCreator = user?.role === 'creator' || isAdmin;
 
+  const contextValue = useMemo(() => ({
+    user, isLoggedIn: !!user, loginWithWallet, loginWithCredentials,
+    logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal,
+    isAdmin, isCreator,
+  }), [user, showLoginModal, loginWithWallet, loginWithCredentials, logout, becomeCreator, updateUser]);
+
   return (
-    <UserContext.Provider
-      value={{ user, isLoggedIn: !!user, loginWithWallet, loginWithCredentials, logout, becomeCreator, updateUser, showLoginModal, setShowLoginModal, isAdmin, isCreator }}
-    >
+    <UserContext.Provider value={contextValue}>
       {children}
       {showLoginModal && <WalletConnectModal onClose={() => setShowLoginModal(false)} />}
     </UserContext.Provider>

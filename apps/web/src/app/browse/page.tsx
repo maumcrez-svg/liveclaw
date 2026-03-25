@@ -22,31 +22,43 @@ export default function BrowsePage() {
   const [fetchError, setFetchError] = useState(false);
   const [sort, setSort] = useState<SortOption>('viewers');
 
-  const load = useCallback(async (isInitial = false) => {
+  const load = useCallback(async (isInitial = false, signal?: AbortSignal) => {
     try {
       const [cats, liveStreams] = await Promise.all([
-        fetch(`${API_URL}/categories?sort=viewers`).then((r) => (r.ok ? r.json() : [])),
-        fetch(`${API_URL}/streams/live?sort=viewers`).then((r) => (r.ok ? r.json() : [])),
+        fetch(`${API_URL}/categories?sort=viewers`, { signal }).then((r) => (r.ok ? r.json() : [])),
+        fetch(`${API_URL}/streams/live?sort=viewers`, { signal }).then((r) => (r.ok ? r.json() : [])),
       ]);
       setCategories(cats);
       setStreams(liveStreams);
       setFetchError(false);
       if (!isInitial) {
-        console.info(`[Browse] Poll refresh: ${cats.length} categories, ${liveStreams.length} streams`);
+        console.info(`[Browse] Visibility refresh: ${cats.length} categories, ${liveStreams.length} streams`);
       } else {
         console.info(`[Browse] Loaded ${cats.length} categories, ${liveStreams.length} live streams`);
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setFetchError(true);
-      console.warn('[Browse] Fetch failed, will retry in 30s');
     }
     if (isInitial) setLoading(false);
   }, []);
 
   useEffect(() => {
-    load(true);
-    const interval = setInterval(() => load(false), 30000);
-    return () => clearInterval(interval);
+    const ac = new AbortController();
+    let lastFetchAt = 0;
+
+    load(true, ac.signal).then(() => { lastFetchAt = Date.now(); });
+
+    const onVisibility = () => {
+      if (!document.hidden && Date.now() - lastFetchAt > 30_000) {
+        load(false, ac.signal).then(() => { lastFetchAt = Date.now(); });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      ac.abort();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [load]);
 
   const setTab = (t: Tab) => {

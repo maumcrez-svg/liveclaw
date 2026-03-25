@@ -450,7 +450,7 @@ Respond with valid JSON matching this schema:
   "segments": [
     {
       "id": "seg_01",
-      "type": "opening|builder_spotlight|signal_analysis|chain_radar|social_pulse|closing",
+      "type": "opening|builder_spotlight|signal_analysis|social_pulse|closing",
       "narration": "Full text to be spoken by TTS",
       "headline": "Text for lower third display",
       "subheadline": "Optional second line",
@@ -619,7 +619,7 @@ async function extractOpinionsLLM(
   episodeNumber: number,
 ): Promise<Array<{ topic: string; stance: string; episode: number }>> {
   const storySegments = segments
-    .filter(s => ['builder_spotlight', 'signal_analysis', 'chain_radar', 'social_pulse'].includes(s.type))
+    .filter(s => ['builder_spotlight', 'signal_analysis', 'social_pulse'].includes(s.type))
     .map(s => `[${s.headline || 'untitled'}]: ${s.narration}`)
     .join('\n\n');
 
@@ -665,7 +665,7 @@ function extractOpinionsRegex(
   const GENERIC_FILLERS = /^(this is|okay|so|well|let's|moving on)/i;
 
   for (const seg of segments) {
-    if (!['builder_spotlight', 'signal_analysis', 'chain_radar', 'social_pulse'].includes(seg.type)) continue;
+    if (!['builder_spotlight', 'signal_analysis', 'social_pulse'].includes(seg.type)) continue;
     const topic = seg.headline || 'unknown';
     const sentences = seg.narration.split(/[.!?]+/).filter(s => s.trim().length > 20);
     const opinion = sentences.find(s => {

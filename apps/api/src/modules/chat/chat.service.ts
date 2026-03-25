@@ -43,14 +43,35 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
 
   private async syncViewerCounts(): Promise<void> {
     try {
-      const liveStreams = await this.streamRepo.find({ where: { isLive: true } });
-      for (const stream of liveStreams) {
-        const count = await this.pub.scard(`viewers:${stream.id}`);
-        stream.currentViewers = count;
-        if (count > stream.peakViewers) {
-          stream.peakViewers = count;
-        }
-        await this.streamRepo.save(stream);
+      const liveStreams = await this.streamRepo.find({
+        where: { isLive: true },
+        select: ['id', 'peakViewers'],
+      });
+      if (liveStreams.length === 0) return;
+
+      // Redis pipeline: all SCARDs in a single round-trip
+      const pipeline = this.pub.pipeline();
+      for (const s of liveStreams) pipeline.scard(`viewers:${s.id}`);
+      const results = await pipeline.exec();
+
+      const updates: Array<{ id: string; count: number; peak: number }> = [];
+      for (let i = 0; i < liveStreams.length; i++) {
+        const count = (results?.[i]?.[1] as number) ?? 0;
+        const peak = Math.max(count, liveStreams[i].peakViewers);
+        updates.push({ id: liveStreams[i].id, count, peak });
+      }
+
+      // Single batch UPDATE instead of N individual saves
+      if (updates.length > 0) {
+        const viewerCases = updates.map(u => `WHEN id = '${u.id}' THEN ${u.count}`).join(' ');
+        const peakCases = updates.map(u => `WHEN id = '${u.id}' THEN ${u.peak}`).join(' ');
+        const ids = updates.map(u => `'${u.id}'`).join(',');
+        await this.streamRepo.query(
+          `UPDATE streams SET
+            current_viewers = CASE ${viewerCases} ELSE current_viewers END,
+            peak_viewers = CASE ${peakCases} ELSE peak_viewers END
+          WHERE id IN (${ids})`,
+        );
       }
     } catch (err) {
       console.error('Failed to sync viewer counts:', err);
@@ -105,6 +126,21 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
 
   async getViewerCount(streamId: string): Promise<number> {
     return this.pub.scard(`viewers:${streamId}`);
+  }
+
+  async getViewerCountsBatch(streamIds: string[]): Promise<Map<string, number>> {
+    if (streamIds.length === 0) return new Map();
+    const pipeline = this.pub.pipeline();
+    for (const id of streamIds) pipeline.scard(`viewers:${id}`);
+    const results = await pipeline.exec();
+    const map = new Map<string, number>();
+    if (results) {
+      for (let i = 0; i < streamIds.length; i++) {
+        const count = results[i]?.[1] as number;
+        if (count > 0) map.set(streamIds[i], count);
+      }
+    }
+    return map;
   }
 
   async clearViewers(streamId: string): Promise<void> {

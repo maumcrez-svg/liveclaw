@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface CategoryCardProps {
   category: {
@@ -21,10 +22,12 @@ export function CategoryCard({ category }: CategoryCardProps) {
       <div className="aspect-[2/3] rounded-lg overflow-hidden relative hover:scale-[1.03] hover:shadow-lg hover:shadow-black/20 transition-all duration-200">
         {category.imageUrl ? (
           <>
-            <img
+            <Image
               src={category.imageUrl}
               alt={category.name}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
+              className="object-cover"
             />
             {/* The image already has the category name baked in, so just overlay viewer count */}
             {viewers > 0 && (

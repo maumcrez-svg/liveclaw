@@ -81,4 +81,20 @@ export class AuthController {
   ): Promise<void> {
     return this.authService.logout(user.sub, refreshToken);
   }
+
+  /** Generate a one-time token for LiveClaw Studio deep-link auth. */
+  @Post('studio-token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async studioToken(@CurrentUser() user: JwtPayload): Promise<{ token: string }> {
+    return this.authService.generateStudioToken(user.sub);
+  }
+
+  /** Exchange a Studio deep-link token for a full auth session. */
+  @Post('exchange-studio-token')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async exchangeStudioToken(@Body('token') token: string): Promise<AuthResponse> {
+    return this.authService.exchangeStudioToken(token);
+  }
 }

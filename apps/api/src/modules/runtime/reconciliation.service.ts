@@ -57,7 +57,7 @@ export class ReconciliationService implements OnModuleInit {
    * Check agents that have a containerId in DB but container is dead/missing in Docker.
    */
   private async reconcileContainers() {
-    const allAgents = await this.agentsService.findAll();
+    const allAgents = await this.agentsService.findAllLightweight();
     const nonOfflineAgents = allAgents.filter(
       (a) =>
         a.streamingMode === 'native' &&
@@ -125,7 +125,7 @@ export class ReconciliationService implements OnModuleInit {
     }
 
     // Check agents marked as live in DB but without an active path in MediaMTX
-    const allAgents = await this.agentsService.findAll();
+    const allAgents = await this.agentsService.findAllLightweight();
     const liveAgents = allAgents.filter((a) => a.status === 'live');
 
     for (const agent of liveAgents) {

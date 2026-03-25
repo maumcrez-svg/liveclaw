@@ -153,6 +153,9 @@ async function launchBroadcastPage() {
 
   console.log('[Puppeteer] Broadcast page loaded');
 
+  // Lock broadcast — disables demo cycling
+  await page.evaluate(() => { (window as any).__lockBroadcast?.(); });
+
   initSpeechQueue(page);
   initAvatar(page);
 

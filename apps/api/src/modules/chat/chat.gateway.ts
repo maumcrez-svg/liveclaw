@@ -16,7 +16,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Server, Socket } from 'socket.io';
 import { createHash } from 'crypto';
-import * as bcrypt from 'bcrypt';
 import { ChatService } from './chat.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { EmotesService } from '../emotes/emotes.service';
@@ -117,17 +116,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    // Agent API key auth
+    // Agent API key auth — SHA-256 lookup is sufficient for high-entropy tokens
     if (token.startsWith('lc_')) {
       try {
         const sha256 = createHash('sha256').update(token).digest('hex');
         const agent = await this.agentRepo.findOne({ where: { apiKeySha256: sha256 } });
-        if (!agent || !agent.apiKeyHash) {
-          client.disconnect();
-          return;
-        }
-        const valid = await bcrypt.compare(token, agent.apiKeyHash);
-        if (!valid) {
+        if (!agent) {
           client.disconnect();
           return;
         }
@@ -197,9 +191,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         select: ['id', 'agentId'],
       });
       if (liveStreams.length > 0) {
+        const countMap = await this.chatService.getViewerCountsBatch(
+          liveStreams.map(s => s.id),
+        );
         const entries: Array<{ agentId: string; count: number }> = [];
         for (const s of liveStreams) {
-          const count = await this.chatService.getViewerCount(s.id);
+          const count = countMap.get(s.id) ?? 0;
           if (count > 0) {
             entries.push({ agentId: s.agentId, count });
             this.streamAgentMap.set(s.id, s.agentId);

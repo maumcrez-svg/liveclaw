@@ -54,9 +54,9 @@ export async function initBridge(page: Page): Promise<void> {
     bus.emit('intel:military-flight', flight);
   });
 
-  await page.exposeFunction('__onVesselCount', (count: number) => {
-    store.setVesselCount(count);
-    bus.emit('intel:vessel-count', count);
+  await page.exposeFunction('__onSeismicCount', (count: number) => {
+    store.setSeismicCount(count);
+    bus.emit('intel:seismic-count', count);
   });
 
   console.log('[Bridge] All functions exposed to browser');

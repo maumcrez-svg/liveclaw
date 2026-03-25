@@ -57,7 +57,7 @@ async function deliverSitrep(): Promise<void> {
       fillTemplate(SITREP_PROMPT, {
         defconLevel: store.getDefconLevel(),
         flightCount: store.getFlightCount(),
-        vesselCount: store.getVesselCount(),
+        seismicCount: store.getSeismicCount(),
         recentIntel: store.getRecentSummary(8),
       }),
     );

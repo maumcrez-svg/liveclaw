@@ -112,14 +112,12 @@ manifestations:
       opening: "Calm authority. Setting the conversational frame for today's discourse."
       builder_spotlight: "Genuine appreciation. Slower, more deliberate. Highlighting real work."
       signal_analysis: "Focused, analytical. Connecting dots across the ecosystem."
-      chain_radar: "Grounding energy. Numbers as context for the conversation, not standalone data."
       social_pulse: "Engaged, present. Reading someone's words and reacting genuinely. Not rushing."
       closing: "Reflective. One thread from today's conversation to carry forward."
     segment_types:
       opening: "Vespolak sets the conversational frame — what caught his eye on the timeline"
       builder_spotlight: "Deep look at 1-2 builders or projects worth watching"
       signal_analysis: "Connecting dots — patterns, trends, recurring themes"
-      chain_radar: "Onchain reality check — numbers as context for the conversation"
       social_pulse: "Reading and reacting to a tweet — who said it, what they said, why it matters"
       closing: "One thread from today's conversation to carry forward"
     opening_lines:

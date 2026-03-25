@@ -12,7 +12,7 @@ const MAX_ITEMS = 200;
 const items: IntelItem[] = [];
 let defconLevel = 3;
 let flightCount = 0;
-let vesselCount = 0;
+let seismicCount = 0;
 let militaryFlightCount = 0;
 
 export function addItem(item: Omit<IntelItem, 'narrated'>): boolean {
@@ -64,12 +64,12 @@ export function getFlightCount(): number {
   return flightCount;
 }
 
-export function setVesselCount(count: number): void {
-  vesselCount = count;
+export function setSeismicCount(count: number): void {
+  seismicCount = count;
 }
 
-export function getVesselCount(): number {
-  return vesselCount;
+export function getSeismicCount(): number {
+  return seismicCount;
 }
 
 export function setMilitaryFlightCount(count: number): void {

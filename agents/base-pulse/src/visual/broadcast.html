@@ -89,10 +89,10 @@
 
   /* Segment Card Container */
   .segment-card {
-    width: 780px;
-    background: rgba(8,14,28,0.96);
-    border: 1px solid rgba(0,82,255,0.35);
-    border-radius: 10px;
+    width: 680px;
+    background: rgba(12, 16, 28, 0.95);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
     overflow: hidden;
     backdrop-filter: blur(16px);
     box-shadow: 0 12px 60px rgba(0,0,0,0.6), 0 0 60px rgba(0,82,255,0.1);
@@ -107,12 +107,8 @@
     opacity: 1;
     transform: translateY(0) scale(1);
     display: block;
-    box-shadow: 0 16px 80px rgba(0,0,0,0.7), 0 0 120px rgba(0,82,255,0.25), 0 0 40px rgba(0,82,255,0.12);
-    animation: cardPulse 3s ease-in-out infinite;
-  }
-  @keyframes cardPulse {
-    0%, 100% { box-shadow: 0 16px 80px rgba(0,0,0,0.7), 0 0 120px rgba(0,82,255,0.25); }
-    50% { box-shadow: 0 16px 80px rgba(0,0,0,0.7), 0 0 140px rgba(0,82,255,0.35); }
+    box-shadow: 0 16px 60px rgba(0,0,0,0.7), 0 0 80px rgba(0,82,255,0.12);
+    animation: none;
   }
   .segment-card .card-header {
     display: flex; align-items: center; gap: 10px;
@@ -132,56 +128,77 @@
     padding: 20px 22px;
   }
 
-  /* Social Signal Card */
+  /* Social Card — Tweet-style embed */
+  #social-card {
+    width: 680px;
+  }
+  #social-card .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 24px 12px;
+    border-bottom: none;
+    background: none;
+  }
+  #social-card .card-header-type {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+  }
+  #social-card .card-header-icon {
+    font-size: 18px; color: rgba(255,255,255,0.4); margin-left: auto;
+  }
+  #social-card .card-body {
+    padding: 0 24px 20px;
+  }
   #social-card .social-author {
-    display: flex; align-items: center; gap: 14px;
-    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px;
   }
   #social-card .social-avatar {
-    width: 46px; height: 46px; border-radius: 50%;
-    background: linear-gradient(135deg, #0052FF 0%, #003bb5 100%);
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #1d9bf0 0%, #0d8bd9 100%);
     display: flex; align-items: center; justify-content: center;
-    font-size: 19px; font-weight: 800; color: white; flex-shrink: 0;
+    font-size: 20px; font-weight: 800; color: white; flex-shrink: 0;
   }
   #social-card .social-author-info { display: flex; flex-direction: column; }
   #social-card .social-display-name {
-    font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2;
+    font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2;
   }
   #social-card .social-username {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 12px; font-weight: 500; color: #0052FF; margin-top: 2px;
+    font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.4); margin-top: 2px;
   }
   #social-card .social-text {
-    font-size: 17px; font-weight: 400; color: #ccd4e0;
-    line-height: 1.6; margin-bottom: 16px;
-    max-height: 160px; overflow: hidden;
+    font-size: 20px; font-weight: 400; color: #e7e9ea;
+    line-height: 1.55; margin-bottom: 18px;
+    max-height: 200px; overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.2px;
   }
   #social-card .social-visual {
-    height: 76px; border-radius: 6px; overflow: hidden;
-    margin-bottom: 14px; position: relative;
+    display: none;
   }
-  #social-card .social-visual canvas { width: 100%; height: 100%; }
   #social-card .social-footer {
-    display: flex; align-items: center; gap: 20px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(0,82,255,0.07);
+    display: flex; align-items: center; gap: 24px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
   }
   #social-card .social-engagement {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; font-weight: 500; color: #445566;
+    font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.35);
+    display: flex; gap: 20px;
   }
-  #social-card .social-engagement span { color: #8899aa; }
+  #social-card .social-engagement span { color: rgba(255,255,255,0.55); }
   #social-card .social-tag {
     margin-left: auto;
-    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    font-size: 9px; font-weight: 700; letter-spacing: 2px;
     text-transform: uppercase;
     padding: 4px 10px; border-radius: 3px;
   }
-  .tag-builder { background: rgba(139,92,246,0.15); color: #8b5cf6; }
-  .tag-launch { background: rgba(34,197,94,0.15); color: #22c55e; }
-  .tag-culture { background: rgba(236,72,153,0.15); color: #ec4899; }
-  .tag-market { background: rgba(0,82,255,0.15); color: #0052FF; }
-  .tag-commentary { background: rgba(100,116,139,0.15); color: #94a3b8; }
+  .tag-builder { background: rgba(139,92,246,0.12); color: #a78bfa; }
+  .tag-launch { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .tag-culture { background: rgba(236,72,153,0.12); color: #f472b6; }
+  .tag-market { background: rgba(0,82,255,0.12); color: #60a5fa; }
+  .tag-commentary { background: rgba(100,116,139,0.12); color: #94a3b8; }
 
   /* Builder Signal Card */
   #builder-card .builder-name {
@@ -404,6 +421,67 @@
   }
 
   #speaking-indicator { display: none; }
+
+  /* ===== Onchain Overlay — bottom-left persistent panel ===== */
+  #onchain-overlay {
+    position: fixed;
+    bottom: 220px;
+    left: 20px;
+    background: rgba(4, 6, 14, 0.72);
+    border: 1px solid rgba(0, 82, 255, 0.28);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.72);
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    backdrop-filter: blur(10px);
+    min-width: 160px;
+    pointer-events: none;
+  }
+  #onchain-overlay .oc-header {
+    color: rgba(0, 82, 255, 0.55);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+  }
+  #onchain-overlay .oc-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  #onchain-overlay .oc-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(0, 82, 255, 0.42);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  #onchain-overlay .oc-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(200, 215, 240, 0.82);
+    line-height: 1.2;
+  }
+  #onchain-overlay .oc-change-up   { color: #22c55e; font-size: 11px; margin-left: 4px; }
+  #onchain-overlay .oc-change-down { color: #ef4444; font-size: 11px; margin-left: 4px; }
+  #onchain-overlay .oc-sep {
+    height: 1px;
+    background: rgba(0, 82, 255, 0.08);
+    margin: 2px 0;
+  }
+  @keyframes ocFlash {
+    0%   { border-color: rgba(0, 82, 255, 0.65); background: rgba(0, 82, 255, 0.06); }
+    100% { border-color: rgba(0, 82, 255, 0.28); background: rgba(4, 6, 14, 0.72); }
+  }
+  #onchain-overlay.flashing {
+    animation: ocFlash 0.6s ease-out forwards;
+  }
 </style>
 </head>
 <body>
@@ -522,6 +600,25 @@
 </div>
 
 <div id="speaking-indicator"></div>
+
+<!-- Onchain Overlay — persistent bottom-left panel -->
+<div id="onchain-overlay">
+  <div class="oc-header">ONCHAIN</div>
+  <div class="oc-row">
+    <div class="oc-label">TVL</div>
+    <div class="oc-value" id="oc-tvl">—<span id="oc-tvl-change"></span></div>
+  </div>
+  <div class="oc-sep"></div>
+  <div class="oc-row">
+    <div class="oc-label">GAS</div>
+    <div class="oc-value" id="oc-gas">—</div>
+  </div>
+  <div class="oc-sep"></div>
+  <div class="oc-row">
+    <div class="oc-label">BLOCK</div>
+    <div class="oc-value" id="oc-block">—</div>
+  </div>
+</div>
 
 <!-- End Card -->
 <div id="end-card">
@@ -770,10 +867,10 @@ function drawVespolak(cx, bottomY) {
       const armPivotRow = 3;
       const dist = row - armPivotRow;
       // Raise: move up and outward
-      pixY -= dist * raiseAmount * 2.5;
-      pixX -= raiseAmount * 6;
+      pixY -= dist * raiseAmount * 3.5;
+      pixX -= raiseAmount * 10;
       // Slight rotation feel
-      pixY -= raiseAmount * 4;
+      pixY -= raiseAmount * 6;
     }
 
     if (isRightArm) {
@@ -781,9 +878,9 @@ function drawVespolak(cx, bottomY) {
       const raiseAmount = Math.min(rightRaise, 1.0);
       const armPivotRow = 3;
       const dist = row - armPivotRow;
-      pixY -= dist * raiseAmount * 2.5;
-      pixX += raiseAmount * 6;
-      pixY -= raiseAmount * 4;
+      pixY -= dist * raiseAmount * 3.5;
+      pixX += raiseAmount * 10;
+      pixY -= raiseAmount * 6;
     }
 
     // Shoulder raise on emphasis rows
@@ -837,8 +934,25 @@ function drawVespolak(cx, bottomY) {
         ctx.beginPath();
         ctx.ellipse(mouthLocalX, mouthLocalY + 5, 11, 2, 0, 0, Math.PI * 2);
         ctx.fill();
+      } else if (mouthFrame === 3) {
+        // Wide open — emphasis moment
+        ctx.fillStyle = '#1a0e08';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY, 15, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Upper lip
+        ctx.fillStyle = '#6B422E';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY - 7, 16, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Lower lip
+        ctx.fillStyle = '#7A5030';
+        ctx.beginPath();
+        ctx.ellipse(mouthLocalX, mouthLocalY + 7, 13, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
+
     ctx.restore();
   }
 
@@ -869,14 +983,17 @@ function updateHost() {
     setTimeout(() => { isBlinking = false; }, 120);
   }
 
-  // Mouth animation when speaking
+  // Mouth animation when speaking — 3 frames for more natural feel
   if (hostState === 'speaking') {
     mouthTimer += dt;
-    if (mouthTimer > 0.08) {
+    // Vary mouth speed with amplitude for more natural feel
+    const mouthSpeed = 0.06 + currentAmplitude * 0.04;
+    if (mouthTimer > mouthSpeed) {
       mouthTimer = 0;
-      if (currentAmplitude > 0.15) mouthFrame = 2;
-      else if (currentAmplitude > 0.05) mouthFrame = 1;
-      else mouthFrame = 0;
+      if (currentAmplitude > 0.2) mouthFrame = 3;       // wide open — emphasis
+      else if (currentAmplitude > 0.12) mouthFrame = 2;  // open
+      else if (currentAmplitude > 0.04) mouthFrame = 1;  // slightly open
+      else mouthFrame = 0;                                // closed
     }
   } else {
     mouthFrame = 0;
@@ -900,21 +1017,24 @@ function updateHost() {
 
   if (hostState === 'speaking') {
     // Head tilts rhythmically with speech
-    headTiltTarget = Math.sin(time * 1.8) * 0.04 + (currentAmplitude > 0.12 ? Math.sin(time * 3.5) * 0.025 : 0);
+    headTiltTarget = Math.sin(time * 1.8) * 0.06 + (currentAmplitude > 0.12 ? Math.sin(time * 3.5) * 0.04 : 0);
 
     // Torso leans into speech, shifts with emphasis
     torsoLeanTarget = Math.sin(time * 0.7) * 4 + (currentAmplitude > 0.15 ? 3 : 0);
 
-    // Arm gestures — change every 1.5-3s during speech
-    if (gestureTimer > 1.5 + Math.random() * 1.5) {
+    // Arm gestures — change every 1.0-2.0s during speech (was 1.5-3s)
+    if (gestureTimer > 1.0 + Math.random() * 1.0) {
       gestureTimer = 0;
       const r = Math.random();
-      if (currentAmplitude > 0.12) {
-        // Animated gesturing
-        gestureArmTarget = r < 0.3 ? 1 : r < 0.6 ? 2 : r < 0.8 ? 3 : 0;
+      if (currentAmplitude > 0.15) {
+        // Strong emphasis — more dramatic gestures
+        gestureArmTarget = r < 0.25 ? 1 : r < 0.5 ? 2 : r < 0.7 ? 3 : 0;
+      } else if (currentAmplitude > 0.08) {
+        // Normal speech — varied gestures
+        gestureArmTarget = r < 0.3 ? 1 : r < 0.6 ? 2 : r < 0.75 ? 3 : 0;
       } else {
         // Quieter — mostly rest with occasional gesture
-        gestureArmTarget = r < 0.7 ? 0 : r < 0.85 ? 1 : 2;
+        gestureArmTarget = r < 0.6 ? 0 : r < 0.8 ? 1 : 2;
       }
     }
 
@@ -1227,7 +1347,7 @@ window.__showSegmentCard = function(type, data) {
 
   if (type === 'social') {
     const card = document.getElementById('social-card');
-    card.querySelector('.card-header-type').textContent = 'SOCIAL SIGNAL';
+    card.querySelector('.card-header-type').textContent = 'READING';
     card.querySelector('.card-header-icon').textContent = data.platform === 'farcaster' ? '◈ Farcaster' : '𝕏';
     card.querySelector('.social-avatar').textContent = (data.displayName || '?')[0].toUpperCase();
     card.querySelector('.social-display-name').textContent = data.displayName || data.username || 'Unknown';
@@ -1386,6 +1506,8 @@ window.__updateTicker = function(items) {
     return `<span class="ticker-item"><span class="symbol">${item}</span></span><span class="ticker-sep">│</span>`;
   }).join('');
   track.innerHTML = html + html;
+  // If any ticker item carries a TVL change, surface it in the overlay
+  _maybeExtractTvlChange(items);
 };
 
 window.__updateBottomStrip = function(tags) {
@@ -1403,6 +1525,87 @@ window.__hideEndCard = function() {
   document.getElementById('end-card').classList.remove('visible');
 };
 
+// =============================================
+// ONCHAIN OVERLAY — persistent bottom-left panel
+// =============================================
+
+// Stores the last known TVL change string (e.g. "▼1.5%" or "▲0.8%")
+let _ocTvlChange = '';
+
+// Parse a TVL change from a ticker item string.
+// Handles formats like: "BASE TVL $4.16B ▼1.5%" or "BASE TVL 4.16B ▲0.8%"
+function _parseTvlChange(tickerItems) {
+  if (!Array.isArray(tickerItems)) return '';
+  for (const item of tickerItems) {
+    const m = item.match(/TVL[^▲▼]*([▲▼][\d.]+%)/i);
+    if (m) return m[1];
+  }
+  return '';
+}
+
+function updateOnchainOverlay(data) {
+  const overlay = document.getElementById('onchain-overlay');
+  if (!overlay) return;
+
+  let changed = false;
+
+  // TVL
+  if (data.baseTvl) {
+    const tvlEl = document.getElementById('oc-tvl');
+    const changeEl = document.getElementById('oc-tvl-change');
+    if (tvlEl) {
+      tvlEl.childNodes[0].textContent = data.baseTvl;
+      changed = true;
+    }
+    // tvlChange may come directly on data, or was parsed from ticker items
+    const rawChange = data.tvlChange || _ocTvlChange || '';
+    if (changeEl && rawChange) {
+      const isUp = rawChange.startsWith('▲');
+      changeEl.className = isUp ? 'oc-change-up' : 'oc-change-down';
+      changeEl.textContent = rawChange;
+    } else if (changeEl) {
+      changeEl.textContent = '';
+    }
+  }
+
+  // Gas
+  if (data.gas) {
+    const gasEl = document.getElementById('oc-gas');
+    if (gasEl) { gasEl.textContent = data.gas; changed = true; }
+  }
+
+  // Block number
+  if (data.blockNumber) {
+    const blockEl = document.getElementById('oc-block');
+    if (blockEl) { blockEl.textContent = '#' + data.blockNumber; changed = true; }
+  }
+
+  // Flash the overlay border briefly when any value updates
+  if (changed) {
+    overlay.classList.remove('flashing');
+    // Force reflow so the animation restarts
+    void overlay.offsetWidth;
+    overlay.classList.add('flashing');
+  }
+}
+
+// Allow external callers to push a TVL ticker string so the overlay
+// can show a delta without a separate API field.
+// Called automatically from __updateTicker when TVL items are present.
+function _maybeExtractTvlChange(items) {
+  const parsed = _parseTvlChange(items);
+  if (parsed) {
+    _ocTvlChange = parsed;
+    // Refresh the change indicator if TVL is already displayed
+    const changeEl = document.getElementById('oc-tvl-change');
+    if (changeEl) {
+      const isUp = parsed.startsWith('▲');
+      changeEl.className = isUp ? 'oc-change-up' : 'oc-change-down';
+      changeEl.textContent = parsed;
+    }
+  }
+}
+
 window.__updateEcosystem = function(data) {
   const keys = ['baseTvl', 'ethPrice', 'gas', 'blockNumber', 'dailyTxn'];
   for (const k of keys) {
@@ -1411,6 +1614,8 @@ window.__updateEcosystem = function(data) {
       ecosystemFlash[k] = 1.0;
     }
   }
+  // Sync the persistent onchain overlay
+  updateOnchainOverlay(data);
 };
 
 window.__pushSignal = function(text, type) {
@@ -1557,13 +1762,14 @@ window.__updateBottomStrip([
 
 window.__setMainScreen('monitoring', 'Monitoring Base ecosystem activity...', '');
 
-// Ecosystem data
+// Ecosystem data — tvlChange is optional; if omitted the overlay shows no delta
 window.__updateEcosystem({
   ethPrice: '3,241',
   baseTvl: '$4.15B',
   gas: '< 0.01 gwei',
   blockNumber: '43,500,000',
   dailyTxn: '3.2M',
+  tvlChange: '▼1.5%',
 });
 
 // Demo mode — only runs if Puppeteer hasn't taken control

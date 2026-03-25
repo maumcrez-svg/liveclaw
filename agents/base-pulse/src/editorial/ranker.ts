@@ -45,7 +45,7 @@ ${marketSummary}
 ARTICLES (tweets + onchain signals):
 ${articleList}
 
-Select 3-5 stories for today's BASE PULSE episode. These are ALL tweets and onchain signals — pick the most interesting, spicy, and substantive ones. Prioritize tweets from builders, ecosystem figures, and anyone with real takes.
+Select 8-12 stories for today's BASE PULSE episode. Vespolak covers 8 tweets minimum per episode — he needs volume. Pick the most interesting, spicy, and substantive ones AND a few playful/meme tweets for quick reactions. Prioritize tweets from builders, ecosystem figures, and anyone with real takes. Include some lighter tweets too — community jokes, meme takes, funny moments.
 
 TWEET CONTEXT — PRESERVE:
 - When selecting tweets, note if they are part of a reply thread or quote tweet chain.

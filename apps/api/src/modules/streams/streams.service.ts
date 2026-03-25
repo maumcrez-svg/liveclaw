@@ -20,8 +20,17 @@ export class StreamsService {
   async findLive(opts?: { category?: string; sort?: string }): Promise<StreamEntity[]> {
     const qb = this.streamRepo
       .createQueryBuilder('stream')
-      .leftJoinAndSelect('stream.agent', 'agent')
-      .leftJoinAndSelect('stream.category', 'category')
+      .leftJoin('stream.agent', 'agent')
+      .leftJoin('stream.category', 'category')
+      .addSelect([
+        'stream.id', 'stream.agentId', 'stream.title', 'stream.startedAt',
+        'stream.currentViewers', 'stream.peakViewers', 'stream.isLive',
+        'stream.tags', 'stream.categoryId', 'stream.thumbnailUrl',
+        'agent.id', 'agent.slug', 'agent.name', 'agent.avatarUrl',
+        'agent.bannerUrl', 'agent.status', 'agent.streamKey',
+        'agent.followerCount', 'agent.subscriberCount', 'agent.defaultTags',
+        'category.id', 'category.name', 'category.slug', 'category.imageUrl',
+      ])
       .where('stream.isLive = :isLive', { isLive: true });
 
     if (opts?.category) {

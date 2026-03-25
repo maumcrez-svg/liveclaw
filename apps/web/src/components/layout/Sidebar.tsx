@@ -82,15 +82,32 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const viewerCounts = useLiveViewerCounts();
 
   useEffect(() => {
+    const ac = new AbortController();
+    let lastFetchAt = 0;
+
     async function fetchAgents() {
       try {
-        const res = await fetch(`${API_URL}/agents`);
+        const res = await fetch(`${API_URL}/agents/sidebar`, { signal: ac.signal });
         if (res.ok) setAgents(await res.json());
-      } catch {}
+        lastFetchAt = Date.now();
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
+      }
     }
+
     fetchAgents();
-    const interval = setInterval(fetchAgents, 15000);
-    return () => clearInterval(interval);
+
+    // Refetch when tab becomes visible after being hidden for >30s
+    const onVisibility = () => {
+      if (!document.hidden && Date.now() - lastFetchAt > 30_000) {
+        fetchAgents();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      ac.abort();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   useEffect(() => {
@@ -98,20 +115,37 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       setFollowedAgentIds(new Set());
       return;
     }
+    const ac = new AbortController();
+    let lastFetchAt = 0;
+
     async function fetchFollows() {
       try {
         const res = await fetch(`${API_URL}/follows/user/${user!.id}`, {
           headers: { Authorization: `Bearer ${user!.token}` },
+          signal: ac.signal,
         });
         if (res.ok) {
           const follows = await res.json();
           setFollowedAgentIds(new Set(follows.map((f: any) => f.agentId)));
         }
-      } catch {}
+        lastFetchAt = Date.now();
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
+      }
     }
+
     fetchFollows();
-    const interval = setInterval(fetchFollows, 30000);
-    return () => clearInterval(interval);
+
+    const onVisibility = () => {
+      if (!document.hidden && Date.now() - lastFetchAt > 30_000) {
+        fetchFollows();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      ac.abort();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [user]);
 
   const liveAgents = agents.filter((a) => a.status === 'live');

@@ -41,7 +41,7 @@ export const SITREP_PROMPT = `You are WATCHDOG. Deliver a periodic Situation Rep
 
 Current DEFCON level: {defconLevel}
 Active flights in theater: {flightCount}
-Tracked vessels: {vesselCount}
+Seismic events (M2.5+): {seismicCount}
 Recent intelligence items:
 {recentIntel}
 

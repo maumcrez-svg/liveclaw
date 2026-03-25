@@ -1,5 +1,5 @@
 import type { Page } from 'puppeteer-core';
-import type { GeneratedEpisode, SegmentType } from '../models/types';
+import type { GeneratedEpisode, RawArticle, Segment, SegmentType } from '../models/types';
 import { playSegment, updateTicker, showEndCard, hideEndCard, playIntro, updateEcosystem, showSegmentCard, hideSegmentCard } from './segment-player';
 import { showMarketData } from './market-segment';
 
@@ -17,15 +17,69 @@ async function callWindow(page: Page, fn: string, ...args: any[]): Promise<void>
   } catch {}
 }
 
-/** Map segment type to segment card template type */
-function segmentToCardType(type: SegmentType): string | null {
+/** Map segment type to segment card template type — every segment gets a card */
+function segmentToCardType(type: SegmentType): string {
   switch (type) {
     case 'social_pulse': return 'social';
-    case 'builder_spotlight': return 'builder';
-    case 'chain_radar': return 'onchain';
-    case 'signal_analysis': return 'market';
-    default: return null;
+    case 'builder_spotlight': return 'social';
+    case 'signal_analysis': return 'social';
+    case 'opening': return 'social';
+    case 'closing': return 'social';
+    default: return 'social';
   }
+}
+
+/** Find the best matching article for a segment */
+function findMatchingArticle(segment: Segment, articles: RawArticle[]): RawArticle | undefined {
+  const headline = segment.headline.toLowerCase();
+  const narration = segment.narration.toLowerCase();
+
+  // Try matching by headline content
+  for (const article of articles) {
+    const title = article.title.toLowerCase();
+    const summary = article.summary.toLowerCase();
+    // Check if segment headline contains key words from article title
+    if (title.length > 10 && headline.includes(title.slice(0, 30))) return article;
+    // Check if article title words appear in the narration
+    const titleWords = title.split(/\s+/).filter(w => w.length > 4);
+    const matchCount = titleWords.filter(w => narration.includes(w)).length;
+    if (titleWords.length > 0 && matchCount >= Math.ceil(titleWords.length * 0.5)) return article;
+  }
+
+  return undefined;
+}
+
+/** Build rich tweet card data from an article */
+function buildTweetCardData(article: RawArticle): Record<string, string> {
+  // Source format is typically "Twitter/@username"
+  const sourceMatch = article.source.match(/@(\w+)/);
+  const username = sourceMatch ? sourceMatch[1] : 'base';
+  // Display name: capitalize username as fallback
+  const displayName = username.charAt(0).toUpperCase() + username.slice(1);
+
+  return {
+    displayName,
+    username,
+    text: article.summary || article.title,
+    platform: 'twitter',
+    signalType: article.signalType || 'culture',
+  };
+}
+
+/** Build a fallback card from segment data */
+function buildFallbackCardData(segment: Segment): Record<string, string> {
+  // Try to extract @username from narration or headline
+  const mentionMatch = segment.narration.match(/@(\w+)/) || segment.headline.match(/@(\w+)/);
+  const username = mentionMatch ? mentionMatch[1] : 'basepulse';
+  const displayName = username.charAt(0).toUpperCase() + username.slice(1);
+
+  return {
+    displayName,
+    username,
+    text: segment.headline,
+    platform: 'twitter',
+    signalType: 'culture',
+  };
 }
 
 export interface RunEpisodeOptions {
@@ -73,6 +127,9 @@ export async function runEpisode(
     await sleep(3000);
   }
 
+  // Pre-build card data for all segments by matching to original articles
+  const headlineArticle = episode.articles.find(a => a.id === episode.plan?.headline?.articleId);
+
   for (let i = 0; i < script.segments.length; i++) {
     const segment = script.segments[i];
     const audio = audioMap.get(segment.id) || null;
@@ -86,30 +143,65 @@ export async function runEpisode(
     // Set host to speaking
     await callWindow(page, '__setBodyState', 'speaking_normal');
 
-    // Show segment card in Zone B based on segment type
+    // Build rich card data — every segment gets a card, no empty center stage
     const cardType = segmentToCardType(segment.type);
-    if (cardType) {
-      await showSegmentCard(page, cardType, segment);
+    let cardData: Record<string, string>;
+
+    if (segment.cardData) {
+      // Pre-built card data from upstream
+      cardData = segment.cardData;
+    } else if (cardType === 'onchain') {
+      // Onchain card uses default buildCardData from segment-player
+      cardData = {};
+    } else {
+      // Try to find matching article for rich tweet data
+      const matchedArticle = findMatchingArticle(segment, episode.articles);
+      if (matchedArticle) {
+        cardData = buildTweetCardData(matchedArticle);
+      } else if (headlineArticle && (segment.type === 'opening' || segment.type === 'closing')) {
+        // Opening/closing: use headline tweet
+        cardData = buildTweetCardData(headlineArticle);
+      } else {
+        // Fallback: extract what we can from segment text
+        cardData = buildFallbackCardData(segment);
+      }
     }
 
-    // Chain radar: also inject market data into onchain card
-    if (segment.type === 'chain_radar' && episode.plan?.marketSnapshot) {
-      await showMarketData(page, episode.plan.marketSnapshot);
+    // Show segment card — always visible
+    if (cardType === 'onchain' && Object.keys(cardData).length === 0) {
+      await showSegmentCard(page, cardType, segment);
+    } else {
+      await showSegmentCard(page, cardType, segment, cardData);
     }
 
     // Play the segment (audio + lower third)
     await playSegment(page, segment, audio);
 
     // Hide segment card after segment
-    if (cardType) {
-      await hideSegmentCard(page);
-    }
+    await hideSegmentCard(page);
 
     // Return to idle between segments
     await callWindow(page, '__setBodyState', 'idle_monitoring');
 
     if (i < script.segments.length - 1) {
-      await sleep(400);
+      const nextSeg = script.segments[i + 1];
+      // Breathing room between segments — Vespolak needs to pause and think
+      const isCurrentSerious = segment.estimatedDurationSec > 30;
+      const isNextOpening = nextSeg?.type === 'opening';
+      const isClosing = segment.type === 'closing';
+
+      if (isClosing) {
+        await sleep(200); // Quick transition to end
+      } else if (isCurrentSerious) {
+        // After a deep tweet read, give Vespolak a moment to "think" before next
+        await callWindow(page, '__setBodyState', 'reacting');
+        await sleep(2000);
+        await callWindow(page, '__setBodyState', 'idle_monitoring');
+        await sleep(1000);
+      } else {
+        // Quick tweet — shorter pause but still breathe
+        await sleep(1500);
+      }
     }
   }
 

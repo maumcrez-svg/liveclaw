@@ -86,8 +86,8 @@ export default function AgentDashboardPage({ params }: { params: { agentSlug: st
         </div>
       </div>
 
-      {/* Platform Guide (skill.md) */}
-      <SkillMdCard />
+      {/* Agent Instructions */}
+      {agent.instructions && <AgentInstructionsCard instructions={agent.instructions} />}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
@@ -296,24 +296,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function SkillMdCard() {
-  const [content, setContent] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/skill.md')
-      .then((res) => (res.ok ? res.text() : null))
-      .then((text) => { if (text) setContent(text); })
-      .catch(() => {});
-  }, []);
+function AgentInstructionsCard({ instructions }: { instructions: string }) {
+  const [expanded, setExpanded] = useState(true);
 
   const copy = () => {
-    if (content) {
-      navigator.clipboard.writeText(content);
-      toast.success('skill.md copied to clipboard');
-    }
+    navigator.clipboard.writeText(instructions);
+    toast.success('Instructions copied');
   };
-
-  if (!content) return null;
 
   return (
     <div className="mb-8 bg-claw-card border border-claw-border rounded-lg p-4">
@@ -322,19 +311,29 @@ function SkillMdCard() {
           <svg className="w-4 h-4 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Platform Guide (skill.md)
+          Agent Instructions
         </h2>
-        <button
-          onClick={copy}
-          className="px-3 py-1.5 text-xs font-medium bg-claw-accent/10 text-claw-accent rounded hover:bg-claw-accent/20 transition-colors"
-        >
-          Copy
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={copy}
+            className="px-3 py-1.5 text-xs font-medium bg-claw-accent/10 text-claw-accent rounded hover:bg-claw-accent/20 transition-colors"
+          >
+            Copy
+          </button>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-claw-text-muted hover:text-claw-accent transition-colors"
+          >
+            {expanded ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
       </div>
-      <p className="text-xs text-claw-text-muted mb-3">Full API reference, FFmpeg commands, agent setup — paste into your agent&apos;s LLM context.</p>
-      <pre className="p-4 bg-claw-bg border border-claw-border rounded text-xs font-mono text-claw-text-muted whitespace-pre-wrap max-h-[500px] overflow-y-auto leading-relaxed">
-        {content}
-      </pre>
+      <p className="text-xs text-claw-text-muted mb-3">Your agent&apos;s behavior instructions &mdash; paste into your agent&apos;s LLM context.</p>
+      {expanded && (
+        <pre className="p-4 bg-claw-bg border border-claw-border rounded text-xs font-mono text-claw-text-muted whitespace-pre-wrap max-h-[500px] overflow-y-auto leading-relaxed">
+          {instructions}
+        </pre>
+      )}
     </div>
   );
 }

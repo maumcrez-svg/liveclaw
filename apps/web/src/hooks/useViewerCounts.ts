@@ -29,18 +29,30 @@ export function useViewerCounts(): Map<string, number> {
 
     const onSnapshot = (entries: Array<{ agentId: string; count: number }>) => {
       console.info(`[ViewerCounts] snapshot: ${entries.length} streams`);
-      setCounts(() => {
+      setCounts((prev) => {
         const next = new Map<string, number>();
         for (const e of entries) {
           if (e.count > 0) next.set(e.agentId, e.count);
+        }
+        // Skip re-render if data is identical
+        if (next.size === prev.size) {
+          let same = true;
+          for (const [k, v] of next) {
+            if (prev.get(k) !== v) { same = false; break; }
+          }
+          if (same) return prev;
         }
         return next;
       });
     };
 
     const onUpdate = (data: { agentId: string; count: number }) => {
-      console.info(`[ViewerCounts] update: agent=${data.agentId} count=${data.count}`);
       setCounts((prev) => {
+        const current = prev.get(data.agentId);
+        // Skip re-render if count hasn't changed
+        if (data.count > 0 && current === data.count) return prev;
+        if (data.count <= 0 && current === undefined) return prev;
+
         const next = new Map(prev);
         if (data.count > 0) {
           next.set(data.agentId, data.count);

@@ -20,7 +20,6 @@ export type EditorialBeat =
   | 'tweet_deep_read'   // focused deep read of one tweet — read it, unpack it
   | 'tweet_reaction'    // genuine first reaction to a tweet — slower, personal
   | 'builder_focus'     // genuine appreciation, slower delivery
-  | 'data_driven'       // numbers, charts, onchain reality
   | 'pattern_connect'   // connecting dots across stories
   | 'discourse_read'    // reading the conversation — replies, quote tweets, threads
   | 'editorial_take'    // Vespolak's strong opinion
@@ -50,19 +49,19 @@ export interface EmotionalArc {
 const ARC_PATTERNS: Array<{ name: string; beats: EditorialBeat[] }> = [
   {
     name: 'tweet_cascade',
-    beats: ['establishing', 'tweet_deep_read', 'tweet_reaction', 'builder_focus', 'data_driven', 'discourse_read', 'editorial_take', 'forward_look'],
+    beats: ['establishing', 'tweet_deep_read', 'tweet_reaction', 'builder_focus', 'discourse_read', 'editorial_take', 'forward_look'],
   },
   {
     name: 'builder_first',
-    beats: ['establishing', 'builder_focus', 'tweet_deep_read', 'data_driven', 'discourse_read', 'pattern_connect', 'editorial_take', 'forward_look'],
+    beats: ['establishing', 'builder_focus', 'tweet_deep_read', 'discourse_read', 'pattern_connect', 'editorial_take', 'forward_look'],
   },
   {
     name: 'data_to_insight',
-    beats: ['establishing', 'data_driven', 'tweet_deep_read', 'pattern_connect', 'builder_focus', 'discourse_read', 'editorial_take', 'forward_look'],
+    beats: ['establishing', 'tweet_deep_read', 'pattern_connect', 'builder_focus', 'discourse_read', 'editorial_take', 'forward_look'],
   },
   {
     name: 'discourse_driven',
-    beats: ['establishing', 'discourse_read', 'tweet_deep_read', 'tweet_reaction', 'data_driven', 'pattern_connect', 'editorial_take', 'forward_look'],
+    beats: ['establishing', 'discourse_read', 'tweet_deep_read', 'tweet_reaction', 'pattern_connect', 'editorial_take', 'forward_look'],
   },
 ];
 
@@ -71,7 +70,6 @@ const BEAT_ENERGY: Record<EditorialBeat, number> = {
   tweet_deep_read: 6,
   tweet_reaction: 5,
   builder_focus: 5,
-  data_driven: 5,
   pattern_connect: 6,
   discourse_read: 5,
   editorial_take: 8,
@@ -84,7 +82,6 @@ const BEAT_EXPRESSION: Record<EditorialBeat, string> = {
   tweet_deep_read: 'focused',
   tweet_reaction: 'impressed',
   builder_focus: 'impressed',
-  data_driven: 'focused',
   pattern_connect: 'confident',
   discourse_read: 'neutral',
   editorial_take: 'confident',
@@ -97,7 +94,6 @@ const BEAT_PACING: Record<EditorialBeat, string> = {
   tweet_deep_read: 'Deliberate reading. Take time with this tweet — read it, unpack it, explain why it matters.',
   tweet_reaction: 'Genuine first reaction. Slower, personal. Vespolak speaks as himself, not as a host.',
   builder_focus: 'Genuine appreciation. Slower, more deliberate. Highlighting real work.',
-  data_driven: 'Grounding energy. Numbers as context for the conversation, not standalone data.',
   pattern_connect: 'Analytical energy. Connecting dots the audience hasn\'t seen yet.',
   discourse_read: 'Reading the conversation. Replies, quote tweets, threads — what people are actually saying.',
   editorial_take: 'Strongest delivery. This is Vespolak\'s clear editorial position.',
@@ -164,7 +160,7 @@ export async function planArcLLM(plan: EpisodePlan, articles: Array<{ id: string
   const headlineTitle = articleMap.get(plan.headline.articleId) || 'Unknown';
 
   const beatList = [
-    'establishing', 'tweet_deep_read', 'tweet_reaction', 'builder_focus', 'data_driven',
+    'establishing', 'tweet_deep_read', 'tweet_reaction', 'builder_focus',
     'pattern_connect', 'discourse_read', 'editorial_take', 'forward_look', 'clean_close',
   ].join(', ');
 
@@ -237,7 +233,6 @@ export function formatArcForPrompt(arc: EmotionalArc, stories: EpisodePlan['stor
     lines.push(`  Transition: ${ann.transition}`);
   }
 
-  lines.push(`\nCHAIN RADAR: data_driven — Vespolak reads the numbers. TVL, tokens, deployments.`);
   lines.push(`CLOSING: ${arc.closingDirective}`);
 
   lines.push(`\nIMPORTANT: The editorial beats above guide the flow. Follow the progression, not just the spice levels.`);

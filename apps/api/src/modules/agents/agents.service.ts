@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgentEntity } from './agent.entity';
+import { StreamEntity } from '../streams/stream.entity';
 import { CreateAgentDto, UpdateAgentDto, HeartbeatDto } from './agents.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { randomBytes, createHash } from 'crypto';
@@ -13,6 +14,43 @@ export class AgentsService {
     @InjectRepository(AgentEntity)
     private readonly agentRepo: Repository<AgentEntity>,
   ) {}
+
+  /** Minimal projection for reconciliation — no joins, no heavy columns */
+  async findAllLightweight(): Promise<Pick<AgentEntity, 'id' | 'slug' | 'status' | 'streamingMode' | 'containerId' | 'streamKey'>[]> {
+    return this.agentRepo.createQueryBuilder('agent')
+      .select(['agent.id', 'agent.slug', 'agent.status', 'agent.streamingMode', 'agent.containerId', 'agent.streamKey'])
+      .getMany();
+  }
+
+  /** Lightweight projection for sidebar — only fields needed for display */
+  async findAllForSidebar(): Promise<any[]> {
+    const agents = await this.agentRepo.createQueryBuilder('agent')
+      .leftJoinAndSelect('agent.defaultCategory', 'category')
+      .select([
+        'agent.id', 'agent.slug', 'agent.name', 'agent.status',
+        'agent.avatarUrl', 'agent.agentType', 'agent.followerCount',
+        'category.id', 'category.name', 'category.slug',
+      ])
+      .orderBy('agent.createdAt', 'DESC')
+      .getMany();
+
+    // Attach currentViewers from active streams (same logic as findAll)
+    const liveAgentIds = agents.filter(a => a.status === 'live').map(a => a.id);
+    if (liveAgentIds.length === 0) return agents;
+
+    const streams = await this.agentRepo.manager
+      .createQueryBuilder()
+      .select(['agent_id', 'current_viewers'])
+      .from('streams', 's')
+      .where('s.is_live = true AND s.agent_id IN (:...ids)', { ids: liveAgentIds })
+      .getRawMany();
+    const viewerMap = new Map(streams.map((s: any) => [s.agent_id, s.current_viewers]));
+
+    return agents.map(a => ({
+      ...a,
+      currentViewers: viewerMap.get(a.id) ?? 0,
+    }));
+  }
 
   async findAll(): Promise<any[]> {
     const agents = await this.agentRepo.find({
@@ -38,19 +76,28 @@ export class AgentsService {
   }
 
   async findLive(): Promise<AgentEntity[]> {
-    return this.agentRepo.find({
-      where: { status: 'live' },
-      relations: ['streams'],
-      order: { followerCount: 'DESC' },
-    });
+    // Only join the current live stream, not all historical streams
+    return this.agentRepo.createQueryBuilder('agent')
+      .leftJoinAndSelect('agent.streams', 'stream', 'stream.isLive = :isLive', { isLive: true })
+      .where('agent.status = :status', { status: 'live' })
+      .orderBy('agent.followerCount', 'DESC')
+      .getMany();
   }
 
   async findBySlug(slug: string): Promise<AgentEntity> {
     const agent = await this.agentRepo.findOne({
       where: { slug },
-      relations: ['streams', 'defaultCategory'],
+      relations: ['defaultCategory'],
     });
     if (!agent) throw new NotFoundException(`Agent ${slug} not found`);
+    // Load only recent streams, not entire history
+    agent.streams = await this.agentRepo.manager
+      .getRepository(StreamEntity)
+      .find({
+        where: { agentId: agent.id },
+        order: { startedAt: 'DESC' },
+        take: 10,
+      });
     return agent;
   }
 

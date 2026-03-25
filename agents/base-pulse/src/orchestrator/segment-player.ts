@@ -89,14 +89,15 @@ export interface SignalCardData {
 }
 
 /** Show a segment card in Zone B */
-export async function showSegmentCard(page: Page, cardType: string, segment: Segment): Promise<void> {
+export async function showSegmentCard(page: Page, cardType: string, segment: Segment, preBuiltData?: Record<string, string>): Promise<void> {
+  const data = preBuiltData || segment.cardData || buildCardData(cardType, segment);
   await safeEval(page, () =>
     page.evaluate(
-      (type: string, data: Record<string, string>) => {
-        (window as any).__showSegmentCard?.(type, data);
+      (type: string, d: Record<string, string>) => {
+        (window as any).__showSegmentCard?.(type, d);
       },
       cardType,
-      buildCardData(cardType, segment),
+      data,
     ),
   );
 }

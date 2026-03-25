@@ -13,6 +13,8 @@ agents/**/.env
 **/secrets/
 **/*.key
 **/*.pem
+*.tsbuildinfo
+.env.vercel
 
 # Secrets (wallets, private keys)
 .secrets/

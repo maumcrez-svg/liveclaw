@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useLiveViewerCounts } from '@/components/LiveViewerCounts';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -70,10 +71,12 @@ export function StreamCard({ stream, featured = false }: StreamCardProps) {
         {/* Thumbnail */}
         <div className={`${featured ? 'aspect-[16/10]' : 'aspect-video'} bg-claw-bg relative`}>
           {showImage ? (
-            <img
+            <Image
               src={thumbSrc}
               alt={stream.title}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover"
               onError={() => setImgError(true)}
             />
           ) : (
@@ -108,10 +111,12 @@ export function StreamCard({ stream, featured = false }: StreamCardProps) {
           {/* Bottom-left: avatar */}
           <div className="absolute bottom-2 left-2">
             {agent.avatarUrl ? (
-              <img
+              <Image
                 src={agent.avatarUrl}
                 alt={agent.name}
-                className={`rounded-full object-cover border-2 border-claw-surface ${featured ? 'w-10 h-10' : 'w-8 h-8'}`}
+                width={featured ? 40 : 32}
+                height={featured ? 40 : 32}
+                className={`rounded-full object-cover border-2 border-claw-surface`}
               />
             ) : (
               <div className={`rounded-full bg-claw-accent/20 flex items-center justify-center text-claw-accent font-bold border-2 border-claw-surface ${featured ? 'w-10 h-10 text-sm' : 'w-8 h-8 text-xs'}`}>

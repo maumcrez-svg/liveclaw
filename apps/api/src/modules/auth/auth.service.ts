@@ -209,4 +209,27 @@ export class AuthService {
       await this.refreshTokenService.consumeRefreshToken(refreshToken);
     }
   }
+
+  /** Generate a one-time token for LiveClaw Studio deep-link auth (60s TTL). */
+  async generateStudioToken(userId: string): Promise<{ token: string }> {
+    const token = uuidv4();
+    await this.redis.set(`studio-token:${token}`, userId, 'EX', 60);
+    return { token };
+  }
+
+  /** Exchange a one-time Studio token for a full auth session. */
+  async exchangeStudioToken(token: string): Promise<AuthResponse> {
+    if (!token || typeof token !== 'string') {
+      throw new BadRequestException('Missing token');
+    }
+    const userId = await this.redis.getdel(`studio-token:${token}`);
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired studio token');
+    }
+    const user = await this.usersService.findById(userId);
+    if (user.isBanned) {
+      throw new UnauthorizedException('Your account has been suspended');
+    }
+    return this.buildAuthResponse(user);
+  }
 }

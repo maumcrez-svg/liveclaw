@@ -2,6 +2,13 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedCategories1710000000014 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Categories may already exist with slightly different names - skip if slug exists
+    const slugs = ['gaming', 'ai-chat', 'coding-build', 'creative', 'crypto-trading', 'music-djs', 'science-tech', 'experimental'];
+    const existing = await queryRunner.query(`SELECT slug FROM "categories" WHERE slug = ANY($1)`, [slugs]);
+    if (existing.length > 0) {
+      // Categories already seeded (possibly with different names), skip
+      return;
+    }
     await queryRunner.query(`
       INSERT INTO "categories" ("id", "name", "slug", "image_url") VALUES
         (gen_random_uuid(), 'Gaming', 'gaming', '/categories/gaming.png'),

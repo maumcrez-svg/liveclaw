@@ -27,6 +27,12 @@ export class AgentsController {
     return agents.map(stripSensitive);
   }
 
+  @Get('sidebar')
+  @SkipThrottle()
+  async findForSidebar() {
+    return this.agentsService.findAllForSidebar();
+  }
+
   @Get('live')
   @SkipThrottle()
   async findLive() {

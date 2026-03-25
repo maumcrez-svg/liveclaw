@@ -8,7 +8,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request } from 'express';
 import { createHash } from 'crypto';
-import * as bcrypt from 'bcrypt';
 import { AgentEntity } from '../modules/agents/agent.entity';
 
 @Injectable()
@@ -32,15 +31,12 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Invalid API key format');
     }
 
+    // SHA-256 lookup is sufficient for API keys with 128 bits of entropy.
+    // bcrypt is designed for weak passwords, not high-entropy random tokens.
     const sha256 = createHash('sha256').update(token).digest('hex');
     const agent = await this.agentRepo.findOne({ where: { apiKeySha256: sha256 } });
 
-    if (!agent || !agent.apiKeyHash) {
-      throw new UnauthorizedException('Invalid API key');
-    }
-
-    const valid = await bcrypt.compare(token, agent.apiKeyHash);
-    if (!valid) {
+    if (!agent) {
       throw new UnauthorizedException('Invalid API key');
     }
 

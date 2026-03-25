@@ -54,7 +54,6 @@ export type SegmentType =
   | 'opening'
   | 'builder_spotlight'
   | 'signal_analysis'
-  | 'chain_radar'
   | 'social_pulse'
   | 'closing';
 

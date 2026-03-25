@@ -1,8 +1,5 @@
-import { BASE_RSS_SOURCES } from '../ingest/sources';
-import { fetchRssFeed } from '../ingest/rss-fetcher';
 import { fetchMarketSnapshot } from '../ingest/coingecko';
 import { fetchOnchainData } from '../ingest/basescan-fetcher';
-import { fetchFarcasterSignals } from '../ingest/farcaster-fetcher';
 import { fetchTwitterSignals } from '../ingest/twitter-fetcher';
 import { config } from '../config';
 import type { RawArticle, MarketSnapshot } from '../models/types';
@@ -11,10 +8,10 @@ import * as path from 'path';
 
 const MAX_QUEUE_AGE_MS = 4 * 60 * 60 * 1000;
 const MAX_SKIPS = 3;
-const SEEN_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours — short TTL so content recycles faster
+const SEEN_TTL_MS = 12 * 60 * 60 * 1000; // 12h — prevent tweet repetition across episodes
 const STARVATION_THRESHOLD = 2;
 const STARVATION_MIN_ARTICLES = 2;
-const MAX_ARTICLE_AGE_MS = 12 * 60 * 60 * 1000;
+const MAX_ARTICLE_AGE_MS = 48 * 60 * 60 * 1000; // 48h — wider window to avoid starvation
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', '..');
 const SEEN_CACHE_FILE = path.join(DATA_DIR, '.seen-articles.json');
 
@@ -77,7 +74,7 @@ export class NewsAccumulator {
   }
 
   async poll(): Promise<void> {
-    console.log('[Accumulator] Polling all 5 layers...');
+    console.log('[Accumulator] Polling Twitter + onchain + market...');
 
     const now = Date.now();
     let expired = 0;
@@ -91,18 +88,14 @@ export class NewsAccumulator {
       console.log(`[Accumulator] Expired ${expired} seen articles (seen: ${this.seenIds.size})`);
     }
 
-    // Fetch all 5 layers in parallel
-    const [feedResults, onchainResult, farcasterArticles, twitterArticles] = await Promise.all([
-      Promise.all(BASE_RSS_SOURCES.map((source) => fetchRssFeed(source))),
+    // Fetch Twitter + onchain in parallel
+    const [onchainResult, twitterArticles] = await Promise.all([
       fetchOnchainData(),
-      fetchFarcasterSignals(),
       fetchTwitterSignals(),
     ]);
 
     const allFetched = [
-      ...feedResults.flat(),
       ...onchainResult.articles,
-      ...farcasterArticles,
       ...twitterArticles,
     ];
 

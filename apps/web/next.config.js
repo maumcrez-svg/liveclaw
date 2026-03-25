@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@liveclaw/shared'],
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.b-cdn.net' },
+      { protocol: 'https', hostname: 'liveclaw.tv' },
+      { protocol: 'https', hostname: 'api.liveclaw.tv' },
+      { protocol: 'http', hostname: 'localhost' },
+    ],
+  },
   async redirects() {
     return [
       {

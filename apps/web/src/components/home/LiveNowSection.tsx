@@ -21,9 +21,9 @@ export function LiveNowSection({ initialStreams }: LiveNowSectionProps) {
   const [streams, setStreams] = useState<any[]>(initialStreams);
   const [fetchFailed, setFetchFailed] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch(`${API_URL}/streams/live?sort=viewers`);
+      const res = await fetch(`${API_URL}/streams/live?sort=viewers`, { signal });
       if (res.ok) {
         const data = await res.json();
         setStreams(data);
@@ -31,19 +31,32 @@ export function LiveNowSection({ initialStreams }: LiveNowSectionProps) {
       } else {
         setFetchFailed(true);
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setFetchFailed(true);
     }
   }, []);
 
   useEffect(() => {
+    const ac = new AbortController();
+    let lastFetchAt = Date.now();
+
     // If SSR returned empty, retry immediately client-side
     if (initialStreams.length === 0) {
-      refresh();
+      refresh(ac.signal).then(() => { lastFetchAt = Date.now(); });
     }
-    // Poll every 30s regardless
-    const interval = setInterval(refresh, 30_000);
-    return () => clearInterval(interval);
+
+    // Refetch when tab becomes visible after >30s hidden
+    const onVisibility = () => {
+      if (!document.hidden && Date.now() - lastFetchAt > 30_000) {
+        refresh(ac.signal).then(() => { lastFetchAt = Date.now(); });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      ac.abort();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [initialStreams.length, refresh]);
 
   const featuredStream = streams.length > 0 ? streams[0] : null;
@@ -78,7 +91,7 @@ export function LiveNowSection({ initialStreams }: LiveNowSectionProps) {
           </p>
           {fetchFailed && (
             <button
-              onClick={refresh}
+              onClick={() => refresh()}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 hover:border-claw-accent hover:bg-white/15 text-white hover:text-claw-accent text-sm font-semibold rounded-lg transition-all duration-200 w-fit"
             >
               Retry now

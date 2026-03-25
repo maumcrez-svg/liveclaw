@@ -91,9 +91,16 @@ export class EpisodeCoordinator {
 
       (this.lastEpisode as any).__played = true;
 
-      // If no next episode and nothing preparing, poll and try
+      // If no next episode and nothing preparing, poll aggressively
       if (!this.nextEpisode && !this.preparing) {
+        console.log('[Coordinator] No next episode queued — polling for fresh signals...');
         await this.accumulator.poll();
+        // If still not enough, wait 60s and poll again (don't wait for 5-min timer)
+        if (!this.accumulator.hasEnough()) {
+          console.log(`[Coordinator] Only ${this.accumulator.pendingCount()} signals — waiting 60s before retry`);
+          await new Promise(r => setTimeout(r, 60000));
+          await this.accumulator.poll();
+        }
         if (this.accumulator.hasEnough()) {
           this.kickOffPreparation();
         }
