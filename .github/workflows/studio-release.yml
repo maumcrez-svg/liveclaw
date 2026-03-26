@@ -58,15 +58,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^2"
-
       - name: Build Studio
         working-directory: apps/studio
         env:
           VITE_API_URL: https://api-production-1866.up.railway.app
           TAURI_SIGNING_PRIVATE_KEY: ''
-        run: cargo tauri build
+        run: npx @tauri-apps/cli build
 
       - name: Upload Linux artifacts
         if: matrix.target == 'linux'
