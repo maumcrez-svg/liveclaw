@@ -66,6 +66,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // Auto-auth from Studio: read token from URL hash fragment
+    if (typeof window !== 'undefined' && window.location.hash.includes('studio_auth=')) {
+      try {
+        const raw = window.location.hash.split('studio_auth=')[1];
+        if (raw) {
+          const data = JSON.parse(decodeURIComponent(raw));
+          if (data.token) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            setUser(data);
+            // Clean up hash without reload
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+            setLoaded(true);
+            return;
+          }
+        }
+      } catch {
+        // Invalid payload — fall through to normal auth
+      }
+    }
+
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {

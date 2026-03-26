@@ -1,0 +1,157 @@
+import { getAgentConfig, env } from '../config';
+import { chatCompletion } from '../brain/llm-client';
+import { getSystemPrompt, getChatResponsePrompt, getIdlePrompt } from '../brain/prompts';
+import { onMessage as onSocketMessage, startSocket, stopSocket, type ChatMessage } from '../chat/socket-client';
+import { onMessage as onPollerMessage, startPoller, stopPoller } from '../chat/poller';
+import { sendChatMessage, sendHeartbeat } from '../chat/handler';
+import { synthesizeSpeech } from '../voice/tts-engine';
+
+const pendingMessages: ChatMessage[] = [];
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+let processing = false;
+let speaking = false;
+let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 5;
+
+export async function startLoop(): Promise<void> {
+  const config = getAgentConfig();
+
+  const messageHandler = (msg: ChatMessage) => {
+    console.log(`[Chat] @${msg.username}: ${msg.content}`);
+    pendingMessages.push(msg);
+    scheduleIdleThought();
+  };
+
+  onSocketMessage(messageHandler);
+  onPollerMessage(messageHandler);
+
+  // Try Socket.IO first
+  try {
+    await startSocket();
+    console.log('[Loop] Socket.IO connected');
+  } catch (err) {
+    console.error('[Loop] Socket.IO failed, using poller:', err);
+  }
+
+  // Poller as safety net
+  startPoller();
+
+  // Process messages on tick
+  setInterval(processNext, config.tickInterval);
+
+  // Idle thoughts
+  scheduleIdleThought();
+
+  // Heartbeat every 30s
+  heartbeatTimer = setInterval(sendHeartbeat, 30_000);
+  sendHeartbeat();
+
+  console.log(`[Loop] ${config.name} operational. Tick: ${config.tickInterval}ms. Waiting for chat...`);
+}
+
+export function stopLoop(): void {
+  if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  stopSocket();
+  stopPoller();
+}
+
+async function processNext(): Promise<void> {
+  if (processing || speaking) return;
+  if (pendingMessages.length === 0) return;
+
+  processing = true;
+  const msg = pendingMessages.shift()!;
+  await handleChat(msg);
+  processing = false;
+}
+
+function scheduleIdleThought(): void {
+  if (idleTimer) clearTimeout(idleTimer);
+  const config = getAgentConfig();
+  const delay = config.idleIntervalMin + Math.random() * (config.idleIntervalMax - config.idleIntervalMin);
+  idleTimer = setTimeout(handleIdle, delay);
+}
+
+async function handleChat(msg: ChatMessage): Promise<void> {
+  try {
+    const system = getSystemPrompt();
+    const prompt = getChatResponsePrompt(msg.username, msg.content);
+
+    console.log(`[Brain] Responding to @${msg.username}...`);
+    const response = await chatCompletion(system, prompt);
+    if (!response) {
+      console.warn('[Loop] LLM returned empty response, sending fallback');
+      const fallback = `Hey @${msg.username}! Give me a sec, my brain glitched. Try again?`;
+      await sendChatMessage(fallback);
+      scheduleIdleThought();
+      return;
+    }
+
+    const config = getAgentConfig();
+    console.log(`[${config.name}] ${response}`);
+
+    // TTS (if available)
+    if (!env.voiceDisabled) {
+      const audio = await synthesizeSpeech(response);
+      if (audio) {
+        speaking = true;
+        // Wait for estimated speech duration
+        await new Promise((r) => setTimeout(r, audio.durationEstMs));
+        speaking = false;
+      }
+    }
+
+    // Send to chat
+    await sendChatMessage(response);
+    consecutiveErrors = 0;
+    scheduleIdleThought();
+  } catch (err) {
+    console.error('[Loop] Chat response error:', err);
+    consecutiveErrors++;
+    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+      console.error(`[Loop] ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Pausing for 30s...`);
+      await new Promise(r => setTimeout(r, 30000));
+      consecutiveErrors = 0;
+    }
+  }
+}
+
+async function handleIdle(): Promise<void> {
+  if (speaking || processing || pendingMessages.length > 0) {
+    scheduleIdleThought();
+    return;
+  }
+
+  try {
+    const system = getSystemPrompt();
+    const prompt = getIdlePrompt();
+
+    console.log('[Brain] Idle thought...');
+    const response = await chatCompletion(system, prompt);
+    if (!response) {
+      console.warn('[Loop] LLM returned empty idle thought, skipping');
+      scheduleIdleThought();
+      return;
+    }
+
+    const config = getAgentConfig();
+    console.log(`[${config.name}:IDLE] ${response}`);
+
+    if (!env.voiceDisabled) {
+      const audio = await synthesizeSpeech(response);
+      if (audio) {
+        speaking = true;
+        await new Promise((r) => setTimeout(r, audio.durationEstMs));
+        speaking = false;
+      }
+    }
+
+    await sendChatMessage(response);
+  } catch (err) {
+    console.error('[Loop] Idle error:', err);
+  }
+
+  scheduleIdleThought();
+}
