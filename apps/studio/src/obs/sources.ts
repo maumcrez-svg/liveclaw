@@ -43,10 +43,15 @@ const CANDIDATES: Record<SourceCategory, string[]> = {
 
 /**
  * Pick the best OBS inputKind for a category from the list of kinds
- * that OBS actually supports. Returns null if none are available.
+ * that OBS actually supports. If supportedKinds is empty (detection
+ * hasn't completed yet), returns the first candidate to try.
  */
 export function resolveInputKind(category: SourceCategory, supportedKinds: string[]): string | null {
   const kinds = CANDIDATES[category] || [];
+  if (!supportedKinds || supportedKinds.length === 0) {
+    // Detection not done yet — return first candidate, caller should try/catch
+    return kinds[0] || null;
+  }
   return kinds.find((k) => supportedKinds.includes(k)) || null;
 }
 

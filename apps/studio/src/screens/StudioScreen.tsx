@@ -98,19 +98,28 @@ export function StudioScreen() {
       // 5. Load sources — auto-add Display Capture if scene is empty
       let items = await listSources(obs);
       if (items.length === 0) {
-        const supportedKinds = useOBSStore.getState().supportedInputKinds;
-        const displayKind = resolveInputKind('display', supportedKinds);
-        const kindToUse = displayKind || resolveInputKind('window', supportedKinds);
-        if (kindToUse) {
+        // Try ALL display + window capture kinds until one works
+        const allKinds = [
+          'screen_capture', 'monitor_capture', 'display_capture',
+          'xshm_input', 'pipewire-desktop-capture-source',
+          'window_capture', 'xcomposite_input',
+        ];
+        let added = false;
+        for (const kind of allKinds) {
           try {
-            const name = displayKind ? `Screen ${Date.now().toString(36).slice(-4)}` : `Window ${Date.now().toString(36).slice(-4)}`;
-            await addSource(obs, { inputName: name, inputKind: kindToUse, inputSettings: {} });
-            items = await listSources(obs);
+            const name = `Capture ${Date.now().toString(36).slice(-4)}`;
+            await addSource(obs, { inputName: name, inputKind: kind, inputSettings: {} });
+            added = true;
+            console.log('[Setup] Auto-added capture with kind:', kind);
+            break;
           } catch {
-            console.warn('[Setup] Auto-add capture failed with kind:', kindToUse);
+            // This kind not available, try next
           }
+        }
+        if (added) {
+          items = await listSources(obs);
         } else {
-          console.warn('[Setup] No capture source available. User can add manually.');
+          console.warn('[Setup] No capture source worked. User can add manually.');
         }
       }
       setSources(items);
