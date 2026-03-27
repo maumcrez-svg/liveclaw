@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { getOBS } from '../obs/connection';
 import { addSource, listSources } from '../obs/scene';
 import { useOBSStore } from '../store/obs-store';
-import { getDefaultDisplaySource, SOURCE_TYPES } from '../obs/sources';
+import { getDefaultDisplaySource, getDisplayCaptureFallbacks, SOURCE_TYPES } from '../obs/sources';
 
 import iconScreen from '../assets/icon-screen.png';
 import iconWebcam from '../assets/icon-webcam.png';
@@ -47,13 +47,18 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
     try {
       switch (buttonId) {
         case 'display': {
-          const src = getDefaultDisplaySource();
-          if (src) {
-            await addSource(obs, {
-              inputName: 'Display Capture',
-              inputKind: src.obsInputKind,
-              inputSettings: src.defaultSettings,
-            });
+          const fallbacks = getDisplayCaptureFallbacks();
+          for (const kind of fallbacks) {
+            try {
+              await addSource(obs, {
+                inputName: 'Display Capture',
+                inputKind: kind,
+                inputSettings: {},
+              });
+              break;
+            } catch {
+              // This kind not supported, try next
+            }
           }
           break;
         }

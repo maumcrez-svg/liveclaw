@@ -34,18 +34,17 @@ const platform = detectPlatform();
 
 // ── source type registry ────────────────────────────────────────────
 
-// Detect X11 vs Wayland on Linux
-function isWayland(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  // XDG_SESSION_TYPE would be 'wayland' on Wayland, but we can't access env from browser.
-  // Heuristic: if navigator.userAgent doesn't help, default to X11 (safer, no permission dialog)
-  return false; // Default to X11 — xshm works without permission dialogs
-}
-
 const displayCaptureKind: Record<Platform, string> = {
   win: 'monitor_capture',
   mac: 'display_capture',
-  linux: isWayland() ? 'pipewire-desktop-capture-source' : 'xshm_input',
+  linux: 'xshm_input',
+};
+
+// Fallback source kinds for Linux (Wayland needs pipewire)
+const displayCaptureFallbacks: Record<Platform, string[]> = {
+  win: ['monitor_capture'],
+  mac: ['display_capture'],
+  linux: ['xshm_input', 'pipewire-desktop-capture-source', 'screen_capture'],
 };
 
 const webcamKind: Record<Platform, string> = {
@@ -53,6 +52,14 @@ const webcamKind: Record<Platform, string> = {
   mac: 'av_capture_input_v2',
   linux: 'v4l2_input',
 };
+
+/**
+ * Get the best display capture source for this platform.
+ * Tries each fallback until one works with OBS.
+ */
+export function getDisplayCaptureFallbacks(): string[] {
+  return displayCaptureFallbacks[platform];
+}
 
 export const SOURCE_TYPES: SourceTypeConfig[] = [
   {

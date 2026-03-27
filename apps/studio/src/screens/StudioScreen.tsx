@@ -11,7 +11,7 @@ import { useAuthStore } from '../store/auth-store';
 import { getOBS } from '../obs/connection';
 import { configureStream, applyVideoSettings, startStream, startRecord, stopRecord } from '../obs/stream';
 import { ensureScene, listSources, addSource } from '../obs/scene';
-import { getDefaultDisplaySource } from '../obs/sources';
+import { getDefaultDisplaySource, getDisplayCaptureFallbacks } from '../obs/sources';
 import { fetchConnectionInfo, fetchActiveStreamId } from '../api/client';
 import { SourceList } from '../components/SourceList';
 import { AddSourceModal } from '../components/AddSourceModal';
@@ -98,15 +98,23 @@ export function StudioScreen() {
       // 5. Load sources — auto-add Display Capture if scene is empty
       let items = await listSources(obs);
       if (items.length === 0) {
-        const defaultSource = getDefaultDisplaySource();
-        if (defaultSource) {
-          await addSource(obs, {
-            inputName: defaultSource.label,
-            inputKind: defaultSource.obsInputKind,
-            inputSettings: defaultSource.defaultSettings,
-          });
-          items = await listSources(obs);
+        // Try each display capture kind until one works (X11 vs Wayland)
+        const fallbacks = getDisplayCaptureFallbacks();
+        let added = false;
+        for (const kind of fallbacks) {
+          try {
+            await addSource(obs, {
+              inputName: 'Display Capture',
+              inputKind: kind,
+              inputSettings: {},
+            });
+            added = true;
+            break;
+          } catch {
+            // This kind not supported, try next
+          }
         }
+        if (added) items = await listSources(obs);
       }
       setSources(items);
 
