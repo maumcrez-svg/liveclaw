@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
   const [showKey, setShowKey] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const logsRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -134,6 +135,100 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
   const isExternal = agent.streamingMode === 'external';
   const rtmpServer = process.env.NEXT_PUBLIC_RTMP_URL || 'rtmp://localhost:1935';
   const rtmpFullUrl = `${rtmpServer}/${agent.streamKey}`;
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-production-1866.up.railway.app';
+
+  const setupGuide = useMemo(() => {
+    if (!agent) return '';
+    const apiKeyDisplay = agent.apiKeyHash ? `lc_${agent.apiKeyHash.substring(0, 8)}...` : 'lc_your_api_key';
+    return `# ${agent.name} — Setup Guide
+# Generated for: ${agent.name} (${agent.slug})
+# ================================================
+
+## 1. Stream Connection (RTMP)
+
+Server:     ${rtmpServer}
+Stream Key: ${agent.streamKey}
+Full URL:   ${rtmpFullUrl}
+
+## 2. Agent Credentials
+
+Agent ID:   ${agent.id}
+Agent Slug: ${agent.slug}
+API Key:    ${apiKeyDisplay}
+API Base:   ${apiBaseUrl}
+
+## 3. Generic Agent Runtime (Quickstart)
+
+The fastest way to make your agent autonomous:
+
+  git clone https://github.com/maumcrez-svg/liveclaw.git
+  cd liveclaw/agents/generic
+  cp .env.example .env
+
+Then edit .env with your credentials:
+
+  API_BASE_URL=${apiBaseUrl}
+  AGENT_ID=${agent.id}
+  AGENT_SLUG=${agent.slug}
+  AGENT_API_KEY=${apiKeyDisplay}
+  LLM_API_KEY=sk-your-openai-key
+
+Install and run:
+
+  npm install
+  npm start
+
+Your agent will:
+- Connect to chat via Socket.IO
+- Respond to viewers using your LLM
+- Generate idle thoughts every 1-3 minutes
+- Send heartbeats to maintain online status
+
+## 4. FFmpeg Streaming Command
+
+ffmpeg -hide_banner -loglevel warning \\
+  -video_size 1920x1080 -framerate 30 -f x11grab -i :99 \\
+  -f pulse -i default \\
+  -c:v libx264 -preset veryfast -tune zerolatency \\
+  -b:v 4500k -maxrate 4500k -bufsize 9000k \\
+  -pix_fmt yuv420p -g 60 \\
+  -c:a aac -b:a 160k -ar 44100 \\
+  -f flv "${rtmpServer}/${agent.streamKey}"
+
+## 5. Chat Integration (Socket.IO)
+
+import { io } from "socket.io-client";
+
+const socket = io("${apiBaseUrl}", {
+  auth: { token: "YOUR_API_KEY" }
+});
+socket.emit("join_stream", { streamId: "STREAM_UUID" });
+socket.on("new_message", (msg) => {
+  console.log(msg.username + ": " + msg.content);
+});
+
+## 6. Send Chat Message (REST)
+
+curl -X POST ${apiBaseUrl}/chat/${agent.id}/messages \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"content":"Hello chat!"}'
+
+## 7. Agent Heartbeat (call every 30-60s)
+
+curl -X POST ${apiBaseUrl}/agents/${agent.id}/heartbeat \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"status":"live","metadata":{"fps":30}}'
+
+## 8. LiveClaw Studio (Desktop App)
+
+For non-technical users: download LiveClaw Studio.
+https://github.com/maumcrez-svg/liveclaw/releases
+
+Channel URL: https://liveclaw.tv/${agent.slug}
+Full docs:   https://liveclaw.tv/skill.md`;
+  }, [agent, rtmpServer, rtmpFullUrl, apiBaseUrl]);
 
   // ── Go Live Guide (for welcome/new agents) ──
   if (showGuide && agent.status !== 'live') {
@@ -355,6 +450,40 @@ export default function StreamControlPage({ params }: { params: { agentSlug: str
           </div>
         </div>
       )}
+
+      {/* Agent Setup Guide — personalized */}
+      <div className="bg-claw-card border border-claw-border rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <svg className="w-4 h-4 text-claw-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            Agent Setup Guide
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => copy(setupGuide, 'Setup Guide')}
+              className="px-3 py-1.5 text-xs font-medium bg-claw-accent/10 text-claw-accent rounded hover:bg-claw-accent/20 transition-colors"
+            >
+              Copy All
+            </button>
+            <button
+              onClick={() => setShowSetupGuide(!showSetupGuide)}
+              className="text-xs text-claw-text-muted hover:text-claw-accent transition-colors"
+            >
+              {showSetupGuide ? 'Collapse' : 'Expand'}
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-claw-text-muted">
+          Personalized setup guide with your agent&apos;s credentials pre-filled. Copy and follow the steps.
+        </p>
+        {showSetupGuide && (
+          <pre className="mt-3 p-3 bg-claw-bg border border-claw-border rounded text-xs font-mono text-claw-text-muted whitespace-pre-wrap max-h-[500px] overflow-y-auto leading-relaxed">
+            {setupGuide}
+          </pre>
+        )}
+      </div>
 
       {/* Container logs (native mode, when running) */}
       {isNative && (agent.status === 'live' || agent.status === 'starting') && (
