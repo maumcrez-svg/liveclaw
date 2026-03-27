@@ -114,6 +114,9 @@ export function StudioScreen() {
             // This kind not supported, try next
           }
         }
+        if (!added) {
+          console.warn('[Setup] No display capture source could be added. User can add manually.');
+        }
         if (added) items = await listSources(obs);
       }
       setSources(items);

@@ -76,8 +76,12 @@ export function SourceEditor({ sourceName, sceneItemId, inputKind, onClose }: So
         setScaleY(Number(t.scaleY) || 1);
         setRotation(Number(t.rotation) || 0);
 
-        const f = await listFilters(obs, sourceName);
-        setFilters(f);
+        try {
+          const f = await listFilters(obs, sourceName);
+          setFilters(f);
+        } catch {
+          setFilters([]); // Filters not available for this source
+        }
 
         // Load text-specific settings
         if (isTextSource) {

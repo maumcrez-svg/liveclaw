@@ -49,6 +49,15 @@ export function AddSourceModal({ open, onClose }: Props) {
       const obs = getOBS();
       const inputSettings: Record<string, any> = { ...st.defaultSettings };
 
+      // Auto-prefix browser source URLs with https:// if missing
+      if (st.id === 'browser' && extraSettings.url) {
+        let url = extraSettings.url;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = 'https://' + url;
+          extraSettings = { ...extraSettings, url };
+        }
+      }
+
       // Merge user-provided config
       for (const field of st.configFields) {
         const val = extraSettings[field.key];

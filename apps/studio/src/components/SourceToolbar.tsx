@@ -100,8 +100,12 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
       }
 
       // Refresh source list
-      const items = await listSources(obs);
-      setSources(items);
+      try {
+        const items = await listSources(obs);
+        setSources(items);
+      } catch {
+        // Refresh failed — UI may be stale
+      }
       flashSuccess(buttonId);
     } catch (err: any) {
       console.error('Failed to add source:', err);

@@ -219,7 +219,7 @@ pub fn launch_obs(path: String) -> Result<(), String> {
                 }
 
                 // Hide PipeWire/Portal screen share dialog
-                for name in &["sharing your screen", "Share your screen", "Screencast", "pipewire"] {
+                for name in &["sharing your screen", "Share your screen", "Screencast", "pipewire", "Arquivos em falta", "Missing Files", "missing file"] {
                     if let Ok(out) = Command::new("xdotool").args(["search", "--name", name]).output() {
                         for wid in String::from_utf8_lossy(&out.stdout).lines() {
                             let wid = wid.trim();

@@ -73,6 +73,8 @@ export function ScenePreview({
 
   // Screenshot state
   const [src, setSrc] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
+  const errorCountRef = useRef(0);
   const screenshotTimerRef = useRef<ReturnType<typeof setInterval>>();
 
   // Drag-and-drop file state
@@ -137,8 +139,11 @@ export function ScenePreview({
           },
         );
         setSrc(res.imageData);
+        errorCountRef.current = 0;
+        setPreviewError(false);
       } catch {
-        // OBS not ready or disconnected
+        errorCountRef.current++;
+        if (errorCountRef.current >= 5) setPreviewError(true);
       }
     };
 
@@ -410,6 +415,10 @@ export function ScenePreview({
           draggable={false}
           style={{ pointerEvents: 'none' }}
         />
+      ) : previewError ? (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-studio-muted text-xs">Preview unavailable — OBS may be busy</p>
+        </div>
       ) : (
         <div className="flex items-center justify-center h-full">
           <div className="w-5 h-5 border-2 border-studio-border border-t-studio-accent rounded-full animate-spin" />

@@ -109,7 +109,16 @@ export class OBSConnection {
     if (!this._connected) {
       throw new Error('OBS is not connected');
     }
-    return this.obs.call(requestType as any, requestData as any) as Promise<T>;
+
+    const timeoutMs = 10_000;
+    const result = await Promise.race([
+      this.obs.call(requestType as any, requestData as any),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`OBS request "${requestType}" timed out after ${timeoutMs / 1000}s`)), timeoutMs)
+      ),
+    ]);
+
+    return result as T;
   }
 
   // ── auto-reconnect ─────────────────────────────────────────────
