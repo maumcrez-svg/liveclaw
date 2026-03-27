@@ -23,10 +23,11 @@ export interface ConfigField {
 
 // ── candidate kinds per category (priority order) ───────────────────
 
-const DISPLAY_KINDS = ['screen_capture', 'monitor_capture', 'display_capture', 'xshm_input', 'pipewire-desktop-capture-source'];
+// Priority: platform-specific first, then cross-platform
+const DISPLAY_KINDS = ['xshm_input', 'pipewire-desktop-capture-source', 'monitor_capture', 'display_capture', 'screen_capture'];
 const WEBCAM_KINDS = ['v4l2_input', 'dshow_input', 'av_capture_input_v2', 'av_capture_input'];
-const WINDOW_KINDS = ['window_capture', 'xcomposite_input'];
-const TEXT_KINDS = ['text_ft2_source_v2', 'text_ft2_source', 'text_gdiplus_v3', 'text_gdiplus_v2'];
+const WINDOW_KINDS = ['xcomposite_input', 'pipewire-window-capture-source', 'window_capture'];
+const TEXT_KINDS = ['text_ft2_source', 'text_ft2_source_v2', 'text_gdiplus_v3', 'text_gdiplus_v2'];
 
 // ── dynamic resolution ──────────────────────────────────────────────
 
