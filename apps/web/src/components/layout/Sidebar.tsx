@@ -48,6 +48,17 @@ const navItems = [
     ),
   },
   {
+    href: 'https://roadmap.liveclaw.tv',
+    label: 'Roadmap',
+    icon: (
+      <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+        <line x1="4" y1="22" x2="4" y2="15" />
+      </svg>
+    ),
+    external: true,
+  },
+  {
     href: '/following',
     label: 'Following',
     icon: (
@@ -270,12 +281,16 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             return true;
           })
           .map((item) => {
-            const active = isNavActive(item.href, item.exact);
+            const active = !item.external && isNavActive(item.href, item.exact);
+            const linkProps = item.external
+              ? { target: '_blank' as const, rel: 'noopener noreferrer' }
+              : {};
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={handleLinkClick}
+                {...linkProps}
                 className={`flex items-center gap-3 px-2.5 py-2 rounded-md transition-colors ${
                   collapsed ? 'justify-center' : ''
                 } ${
