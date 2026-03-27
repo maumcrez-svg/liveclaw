@@ -18,3 +18,4 @@ agents/**/.env
 
 # Secrets (wallets, private keys)
 .secrets/
+unnamed.jpg
