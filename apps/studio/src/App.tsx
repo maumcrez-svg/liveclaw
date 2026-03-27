@@ -230,6 +230,15 @@ export default function App() {
       }
 
       if (connected) {
+        // Detect available OBS input kinds BEFORE proceeding
+        try {
+          const obsConn = getOBS();
+          const kindsRes = await obsConn.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
+          useOBSStore.getState().setSupportedInputKinds(kindsRes.inputKinds);
+          console.log('[boot] Detected OBS input kinds:', kindsRes.inputKinds.length);
+        } catch (err) {
+          console.warn('[boot] Could not detect input kinds:', err);
+        }
         transition('checking_auth');
       } else {
         transition('booting', 'Could not connect to OBS WebSocket on port 4455. Make sure OBS is running and the WebSocket plugin is enabled (Tools > WebSocket Server Settings).');

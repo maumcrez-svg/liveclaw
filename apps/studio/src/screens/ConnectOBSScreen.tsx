@@ -9,6 +9,17 @@ import { useOBSStore } from '../store/obs-store';
 import { getOBS } from '../obs/connection';
 import logoImg from '../assets/logo-dark.png';
 
+async function detectInputKinds() {
+  try {
+    const obs = getOBS();
+    const res = await obs.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
+    useOBSStore.getState().setSupportedInputKinds(res.inputKinds);
+    console.log('[ConnectOBS] Detected OBS input kinds:', res.inputKinds.length);
+  } catch (err) {
+    console.warn('[ConnectOBS] Could not detect input kinds:', err);
+  }
+}
+
 export function ConnectOBSScreen() {
   const appState = useAppStore((s) => s.state);
   const transition = useAppStore((s) => s.transition);
@@ -28,6 +39,8 @@ export function ConnectOBSScreen() {
 
     try {
       await obs.connect(password);
+      // Detect available input kinds BEFORE transitioning so StudioScreen has them
+      await detectInputKinds();
       // Global onConnected callback updates the store; we just transition.
       transition('checking_auth');
       return;

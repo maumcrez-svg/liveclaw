@@ -11,7 +11,6 @@ import { useAuthStore } from '../store/auth-store';
 import { getOBS } from '../obs/connection';
 import { configureStream, applyVideoSettings, startStream, startRecord, stopRecord } from '../obs/stream';
 import { ensureScene, listSources, addSource } from '../obs/scene';
-import { resolveInputKind } from '../obs/sources';
 import { fetchConnectionInfo, fetchActiveStreamId } from '../api/client';
 import { SourceList } from '../components/SourceList';
 import { AddSourceModal } from '../components/AddSourceModal';
@@ -95,17 +94,29 @@ export function StudioScreen() {
       await ensureScene(obs);
       markStep('scene');
 
-      // 5. Load sources — auto-add Display Capture if scene is empty
+      // 5. Load sources — auto-add capture if scene is empty
       let items = await listSources(obs);
       if (items.length === 0) {
-        // Try ALL display + window capture kinds until one works
-        const allKinds = [
-          'screen_capture', 'monitor_capture', 'display_capture',
-          'xshm_input', 'pipewire-desktop-capture-source',
-          'window_capture', 'xcomposite_input',
-        ];
+        const supportedKinds = useOBSStore.getState().supportedInputKinds;
+
+        // Build candidate list: detected kinds first, then brute force all
+        const DISPLAY_CANDIDATES = ['screen_capture', 'monitor_capture', 'display_capture', 'xshm_input', 'pipewire-desktop-capture-source'];
+        const WINDOW_CANDIDATES = ['window_capture', 'xcomposite_input'];
+
+        let candidates: string[];
+        if (supportedKinds.length > 0) {
+          // Use only kinds OBS confirmed it supports
+          candidates = [
+            ...DISPLAY_CANDIDATES.filter(k => supportedKinds.includes(k)),
+            ...WINDOW_CANDIDATES.filter(k => supportedKinds.includes(k)),
+          ];
+        } else {
+          // Detection didn't run yet — try everything
+          candidates = [...DISPLAY_CANDIDATES, ...WINDOW_CANDIDATES];
+        }
+
         let added = false;
-        for (const kind of allKinds) {
+        for (const kind of candidates) {
           try {
             const name = `Capture ${Date.now().toString(36).slice(-4)}`;
             await addSource(obs, { inputName: name, inputKind: kind, inputSettings: {} });
@@ -113,13 +124,15 @@ export function StudioScreen() {
             console.log('[Setup] Auto-added capture with kind:', kind);
             break;
           } catch {
-            // This kind not available, try next
+            // This kind didn't work, try next
           }
         }
+
         if (added) {
           items = await listSources(obs);
         } else {
-          console.warn('[Setup] No capture source worked. User can add manually.');
+          console.warn('[Setup] No capture source worked on this system.');
+          // Don't show error — user can add manually via toolbar
         }
       }
       setSources(items);

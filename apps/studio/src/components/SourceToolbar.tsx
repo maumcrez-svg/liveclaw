@@ -35,6 +35,7 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
   const supportedKinds = useOBSStore((s) => s.supportedInputKinds);
   const [adding, setAdding] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const flashSuccess = (buttonId: string) => {
     setLastAdded(buttonId);
@@ -112,6 +113,8 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
       flashSuccess(buttonId);
     } catch (err: any) {
       console.error('Failed to add source:', err);
+      setAddError(err.message || 'Could not add this source. Try another type.');
+      setTimeout(() => setAddError(null), 5000);
     } finally {
       setAdding(null);
     }
@@ -127,39 +130,44 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
     : QUICK_BUTTONS; // show all until detection finishes
 
   return (
-    <div className="flex gap-1.5 py-2">
-      {availableButtons.map((btn) => (
-        <button
-          key={btn.id}
-          onClick={() => handleAdd(btn.id)}
-          disabled={adding !== null}
-          className={`flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg border bg-studio-card transition-all disabled:opacity-50 group ${
-            lastAdded === btn.id
-              ? 'border-studio-success bg-studio-success/10'
-              : adding === btn.id
-              ? 'border-studio-accent'
-              : 'border-studio-border hover:border-studio-accent hover:bg-studio-accent/5'
-          }`}
-          title={`Add ${btn.label}`}
-        >
-          <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
-            {adding === btn.id ? (
-              <span className="inline-block w-5 h-5 border-2 border-studio-border border-t-studio-accent rounded-full animate-spin" />
-            ) : lastAdded === btn.id ? (
-              <span className="text-lg text-studio-success">{'\u2713'}</span>
-            ) : (
-              <img src={btn.img} alt={btn.label} className="w-10 h-10 object-contain" draggable={false} />
-            )}
-          </div>
-          <span className={`text-[10px] transition-colors ${
-            lastAdded === btn.id
-              ? 'text-studio-success'
-              : 'text-studio-muted group-hover:text-studio-text'
-          }`}>
-            {btn.label}
-          </span>
-        </button>
-      ))}
+    <div>
+      <div className="flex gap-1.5 py-2">
+        {availableButtons.map((btn) => (
+          <button
+            key={btn.id}
+            onClick={() => handleAdd(btn.id)}
+            disabled={adding !== null}
+            className={`flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg border bg-studio-card transition-all disabled:opacity-50 group ${
+              lastAdded === btn.id
+                ? 'border-studio-success bg-studio-success/10'
+                : adding === btn.id
+                ? 'border-studio-accent'
+                : 'border-studio-border hover:border-studio-accent hover:bg-studio-accent/5'
+            }`}
+            title={`Add ${btn.label}`}
+          >
+            <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              {adding === btn.id ? (
+                <span className="inline-block w-5 h-5 border-2 border-studio-border border-t-studio-accent rounded-full animate-spin" />
+              ) : lastAdded === btn.id ? (
+                <span className="text-lg text-studio-success">{'\u2713'}</span>
+              ) : (
+                <img src={btn.img} alt={btn.label} className="w-10 h-10 object-contain" draggable={false} />
+              )}
+            </div>
+            <span className={`text-[10px] transition-colors ${
+              lastAdded === btn.id
+                ? 'text-studio-success'
+                : 'text-studio-muted group-hover:text-studio-text'
+            }`}>
+              {btn.label}
+            </span>
+          </button>
+        ))}
+      </div>
+      {addError && (
+        <p className="text-xs text-studio-live mt-1 text-center">{addError}</p>
+      )}
     </div>
   );
 }

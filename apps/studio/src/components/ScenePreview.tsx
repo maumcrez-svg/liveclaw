@@ -428,6 +428,17 @@ export function ScenePreview({
     );
   }
 
+  if (connected && sources.length === 0) {
+    return (
+      <div className="rounded-lg overflow-hidden border border-studio-border bg-studio-surface aspect-video relative flex items-center justify-center">
+        <div className="text-center px-4">
+          <p className="text-studio-muted text-sm font-medium">No sources added yet</p>
+          <p className="text-studio-muted/50 text-xs mt-1">Click Screen, Webcam, or Text above to add content to your stream</p>
+        </div>
+      </div>
+    );
+  }
+
   // Resize handle positions: [corner, css props, cursor]
   const resizeHandles: Array<{
     corner: ResizeCorner;

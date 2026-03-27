@@ -36,7 +36,27 @@ fn obs_data_dir(app: &AppHandle) -> PathBuf {
 fn obs_binary_path(base: &Path) -> PathBuf {
     #[cfg(target_os = "windows")]
     {
-        base.join("bin").join("64bit").join("obs64.exe")
+        // Direct path (if extracted flat)
+        let direct = base.join("bin").join("64bit").join("obs64.exe");
+        if direct.exists() {
+            return direct;
+        }
+
+        // Search in extracted subdirectories (OBS zip creates OBS-Studio-VERSION-Windows-x64/)
+        if let Ok(entries) = std::fs::read_dir(base) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_dir() {
+                    let nested = p.join("bin").join("64bit").join("obs64.exe");
+                    if nested.exists() {
+                        return nested;
+                    }
+                }
+            }
+        }
+
+        // Fallback to direct path even if it doesn't exist (will fail later with clear error)
+        direct
     }
     #[cfg(target_os = "macos")]
     {
@@ -121,8 +141,8 @@ pub async fn setup_obs_portable(app: AppHandle) -> Result<String, String> {
     let (download_url, archive_name) = get_download_info();
     let archive_path = base.join(&archive_name);
 
-    // Use system curl for download (available on Win10+, macOS, Linux)
-    let status = Command::new("curl")
+    // Try curl first (available on most systems)
+    let curl_ok = Command::new("curl")
         .args([
             "-L",
             "-o",
@@ -132,10 +152,50 @@ pub async fn setup_obs_portable(app: AppHandle) -> Result<String, String> {
             "--fail",
         ])
         .status()
-        .map_err(|e| format!("Failed to download OBS: {}. Make sure curl is installed.", e))?;
+        .map(|s| s.success())
+        .unwrap_or(false);
 
-    if !status.success() {
-        return Err("Download failed. Check your internet connection.".to_string());
+    if !curl_ok {
+        // Fallback: PowerShell (Windows) or wget (Linux/macOS)
+        #[cfg(target_os = "windows")]
+        {
+            emit_progress(&app, "downloading", "Downloading OBS Studio (via PowerShell)...");
+            let ps_status = Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-ExecutionPolicy", "Bypass",
+                    "-Command",
+                    &format!(
+                        "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '{}' -OutFile '{}' -UseBasicParsing",
+                        download_url,
+                        archive_path.to_str().unwrap()
+                    ),
+                ])
+                .status()
+                .map_err(|e| format!("Download failed: {}. Please install OBS manually from obsproject.com", e))?;
+
+            if !ps_status.success() {
+                return Err("Download failed. Please install OBS manually from obsproject.com/download".to_string());
+            }
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Try wget as fallback
+            let wget_ok = Command::new("wget")
+                .args(["-O", archive_path.to_str().unwrap(), &download_url])
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false);
+
+            if !wget_ok {
+                return Err("Download failed. Please install OBS manually from obsproject.com/download".to_string());
+            }
+        }
+    }
+
+    if !archive_path.exists() {
+        return Err("Download completed but file not found. Please install OBS manually.".to_string());
     }
 
     // Step 2: Extract
@@ -149,7 +209,8 @@ pub async fn setup_obs_portable(app: AppHandle) -> Result<String, String> {
     emit_progress(&app, "configuring", "Configuring OBS for LiveClaw...");
     configure_obs_portable(&base)?;
 
-    // Step 4: Verify
+    // Step 4: Verify — re-resolve binary path now that extraction is complete
+    let binary = obs_binary_path(&base);
     if !binary.exists() {
         return Err(format!(
             "Setup completed but OBS binary not found at expected path: {}",
