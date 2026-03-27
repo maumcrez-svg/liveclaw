@@ -23,15 +23,15 @@ export interface ConfigField {
 
 // ── candidate kinds per category (priority order) ───────────────────
 
-// Priority: platform-specific first, then cross-platform
-const DISPLAY_KINDS = ['xshm_input', 'pipewire-desktop-capture-source', 'monitor_capture', 'display_capture', 'screen_capture'];
+// Priority: pipewire first (modern Linux), then legacy, then Windows/macOS
+const DISPLAY_KINDS = ['pipewire-desktop-capture-source', 'xshm_input', 'monitor_capture', 'display_capture', 'screen_capture'];
 const WEBCAM_KINDS = ['v4l2_input', 'dshow_input', 'av_capture_input_v2', 'av_capture_input'];
-const WINDOW_KINDS = ['xcomposite_input', 'pipewire-window-capture-source', 'window_capture'];
+const WINDOW_KINDS = ['pipewire-window-capture-source', 'xcomposite_input', 'window_capture'];
 const TEXT_KINDS = ['text_ft2_source', 'text_ft2_source_v2', 'text_gdiplus_v3', 'text_gdiplus_v2'];
 
 // ── dynamic resolution ──────────────────────────────────────────────
 
-type SourceCategory = 'display' | 'webcam' | 'window' | 'text' | 'browser' | 'image';
+export type SourceCategory = 'display' | 'webcam' | 'window' | 'text' | 'browser' | 'image';
 
 const CANDIDATES: Record<SourceCategory, string[]> = {
   display: DISPLAY_KINDS,
@@ -43,17 +43,20 @@ const CANDIDATES: Record<SourceCategory, string[]> = {
 };
 
 /**
- * Pick the best OBS inputKind for a category from the list of kinds
- * that OBS actually supports. If supportedKinds is empty (detection
- * hasn't completed yet), returns the first candidate to try.
+ * Pick the best OBS inputKind for a category.
+ * Returns null when supportedKinds is empty (caller must brute force or wait).
  */
 export function resolveInputKind(category: SourceCategory, supportedKinds: string[]): string | null {
   const kinds = CANDIDATES[category] || [];
   if (!supportedKinds || supportedKinds.length === 0) {
-    // Detection not done yet — return first candidate, caller should try/catch
-    return kinds[0] || null;
+    return null; // Detection not done — caller must brute force
   }
   return kinds.find((k) => supportedKinds.includes(k)) || null;
+}
+
+/** Get all candidate kinds for a category (for brute force). */
+export function getAllCandidates(category: SourceCategory): string[] {
+  return [...(CANDIDATES[category] || [])];
 }
 
 /**

@@ -82,19 +82,10 @@ export default function App() {
   useEffect(() => {
     const obs = getOBS();
 
-    obs.onConnected = async () => {
+    obs.onConnected = () => {
       useOBSStore.getState().setConnected(true);
       useOBSStore.getState().setReconnecting(false);
-
-      // Detect available input kinds from OBS
-      try {
-        const obsInner = getOBS();
-        const res = await obsInner.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
-        useOBSStore.getState().setSupportedInputKinds(res.inputKinds);
-        console.log('[OBS] Supported input kinds:', res.inputKinds);
-      } catch (err) {
-        console.warn('[OBS] Could not detect input kinds:', err);
-      }
+      // Input kind detection is done in fallbackSystemObs/ConnectOBSScreen with retry
     };
 
     obs.onDisconnected = () => {
@@ -232,12 +223,24 @@ export default function App() {
       if (connected) {
         // Detect available OBS input kinds BEFORE proceeding
         try {
-          const obsConn = getOBS();
-          const kindsRes = await obsConn.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
-          useOBSStore.getState().setSupportedInputKinds(kindsRes.inputKinds);
-          console.log('[boot] Detected OBS input kinds:', kindsRes.inputKinds.length);
+          // Retry GetInputKindList — OBS needs time to load plugins
+          let kinds: string[] = [];
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            await new Promise((r) => setTimeout(r, 2000));
+            try {
+              const obsConn = getOBS();
+              const kindsRes = await obsConn.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
+              kinds = kindsRes.inputKinds || [];
+              console.log(`[boot] GetInputKindList attempt ${attempt}: ${kinds.length} kinds`);
+              if (kinds.length > 3) break;
+            } catch (err) {
+              console.warn(`[boot] GetInputKindList attempt ${attempt} failed:`, err);
+            }
+          }
+          useOBSStore.getState().setSupportedInputKinds(kinds);
+          console.log('[boot] Final input kinds:', kinds.join(', '));
         } catch (err) {
-          console.warn('[boot] Could not detect input kinds:', err);
+          console.warn('[boot] Input kind detection failed entirely:', err);
         }
         transition('checking_auth');
       } else {

@@ -10,14 +10,21 @@ import { getOBS } from '../obs/connection';
 import logoImg from '../assets/logo-dark.png';
 
 async function detectInputKinds() {
-  try {
-    const obs = getOBS();
-    const res = await obs.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
-    useOBSStore.getState().setSupportedInputKinds(res.inputKinds);
-    console.log('[ConnectOBS] Detected OBS input kinds:', res.inputKinds.length);
-  } catch (err) {
-    console.warn('[ConnectOBS] Could not detect input kinds:', err);
+  let kinds: string[] = [];
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const obs = getOBS();
+      const res = await obs.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
+      kinds = res.inputKinds || [];
+      console.log(`[ConnectOBS] GetInputKindList attempt ${attempt}: ${kinds.length} kinds`);
+      if (kinds.length > 3) break;
+    } catch (err) {
+      console.warn(`[ConnectOBS] GetInputKindList attempt ${attempt} failed:`, err);
+    }
   }
+  useOBSStore.getState().setSupportedInputKinds(kinds);
+  console.log('[ConnectOBS] Final input kinds:', kinds.join(', '));
 }
 
 export function ConnectOBSScreen() {

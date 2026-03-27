@@ -6,7 +6,7 @@
 
 import type { OBSConnection } from './connection';
 import { addSource, ensureScene, listSources } from './scene';
-import { SOURCE_TYPES, resolveInputKind } from './sources';
+import { SOURCE_TYPES, resolveInputKind, getAllCandidates } from './sources';
 import { useOBSStore } from '../store/obs-store';
 
 // Template thumbnails
@@ -110,19 +110,31 @@ export async function applySceneTemplate(
     }
   }
 
-  // Add template sources
+  // Add template sources — try each with fallback kinds
+  const supportedKinds = useOBSStore.getState().supportedInputKinds;
   for (const src of template.sources) {
-    const inputKind = getInputKind(src.sourceTypeId);
-    if (!inputKind) continue;
-
     const sourceType = SOURCE_TYPES.find((s) => s.id === src.sourceTypeId);
     const settings = { ...(sourceType?.defaultSettings ?? {}), ...(src.settings ?? {}) };
+    const uniqueName = `${src.inputName} ${Date.now().toString(36).slice(-4)}`;
 
-    await addSource(obs, {
-      inputName: src.inputName,
-      inputKind,
-      inputSettings: settings,
-    });
+    // Get candidates: resolved first, then brute force from sources.ts
+    const resolved = resolveInputKind(src.sourceTypeId as any, supportedKinds);
+    const candidates: string[] = resolved ? [resolved] : getAllCandidates(src.sourceTypeId as any);
+
+    let added = false;
+    for (const kind of candidates) {
+      try {
+        await addSource(obs, { inputName: uniqueName, inputKind: kind, inputSettings: settings });
+        added = true;
+        break;
+      } catch {
+        // This kind didn't work, try next
+      }
+    }
+
+    if (!added) {
+      console.warn(`[Template] Could not add ${src.sourceTypeId} source — no supported kind found`);
+    }
   }
 
   // After creating all sources, apply positioning for multi-source templates

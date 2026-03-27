@@ -90,7 +90,9 @@ export function ScenePreview({
   // Screenshot state
   const [src, setSrc] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
+  const [showBlackWarning, setShowBlackWarning] = useState(false);
   const errorCountRef = useRef(0);
+  const blackFrameCountRef = useRef(0);
   const screenshotTimerRef = useRef<ReturnType<typeof setInterval>>();
 
   // Drag-and-drop file state
@@ -158,6 +160,14 @@ export function ScenePreview({
         setSrc(res.imageData);
         errorCountRef.current = 0;
         setPreviewError(false);
+        // Detect black frames (very short base64 = likely empty/black)
+        if (sources.length > 0 && res.imageData && res.imageData.length < 2000) {
+          blackFrameCountRef.current++;
+          if (blackFrameCountRef.current >= 10) setShowBlackWarning(true);
+        } else {
+          blackFrameCountRef.current = 0;
+          setShowBlackWarning(false);
+        }
       } catch {
         errorCountRef.current++;
         if (errorCountRef.current >= 5) setPreviewError(true);
@@ -575,6 +585,13 @@ export function ScenePreview({
       {dragOver && (
         <div className="absolute inset-0 bg-studio-accent/20 flex items-center justify-center z-10 pointer-events-none">
           <p className="text-white text-sm font-medium">Drop image here</p>
+        </div>
+      )}
+
+      {/* Black frame warning */}
+      {showBlackWarning && sources.length > 0 && (
+        <div className="absolute bottom-2 left-2 right-2 bg-studio-warning/90 text-white text-xs px-3 py-2 rounded-lg pointer-events-none text-center">
+          Source may need configuration — click it to set up capture settings
         </div>
       )}
 

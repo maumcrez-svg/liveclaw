@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { getOBS } from '../obs/connection';
 import { addSource, listSources } from '../obs/scene';
 import { useOBSStore } from '../store/obs-store';
-import { resolveInputKind } from '../obs/sources';
+import { resolveInputKind, getAllCandidates } from '../obs/sources';
 
 import iconScreen from '../assets/icon-screen.png';
 import iconWebcam from '../assets/icon-webcam.png';
@@ -50,28 +50,39 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
       switch (buttonId) {
         case 'display': {
           const kind = resolveInputKind('display', supportedKinds);
-          if (!kind) {
-            // Fallback to window capture if no display capture available
-            const winKind = resolveInputKind('window', supportedKinds);
-            if (winKind) {
-              const name = `Window ${Date.now().toString(36).slice(-4)}`;
-              await addSource(obs, { inputName: name, inputKind: winKind, inputSettings: {} });
+          // Brute force: try all display + window candidates
+          const candidates = kind ? [kind] : [...getAllCandidates('display'), ...getAllCandidates('window')];
+          let captureAdded = false;
+          for (const k of candidates) {
+            try {
+              const name = `Capture ${Date.now().toString(36).slice(-4)}`;
+              console.log(`[Toolbar] Trying: ${k}`);
+              await addSource(obs, { inputName: name, inputKind: k, inputSettings: {} });
+              console.log(`[Toolbar] SUCCESS: ${k}`);
+              captureAdded = true;
+              break;
+            } catch {
+              console.log(`[Toolbar] FAILED: ${k}`);
             }
-            break;
           }
-          // Check if display capture already exists
-          const existingSources = useOBSStore.getState().sources;
-          const hasDisplay = existingSources.some(s => s.inputKind === kind);
-          if (hasDisplay) break; // Already added
-          const displayName = `Screen ${Date.now().toString(36).slice(-4)}`;
-          await addSource(obs, { inputName: displayName, inputKind: kind, inputSettings: {} });
+          if (!captureAdded) {
+            throw new Error('No screen or window capture available. Check OBS plugins.');
+          }
           break;
         }
         case 'webcam': {
           const kind = resolveInputKind('webcam', supportedKinds);
-          if (!kind) break;
-          const camName = `Webcam ${Date.now().toString(36).slice(-4)}`;
-          await addSource(obs, { inputName: camName, inputKind: kind, inputSettings: {} });
+          const wcCandidates = kind ? [kind] : getAllCandidates('webcam');
+          let wcAdded = false;
+          for (const k of wcCandidates) {
+            try {
+              const name = `Webcam ${Date.now().toString(36).slice(-4)}`;
+              await addSource(obs, { inputName: name, inputKind: k, inputSettings: {} });
+              wcAdded = true;
+              break;
+            } catch { /* next */ }
+          }
+          if (!wcAdded) throw new Error('No webcam source available.');
           break;
         }
         case 'text': {

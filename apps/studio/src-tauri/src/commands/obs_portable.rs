@@ -233,17 +233,34 @@ pub fn launch_bundled_obs(app: AppHandle) -> Result<u32, String> {
     }
 
     #[cfg(target_os = "windows")]
-    let child = Command::new(&binary)
-        .current_dir(binary.parent().unwrap().parent().unwrap()) // obs-portable/bin/64bit → obs-portable/
-        .args([
-            "--portable",
-            "--minimize-to-tray",
-            "--disable-updater",
-            "--websocket_port",
-            "4455",
-        ])
-        .spawn()
-        .map_err(|e| format!("Failed to launch OBS: {}", e))?;
+    let child = {
+        // Go up from bin/64bit/obs64.exe to OBS root (where data/ lives)
+        let obs_root = binary.parent() // bin/64bit
+            .and_then(|p| p.parent())   // bin
+            .and_then(|p| p.parent())   // OBS root (e.g. OBS-Studio-32.1.0-Windows-x64)
+            .unwrap_or_else(|| binary.parent().unwrap());
+
+        eprintln!("[OBS Portable] Binary: {:?}", binary);
+        eprintln!("[OBS Portable] Working dir: {:?}", obs_root);
+        eprintln!("[OBS Portable] data/ exists: {}", obs_root.join("data").exists());
+
+        let locale_check = obs_root.join("data").join("obs-studio").join("locale").join("en-US.ini");
+        if !locale_check.exists() {
+            eprintln!("[OBS Portable] WARNING: locale not found at {:?}", locale_check);
+        }
+
+        Command::new(&binary)
+            .current_dir(obs_root)
+            .args([
+                "--portable",
+                "--minimize-to-tray",
+                "--disable-updater",
+                "--websocket_port",
+                "4455",
+            ])
+            .spawn()
+            .map_err(|e| format!("Failed to launch OBS: {}", e))?
+    };
 
     #[cfg(target_os = "macos")]
     let child = Command::new(&binary)
