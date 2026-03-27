@@ -35,10 +35,9 @@ export function StepVoice({ voice, onChange, onNext, onBack }: StepVoiceProps) {
   const update = (partial: Partial<VoiceConfig>) => onChange({ ...voice, ...partial });
 
   const playVoiceSample = (voiceId: string) => {
-    // Stop current playback
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current = null;
+      audioRef.current.currentTime = 0;
     }
 
     if (playing === voiceId) {
@@ -49,14 +48,25 @@ export function StepVoice({ voice, onChange, onNext, onBack }: StepVoiceProps) {
     const src = VOICE_SAMPLES[voiceId];
     if (!src) return;
 
-    const audio = new Audio(src);
-    audioRef.current = audio;
-    setPlaying(voiceId);
-    audio.play().catch(() => {});
-    audio.onended = () => {
+    // Use existing audio element or create one (avoids CSP issues in Tauri)
+    if (!audioRef.current) {
+      audioRef.current = document.createElement('audio');
+      document.body.appendChild(audioRef.current);
+      audioRef.current.style.display = 'none';
+    }
+
+    audioRef.current.src = src;
+    audioRef.current.onended = () => setPlaying(null);
+    audioRef.current.onerror = () => {
+      console.error('[Voice] Failed to play sample:', voiceId);
       setPlaying(null);
-      audioRef.current = null;
     };
+
+    setPlaying(voiceId);
+    audioRef.current.play().catch((err) => {
+      console.error('[Voice] Play error:', err);
+      setPlaying(null);
+    });
   };
 
   return (

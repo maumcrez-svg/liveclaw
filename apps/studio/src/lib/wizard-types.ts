@@ -132,8 +132,16 @@ export const RESPONSE_STYLES = [
 
 export function detectProvider(key: string): { id: string; name: string } | null {
   if (key.startsWith('sk-ant-')) return { id: 'anthropic', name: 'Anthropic' };
+  if (key.startsWith('xai-')) return { id: 'xai', name: 'xAI (Grok)' };
+  if (key.startsWith('sk-or-')) return { id: 'openrouter', name: 'OpenRouter' };
   if (key.startsWith('sk-')) return { id: 'openai', name: 'OpenAI' };
   if (key.startsWith('AIza')) return { id: 'google', name: 'Google' };
+  if (key.startsWith('pplx-')) return { id: 'perplexity', name: 'Perplexity' };
+  if (key.startsWith('r8_') || key.startsWith('rep_')) return { id: 'replicate', name: 'Replicate' };
+  if (key.startsWith('hf_')) return { id: 'huggingface', name: 'Hugging Face' };
+  if (key.startsWith('nvapi-')) return { id: 'nvidia', name: 'NVIDIA NIM' };
+  // Fallback: if it looks like an API key, assume OpenAI-compatible
+  if (key.length > 20) return { id: 'openai', name: 'OpenAI-compatible' };
   return null;
 }
 
@@ -141,14 +149,45 @@ export const MODEL_OPTIONS: Record<string, Array<{ id: string; name: string }>> 
   openai: [
     { id: 'gpt-4o', name: 'GPT-4o' },
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+    { id: 'gpt-4.1', name: 'GPT-4.1' },
+    { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
+    { id: 'o3-mini', name: 'o3-mini' },
   ],
   anthropic: [
     { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
     { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4' },
   ],
   google: [
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+  ],
+  xai: [
+    { id: 'grok-3', name: 'Grok 3' },
+    { id: 'grok-3-mini', name: 'Grok 3 Mini' },
+  ],
+  openrouter: [
+    { id: 'openai/gpt-4o', name: 'GPT-4o (via OpenRouter)' },
+    { id: 'anthropic/claude-sonnet-4', name: 'Claude Sonnet 4 (via OpenRouter)' },
+    { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (via OpenRouter)' },
+    { id: 'meta-llama/llama-4-scout', name: 'Llama 4 Scout (via OpenRouter)' },
+  ],
+  perplexity: [
+    { id: 'sonar-pro', name: 'Sonar Pro' },
+    { id: 'sonar', name: 'Sonar' },
+  ],
+  replicate: [
+    { id: 'meta/llama-4-scout', name: 'Llama 4 Scout' },
+    { id: 'meta/llama-4-maverick', name: 'Llama 4 Maverick' },
+  ],
+  huggingface: [
+    { id: 'meta-llama/Llama-4-Scout-17B-16E', name: 'Llama 4 Scout' },
+    { id: 'mistralai/Mistral-Small-24B', name: 'Mistral Small' },
+  ],
+  nvidia: [
+    { id: 'meta/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout (NIM)' },
+    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B' },
   ],
 };
 
