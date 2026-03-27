@@ -85,20 +85,33 @@ export function ConnectOBSScreen() {
           <div className="w-16 h-16 mx-auto rounded-full bg-studio-card border border-studio-border flex items-center justify-center text-2xl text-studio-live">
             !
           </div>
-          <p className="text-studio-text">{errorMsg}</p>
+          <h2 className="text-lg font-semibold text-studio-text">OBS not found</h2>
+          <p className="text-studio-muted text-sm leading-relaxed max-w-sm">
+            LiveClaw Studio needs OBS to stream. It tried to set it up automatically but couldn't connect.
+          </p>
+          <div className="bg-studio-surface border border-studio-border rounded-lg p-4 text-left max-w-sm">
+            <p className="text-xs font-medium text-studio-text mb-2">How to fix:</p>
+            <ol className="text-xs text-studio-muted space-y-1.5 list-decimal list-inside">
+              <li>Download OBS Studio from <a href="https://obsproject.com" target="_blank" rel="noopener noreferrer" className="text-studio-accent hover:text-studio-accent-hover underline">obsproject.com</a></li>
+              <li>Install and open OBS once (it will configure itself)</li>
+              <li>Close OBS and click "Try again" below</li>
+            </ol>
+          </div>
           <div className="flex gap-3 justify-center">
             <button
               onClick={handleRetry}
-              className="px-5 py-2.5 bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium rounded transition-colors"
+              className="px-5 py-2.5 bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium rounded-lg transition-colors"
             >
               Try again
             </button>
-            <button
-              onClick={() => transition('booting')}
-              className="px-5 py-2.5 border border-studio-border text-studio-muted hover:text-studio-text text-sm rounded transition-colors"
+            <a
+              href="https://obsproject.com/download"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 border border-studio-border text-studio-muted hover:text-studio-text text-sm rounded-lg transition-colors inline-flex items-center"
             >
-              Go back
-            </button>
+              Download OBS
+            </a>
           </div>
         </div>
       )}

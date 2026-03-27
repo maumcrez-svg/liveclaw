@@ -34,15 +34,34 @@ export function BootingScreen() {
       {/* Status */}
       {error ? (
         <div className="text-center max-w-md">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-            <p className="text-red-400 text-sm">{error}</p>
+          <div className="bg-studio-live/10 border border-studio-live/20 rounded-lg p-4 mb-4">
+            <p className="text-studio-live text-sm font-medium mb-1">Setup failed</p>
+            <p className="text-studio-muted text-xs">{error}</p>
           </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-studio-card border border-studio-border rounded-lg text-sm hover:border-studio-accent transition-colors"
-          >
-            Try again
-          </button>
+          <div className="bg-studio-surface border border-studio-border rounded-lg p-4 mb-4 text-left">
+            <p className="text-xs font-medium text-studio-text mb-2">OBS Studio is required:</p>
+            <ol className="text-xs text-studio-muted space-y-1 list-decimal list-inside">
+              <li>Download from <a href="https://obsproject.com/download" target="_blank" rel="noopener noreferrer" className="text-studio-accent underline">obsproject.com</a></li>
+              <li>Install and run OBS once</li>
+              <li>Close OBS and restart LiveClaw Studio</li>
+            </ol>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2.5 bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Try again
+            </button>
+            <a
+              href="https://obsproject.com/download"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 border border-studio-border text-studio-muted hover:text-studio-text text-sm rounded-lg transition-colors"
+            >
+              Download OBS
+            </a>
+          </div>
         </div>
       ) : (
         <div className="text-center">
