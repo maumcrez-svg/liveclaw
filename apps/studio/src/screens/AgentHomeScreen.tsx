@@ -32,7 +32,7 @@ export function AgentHomeScreen() {
   }, [agentSlug]);
 
   const handleStartStreaming = () => {
-    transition('configuring');
+    transition('simple_studio');
   };
 
   const handleChangeAgent = () => {
@@ -148,10 +148,13 @@ export function AgentHomeScreen() {
           </button>
         </div>
 
-        {/* Stream info hint */}
-        <p className="text-[10px] text-studio-muted/50 text-center mt-6">
-          OBS will be configured automatically when you start streaming
-        </p>
+        {/* Advanced mode */}
+        <button
+          onClick={() => transition('configuring')}
+          className="w-full mt-2 py-2 text-[10px] text-studio-muted hover:text-studio-accent transition-colors"
+        >
+          Advanced mode (OBS)
+        </button>
       </div>
     </div>
   );

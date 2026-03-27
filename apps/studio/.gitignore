@@ -4,3 +4,5 @@ dist/
 .env.local
 .env*.local
 apps/studio/src-tauri/target/
+src-tauri/target/
+src-tauri/gen/

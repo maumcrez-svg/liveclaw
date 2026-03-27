@@ -21,6 +21,7 @@ import { AgentPickerScreen } from './screens/AgentPickerScreen';
 import { StudioScreen } from './screens/StudioScreen';
 import { LiveScreen } from './screens/LiveScreen';
 import { AgentHomeScreen } from './screens/AgentHomeScreen';
+import { SimpleStudioScreen } from './screens/SimpleStudioScreen';
 
 // Components
 import { StatusBar } from './components/StatusBar';
@@ -374,6 +375,10 @@ function ScreenRouter({ state }: { state: string }) {
     case 'live':
     case 'stopping':
       return <LiveScreen />;
+
+    case 'simple_studio':
+    case 'simple_live':
+      return <SimpleStudioScreen />;
 
     default:
       return <BootingScreen />;

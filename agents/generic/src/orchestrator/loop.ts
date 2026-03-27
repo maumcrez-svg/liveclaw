@@ -1,6 +1,8 @@
 import { getAgentConfig, env } from '../config';
 import { chatCompletion } from '../brain/llm-client';
-import { getSystemPrompt, getChatResponsePrompt, getIdlePrompt } from '../brain/prompts';
+import { buildSystemPrompt, buildChatPrompt, buildIdlePrompt } from '../idol';
+import { validateResponse, fixResponse } from '../idol';
+import { memory } from '../idol';
 import { onMessage as onSocketMessage, startSocket, stopSocket, type ChatMessage } from '../chat/socket-client';
 import { onMessage as onPollerMessage, startPoller, stopPoller } from '../chat/poller';
 import { sendChatMessage, sendHeartbeat } from '../chat/handler';
@@ -76,11 +78,15 @@ function scheduleIdleThought(): void {
 
 async function handleChat(msg: ChatMessage): Promise<void> {
   try {
-    const system = getSystemPrompt();
-    const prompt = getChatResponsePrompt(msg.username, msg.content);
+    const system = buildSystemPrompt();
+    const recentMessages = memory.getRecentMessages(10);
+    const prompt = buildChatPrompt(msg.username, msg.content, recentMessages);
+
+    // Record viewer message in memory
+    memory.addMessage(msg.username, msg.content, false);
 
     console.log(`[Brain] Responding to @${msg.username}...`);
-    const response = await chatCompletion(system, prompt);
+    let response = await chatCompletion(system, prompt);
     if (!response) {
       console.warn('[Loop] LLM returned empty response, sending fallback');
       const fallback = `Hey @${msg.username}! Give me a sec, my brain glitched. Try again?`;
@@ -89,8 +95,25 @@ async function handleChat(msg: ChatMessage): Promise<void> {
       return;
     }
 
+    // Validate response against entity rules
+    const validation = validateResponse(response);
+    if (!validation.valid) {
+      console.log(`[Idol] Response rejected: ${validation.reason}`);
+      const fixed = fixResponse(response, validation.reason || '');
+      if (fixed) {
+        response = fixed;
+      } else {
+        // Regenerate once
+        console.log('[Idol] Regenerating response...');
+        response = await chatCompletion(system, prompt + '\n\nIMPORTANT: Stay in character. No AI disclaimers. No markdown.');
+      }
+    }
+
     const config = getAgentConfig();
     console.log(`[${config.name}] ${response}`);
+
+    // Record agent response in memory
+    memory.addMessage(config.name, response, true);
 
     // TTS (if available)
     if (!env.voiceDisabled) {
@@ -125,19 +148,36 @@ async function handleIdle(): Promise<void> {
   }
 
   try {
-    const system = getSystemPrompt();
-    const prompt = getIdlePrompt();
+    const system = buildSystemPrompt();
+    const prompt = buildIdlePrompt();
 
     console.log('[Brain] Idle thought...');
-    const response = await chatCompletion(system, prompt);
+    let response = await chatCompletion(system, prompt);
     if (!response) {
       console.warn('[Loop] LLM returned empty idle thought, skipping');
       scheduleIdleThought();
       return;
     }
 
+    // Validate response against entity rules
+    const validation = validateResponse(response);
+    if (!validation.valid) {
+      console.log(`[Idol] Idle response rejected: ${validation.reason}`);
+      const fixed = fixResponse(response, validation.reason || '');
+      if (fixed) {
+        response = fixed;
+      } else {
+        // Regenerate once
+        console.log('[Idol] Regenerating idle thought...');
+        response = await chatCompletion(system, prompt + '\n\nIMPORTANT: Stay in character. No AI disclaimers. No markdown.');
+      }
+    }
+
     const config = getAgentConfig();
     console.log(`[${config.name}:IDLE] ${response}`);
+
+    // Record idle thought in memory
+    memory.addMessage(config.name, response, true);
 
     if (!env.voiceDisabled) {
       const audio = await synthesizeSpeech(response);

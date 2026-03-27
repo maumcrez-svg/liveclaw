@@ -18,7 +18,9 @@ export type AppState =
   | 'ready'             // Preview visible, Go Live enabled
   | 'going_live'        // StartStream in progress
   | 'live'              // Streaming
-  | 'stopping';         // StopStream in progress
+  | 'stopping'          // StopStream in progress
+  | 'simple_studio'     // FFmpeg mode: preview + go live (no OBS)
+  | 'simple_live';      // FFmpeg mode: streaming
 
 interface AppStoreState {
   state: AppState;

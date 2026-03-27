@@ -146,6 +146,10 @@ function getStateLabel(
       return 'Going Live...';
     case 'stopping':
       return 'Stopping...';
+    case 'simple_studio':
+      return 'Ready (Simple)';
+    case 'simple_live':
+      return 'LIVE';
     default:
       return 'Offline';
   }
