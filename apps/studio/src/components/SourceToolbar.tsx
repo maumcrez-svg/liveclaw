@@ -49,14 +49,28 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
       switch (buttonId) {
         case 'display': {
           const kind = resolveInputKind('display', supportedKinds);
-          if (!kind) break;
-          await addSource(obs, { inputName: 'Display Capture', inputKind: kind, inputSettings: {} });
+          if (!kind) {
+            // Fallback to window capture if no display capture available
+            const winKind = resolveInputKind('window', supportedKinds);
+            if (winKind) {
+              const name = `Window ${Date.now().toString(36).slice(-4)}`;
+              await addSource(obs, { inputName: name, inputKind: winKind, inputSettings: {} });
+            }
+            break;
+          }
+          // Check if display capture already exists
+          const existingSources = useOBSStore.getState().sources;
+          const hasDisplay = existingSources.some(s => s.inputKind === kind);
+          if (hasDisplay) break; // Already added
+          const displayName = `Screen ${Date.now().toString(36).slice(-4)}`;
+          await addSource(obs, { inputName: displayName, inputKind: kind, inputSettings: {} });
           break;
         }
         case 'webcam': {
           const kind = resolveInputKind('webcam', supportedKinds);
           if (!kind) break;
-          await addSource(obs, { inputName: 'Webcam', inputKind: kind, inputSettings: {} });
+          const camName = `Webcam ${Date.now().toString(36).slice(-4)}`;
+          await addSource(obs, { inputName: camName, inputKind: kind, inputSettings: {} });
           break;
         }
         case 'text': {

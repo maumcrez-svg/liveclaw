@@ -100,15 +100,17 @@ export function StudioScreen() {
       if (items.length === 0) {
         const supportedKinds = useOBSStore.getState().supportedInputKinds;
         const displayKind = resolveInputKind('display', supportedKinds);
-        if (displayKind) {
+        const kindToUse = displayKind || resolveInputKind('window', supportedKinds);
+        if (kindToUse) {
           try {
-            await addSource(obs, { inputName: 'Display Capture', inputKind: displayKind, inputSettings: {} });
+            const name = displayKind ? `Screen ${Date.now().toString(36).slice(-4)}` : `Window ${Date.now().toString(36).slice(-4)}`;
+            await addSource(obs, { inputName: name, inputKind: kindToUse, inputSettings: {} });
             items = await listSources(obs);
           } catch {
-            console.warn('[Setup] Display capture add failed even with detected kind:', displayKind);
+            console.warn('[Setup] Auto-add capture failed with kind:', kindToUse);
           }
         } else {
-          console.warn('[Setup] No display capture source available on this system.');
+          console.warn('[Setup] No capture source available. User can add manually.');
         }
       }
       setSources(items);
