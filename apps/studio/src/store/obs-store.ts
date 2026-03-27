@@ -16,6 +16,7 @@ interface OBSStoreState {
   outputSkippedFrames: number;
   reconnecting: boolean;
   reconnectAttempt: number;
+  supportedInputKinds: string[];
 }
 
 interface OBSStoreActions {
@@ -32,6 +33,7 @@ interface OBSStoreActions {
   resetStream: () => void;
   setReconnecting: (reconnecting: boolean, attempt?: number) => void;
   setStats: (fps: number, skipped: number) => void;
+  setSupportedInputKinds: (kinds: string[]) => void;
 }
 
 export const useOBSStore = create<OBSStoreState & OBSStoreActions>(
@@ -48,6 +50,7 @@ export const useOBSStore = create<OBSStoreState & OBSStoreActions>(
     outputSkippedFrames: 0,
     reconnecting: false,
     reconnectAttempt: 0,
+    supportedInputKinds: [],
 
     setConnected: (connected) => set({ connected }),
 
@@ -76,5 +79,7 @@ export const useOBSStore = create<OBSStoreState & OBSStoreActions>(
     setReconnecting: (reconnecting, attempt) => set({ reconnecting, reconnectAttempt: attempt ?? 0 }),
 
     setStats: (fps, skipped) => set({ activeFps: fps, outputSkippedFrames: skipped }),
+
+    setSupportedInputKinds: (kinds) => set({ supportedInputKinds: kinds }),
   }),
 );

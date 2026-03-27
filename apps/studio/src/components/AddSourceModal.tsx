@@ -1,7 +1,7 @@
 // ── Add Source modal ────────────────────────────────────────────────
 
 import React, { useState } from 'react';
-import { SOURCE_TYPES, type SourceTypeConfig, type ConfigField } from '../obs/sources';
+import { SOURCE_TYPES, resolveInputKind, type SourceTypeConfig, type ConfigField } from '../obs/sources';
 import { getOBS } from '../obs/connection';
 import { addSource, listSources } from '../obs/scene';
 import { useOBSStore } from '../store/obs-store';
@@ -66,9 +66,13 @@ export function AddSourceModal({ open, onClose }: Props) {
         }
       }
 
+      // Use dynamically resolved kind when available, fall back to static hint
+      const supportedKinds = useOBSStore.getState().supportedInputKinds;
+      const resolvedKind = resolveInputKind(st.id as any, supportedKinds) || st.obsInputKind;
+
       await addSource(obs, {
         inputName: name,
-        inputKind: st.obsInputKind,
+        inputKind: resolvedKind,
         inputSettings,
       });
 

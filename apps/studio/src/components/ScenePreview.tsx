@@ -17,6 +17,22 @@ const SCREENSHOT_WIDTH = 640;
 const SCREENSHOT_HEIGHT = 360;
 const CANVAS_W = 1920;
 const CANVAS_H = 1080;
+const SNAP_THRESHOLD = 15;
+
+// ── Snap helper ──────────────────────────────────────────────────────
+
+function snapValue(
+  value: number,
+  targets: number[],
+  threshold: number,
+): { value: number; snapped: boolean; snapTarget: number | null } {
+  for (const target of targets) {
+    if (Math.abs(value - target) < threshold) {
+      return { value: target, snapped: true, snapTarget: target };
+    }
+  }
+  return { value, snapped: false, snapTarget: null };
+}
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -96,6 +112,7 @@ export function ScenePreview({
   const [dragging, setDragging] = useState<DragState | null>(null);
   const [resizing, setResizing] = useState<ResizeState | null>(null);
   const [hoveredSource, setHoveredSource] = useState<number | null>(null);
+  const [snapGuides, setSnapGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
 
   // Scale factors
   const scaleFactorX = previewSize.w / CANVAS_W;
@@ -257,14 +274,44 @@ export function ScenePreview({
     if (dragging) {
       const dx = (e.clientX - dragging.startX) / scaleFactorX;
       const dy = (e.clientY - dragging.startY) / scaleFactorY;
-      const newX = dragging.origX + dx;
-      const newY = dragging.origY + dy;
+      let newX = dragging.origX + dx;
+      let newY = dragging.origY + dy;
+
+      // Snap to edges
+      const t = transforms.find((tr) => tr.sceneItemId === dragging.id);
+      if (t) {
+        const sourceW = t.sourceWidth * t.scaleX;
+        const sourceH = t.sourceHeight * t.scaleY;
+
+        // Snap targets: canvas left, canvas center, canvas right + other source edges
+        const xTargets = [0, CANVAS_W / 2 - sourceW / 2, CANVAS_W - sourceW];
+        const yTargets = [0, CANVAS_H / 2 - sourceH / 2, CANVAS_H - sourceH];
+
+        for (const other of transforms) {
+          if (other.sceneItemId === dragging.id) continue;
+          const otherW = other.sourceWidth * other.scaleX;
+          const otherH = other.sourceHeight * other.scaleY;
+          xTargets.push(other.positionX, other.positionX + otherW);
+          yTargets.push(other.positionY, other.positionY + otherH);
+        }
+
+        const snappedX = snapValue(newX, xTargets, SNAP_THRESHOLD);
+        const snappedY = snapValue(newY, yTargets, SNAP_THRESHOLD);
+
+        newX = snappedX.value;
+        newY = snappedY.value;
+
+        setSnapGuides({
+          x: snappedX.snapped ? snappedX.value : null,
+          y: snappedY.snapped ? snappedY.value : null,
+        });
+      }
 
       setTransforms((prev) =>
-        prev.map((t) =>
-          t.sceneItemId === dragging.id
-            ? { ...t, positionX: newX, positionY: newY }
-            : t,
+        prev.map((tr) =>
+          tr.sceneItemId === dragging.id
+            ? { ...tr, positionX: newX, positionY: newY }
+            : tr,
         ),
       );
       return;
@@ -341,6 +388,7 @@ export function ScenePreview({
         }).catch(() => {});
       }
       setDragging(null);
+      setSnapGuides({ x: null, y: null });
       return;
     }
 
@@ -487,6 +535,30 @@ export function ScenePreview({
           </div>
         );
       })}
+
+      {/* Snap guides */}
+      {snapGuides.x !== null && (
+        <div
+          className="absolute top-0 bottom-0 pointer-events-none"
+          style={{
+            left: snapGuides.x * scaleFactorX,
+            width: 1,
+            background: '#ff6b00',
+            opacity: 0.6,
+          }}
+        />
+      )}
+      {snapGuides.y !== null && (
+        <div
+          className="absolute left-0 right-0 pointer-events-none"
+          style={{
+            top: snapGuides.y * scaleFactorY,
+            height: 1,
+            background: '#ff6b00',
+            opacity: 0.6,
+          }}
+        />
+      )}
 
       {/* File drag overlay */}
       {dragOver && (

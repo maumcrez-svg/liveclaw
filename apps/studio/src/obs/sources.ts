@@ -1,12 +1,14 @@
-// ── Platform-aware OBS source type definitions ─────────────────────
+// ── OBS source type definitions ─────────────────────────────────────
 //
-// Maps human-friendly source types to the correct OBS inputKind per OS.
+// Dynamic input kind resolution. Instead of guessing the platform and
+// hardcoding OBS source names, we query OBS for its GetInputKindList
+// on connect and pick the first supported kind from a priority list.
 
 export interface SourceTypeConfig {
   id: string;
   label: string;
   icon: string;
-  obsInputKind: string;
+  obsInputKind: string; // static hint — use resolveInputKind() at runtime
   defaultSettings: Record<string, any>;
   configFields: ConfigField[];
 }
@@ -19,54 +21,69 @@ export interface ConfigField {
   defaultValue?: string | number;
 }
 
-// ── platform detection ──────────────────────────────────────────────
+// ── candidate kinds per category (priority order) ───────────────────
 
-type Platform = 'win' | 'mac' | 'linux';
+const DISPLAY_KINDS = ['screen_capture', 'monitor_capture', 'display_capture', 'xshm_input', 'pipewire-desktop-capture-source'];
+const WEBCAM_KINDS = ['v4l2_input', 'dshow_input', 'av_capture_input_v2', 'av_capture_input'];
+const WINDOW_KINDS = ['window_capture', 'xcomposite_input'];
+const TEXT_KINDS = ['text_ft2_source_v2', 'text_ft2_source', 'text_gdiplus_v3', 'text_gdiplus_v2'];
 
-function detectPlatform(): Platform {
-  const ua = navigator.userAgent.toLowerCase();
-  if (ua.includes('win')) return 'win';
-  if (ua.includes('mac')) return 'mac';
-  return 'linux';
-}
+// ── dynamic resolution ──────────────────────────────────────────────
 
-const platform = detectPlatform();
+type SourceCategory = 'display' | 'webcam' | 'window' | 'text' | 'browser' | 'image';
 
-// ── source type registry ────────────────────────────────────────────
-
-const displayCaptureKind: Record<Platform, string> = {
-  win: 'monitor_capture',
-  mac: 'display_capture',
-  linux: 'xshm_input',
-};
-
-// Fallback source kinds for Linux (Wayland needs pipewire)
-const displayCaptureFallbacks: Record<Platform, string[]> = {
-  win: ['monitor_capture'],
-  mac: ['display_capture'],
-  linux: ['xshm_input', 'pipewire-desktop-capture-source', 'screen_capture'],
-};
-
-const webcamKind: Record<Platform, string> = {
-  win: 'dshow_input',
-  mac: 'av_capture_input_v2',
-  linux: 'v4l2_input',
+const CANDIDATES: Record<SourceCategory, string[]> = {
+  display: DISPLAY_KINDS,
+  webcam: WEBCAM_KINDS,
+  window: WINDOW_KINDS,
+  text: TEXT_KINDS,
+  browser: ['browser_source'],
+  image: ['image_source'],
 };
 
 /**
- * Get the best display capture source for this platform.
- * Tries each fallback until one works with OBS.
+ * Pick the best OBS inputKind for a category from the list of kinds
+ * that OBS actually supports. Returns null if none are available.
  */
-export function getDisplayCaptureFallbacks(): string[] {
-  return displayCaptureFallbacks[platform];
+export function resolveInputKind(category: SourceCategory, supportedKinds: string[]): string | null {
+  const kinds = CANDIDATES[category] || [];
+  return kinds.find((k) => supportedKinds.includes(k)) || null;
 }
+
+/**
+ * Returns all display capture kinds that OBS supports, in priority order.
+ * If supportedKinds is empty (detection not done yet), returns the full
+ * candidate list as a fallback.
+ */
+export function getDisplayCaptureFallbacks(supportedKinds?: string[]): string[] {
+  if (supportedKinds && supportedKinds.length > 0) {
+    return DISPLAY_KINDS.filter((k) => supportedKinds.includes(k));
+  }
+  return DISPLAY_KINDS; // fallback to all if detection not done yet
+}
+
+/**
+ * Get the best display capture source for auto-adding.
+ * Returns null when no display capture kind is available.
+ */
+export function getDefaultDisplaySource(supportedKinds: string[]): { label: string; obsInputKind: string; defaultSettings: Record<string, any> } | null {
+  const kind = resolveInputKind('display', supportedKinds);
+  if (!kind) return null;
+  return { label: 'Display Capture', obsInputKind: kind, defaultSettings: {} };
+}
+
+// ── source type registry ────────────────────────────────────────────
+//
+// obsInputKind here is a static hint used for icon/label lookups and
+// the AddSourceModal. Callers that create sources should prefer
+// resolveInputKind() to pick the right kind at runtime.
 
 export const SOURCE_TYPES: SourceTypeConfig[] = [
   {
     id: 'display',
     label: 'Display Capture',
     icon: '\uD83D\uDDA5',
-    obsInputKind: displayCaptureKind[platform],
+    obsInputKind: 'monitor_capture',
     defaultSettings: {},
     configFields: [],
   },
@@ -82,7 +99,7 @@ export const SOURCE_TYPES: SourceTypeConfig[] = [
     id: 'webcam',
     label: 'Webcam',
     icon: '\uD83D\uDCF7',
-    obsInputKind: webcamKind[platform],
+    obsInputKind: 'v4l2_input',
     defaultSettings: {},
     configFields: [],
   },
@@ -142,31 +159,46 @@ export const SOURCE_TYPES: SourceTypeConfig[] = [
   },
 ];
 
+// ── category for an OBS inputKind ───────────────────────────────────
+
+/**
+ * Determine which category an OBS inputKind belongs to.
+ * Used for icon/label lookups on sources that already exist.
+ */
+function categoryForKind(inputKind: string): SourceCategory | null {
+  for (const [cat, kinds] of Object.entries(CANDIDATES)) {
+    if (kinds.includes(inputKind)) return cat as SourceCategory;
+  }
+  return null;
+}
+
 /**
  * Look up the icon emoji for a given OBS inputKind.
  * Falls back to a generic icon if unknown.
  */
 export function iconForInputKind(inputKind: string): string {
-  const match = SOURCE_TYPES.find((s) => s.obsInputKind === inputKind);
-  return match?.icon ?? '\u2B1C';
+  // Direct match on SOURCE_TYPES
+  const direct = SOURCE_TYPES.find((s) => s.obsInputKind === inputKind);
+  if (direct) return direct.icon;
+  // Category-based match (e.g. pipewire source -> display icon)
+  const cat = categoryForKind(inputKind);
+  if (cat) {
+    const st = SOURCE_TYPES.find((s) => s.id === cat);
+    if (st) return st.icon;
+  }
+  return '\u2B1C';
 }
 
 /**
  * Look up a friendly label for a given OBS inputKind.
  */
 export function labelForInputKind(inputKind: string): string {
-  const match = SOURCE_TYPES.find((s) => s.obsInputKind === inputKind);
-  return match?.label ?? inputKind;
-}
-
-/**
- * Get the default Display Capture source config for the current platform.
- * Used for auto-adding a source when the scene is empty.
- */
-export function getDefaultDisplaySource(): { label: string; obsInputKind: string; defaultSettings: Record<string, any> } {
-  return {
-    label: 'Display Capture',
-    obsInputKind: displayCaptureKind[platform],
-    defaultSettings: {},
-  };
+  const direct = SOURCE_TYPES.find((s) => s.obsInputKind === inputKind);
+  if (direct) return direct.label;
+  const cat = categoryForKind(inputKind);
+  if (cat) {
+    const st = SOURCE_TYPES.find((s) => s.id === cat);
+    if (st) return st.label;
+  }
+  return inputKind;
 }

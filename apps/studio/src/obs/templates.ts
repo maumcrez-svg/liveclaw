@@ -6,7 +6,8 @@
 
 import type { OBSConnection } from './connection';
 import { addSource, ensureScene, listSources } from './scene';
-import { SOURCE_TYPES } from './sources';
+import { SOURCE_TYPES, resolveInputKind } from './sources';
+import { useOBSStore } from '../store/obs-store';
 
 // Template thumbnails
 import thumbFullscreen from '../assets/template-fullscreen.png';
@@ -30,6 +31,10 @@ interface TemplateSources {
 }
 
 function getInputKind(sourceTypeId: string): string | null {
+  const supportedKinds = useOBSStore.getState().supportedInputKinds;
+  // Try dynamic resolution first, fall back to static hint
+  const resolved = resolveInputKind(sourceTypeId as any, supportedKinds);
+  if (resolved) return resolved;
   const st = SOURCE_TYPES.find((s) => s.id === sourceTypeId);
   return st?.obsInputKind ?? null;
 }

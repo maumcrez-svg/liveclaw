@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { getOBS } from '../obs/connection';
 import { addSource, listSources } from '../obs/scene';
 import { useOBSStore } from '../store/obs-store';
-import { getDefaultDisplaySource, getDisplayCaptureFallbacks, SOURCE_TYPES } from '../obs/sources';
+import { resolveInputKind } from '../obs/sources';
 
 import iconScreen from '../assets/icon-screen.png';
 import iconWebcam from '../assets/icon-webcam.png';
@@ -32,6 +32,7 @@ const QUICK_BUTTONS = [
 
 export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps) {
   const setSources = useOBSStore((s) => s.setSources);
+  const supportedKinds = useOBSStore((s) => s.supportedInputKinds);
   const [adding, setAdding] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
 
@@ -47,50 +48,38 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
     try {
       switch (buttonId) {
         case 'display': {
-          const fallbacks = getDisplayCaptureFallbacks();
-          for (const kind of fallbacks) {
-            try {
-              await addSource(obs, {
-                inputName: 'Display Capture',
-                inputKind: kind,
-                inputSettings: {},
-              });
-              break;
-            } catch {
-              // This kind not supported, try next
-            }
-          }
+          const kind = resolveInputKind('display', supportedKinds);
+          if (!kind) break;
+          await addSource(obs, { inputName: 'Display Capture', inputKind: kind, inputSettings: {} });
           break;
         }
         case 'webcam': {
-          const webcam = SOURCE_TYPES.find((s) => s.id === 'webcam');
-          if (webcam) {
-            await addSource(obs, {
-              inputName: 'Webcam',
-              inputKind: webcam.obsInputKind,
-              inputSettings: webcam.defaultSettings || {},
-            });
-          }
+          const kind = resolveInputKind('webcam', supportedKinds);
+          if (!kind) break;
+          await addSource(obs, { inputName: 'Webcam', inputKind: kind, inputSettings: {} });
           break;
         }
         case 'text': {
-          const textSrc = SOURCE_TYPES.find((s) => s.id === 'text');
-          if (textSrc) {
-            const name = `Text ${Date.now().toString(36).slice(-4)}`;
-            await addSource(obs, {
-              inputName: name,
-              inputKind: textSrc.obsInputKind,
-              inputSettings: textSrc.defaultSettings || {},
-            });
-            // Refresh first so the callback can find the new item
-            const items = await listSources(obs);
-            setSources(items);
-            flashSuccess(buttonId);
-            setAdding(null);
-            onTextAdded?.(name);
-            return;
-          }
-          break;
+          const kind = resolveInputKind('text', supportedKinds);
+          if (!kind) break;
+          const name = `Text ${Date.now().toString(36).slice(-4)}`;
+          await addSource(obs, {
+            inputName: name,
+            inputKind: kind,
+            inputSettings: {
+              text: 'Hello World',
+              font: { face: 'Sans Serif', size: 64, style: '', flags: 0 },
+              color1: 4294967295,
+              color2: 4294967295,
+            },
+          });
+          // Refresh first so the callback can find the new item
+          const items = await listSources(obs);
+          setSources(items);
+          flashSuccess(buttonId);
+          setAdding(null);
+          onTextAdded?.(name);
+          return;
         }
         case 'image':
         case 'browser':
@@ -114,9 +103,18 @@ export function SourceToolbar({ onTextAdded, onNeedConfig }: SourceToolbarProps)
     }
   };
 
+  // Hide buttons for source categories that OBS doesn't support
+  const availableButtons = supportedKinds.length > 0
+    ? QUICK_BUTTONS.filter((btn) => {
+        // image/browser are always available (standard OBS kinds)
+        if (btn.id === 'image' || btn.id === 'browser') return true;
+        return resolveInputKind(btn.id as any, supportedKinds) !== null;
+      })
+    : QUICK_BUTTONS; // show all until detection finishes
+
   return (
     <div className="flex gap-1.5 py-2">
-      {QUICK_BUTTONS.map((btn) => (
+      {availableButtons.map((btn) => (
         <button
           key={btn.id}
           onClick={() => handleAdd(btn.id)}

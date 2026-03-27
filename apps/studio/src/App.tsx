@@ -82,9 +82,19 @@ export default function App() {
   useEffect(() => {
     const obs = getOBS();
 
-    obs.onConnected = () => {
+    obs.onConnected = async () => {
       useOBSStore.getState().setConnected(true);
       useOBSStore.getState().setReconnecting(false);
+
+      // Detect available input kinds from OBS
+      try {
+        const obsInner = getOBS();
+        const res = await obsInner.call<{ inputKinds: string[] }>('GetInputKindList', { unversioned: true });
+        useOBSStore.getState().setSupportedInputKinds(res.inputKinds);
+        console.log('[OBS] Supported input kinds:', res.inputKinds);
+      } catch (err) {
+        console.warn('[OBS] Could not detect input kinds:', err);
+      }
     };
 
     obs.onDisconnected = () => {

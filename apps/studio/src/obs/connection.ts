@@ -21,7 +21,7 @@ export class OBSConnection {
   private lastPassword: string | undefined;
 
   // ── public callbacks ────────────────────────────────────────────
-  onConnected: (() => void) | null = null;
+  onConnected: (() => void | Promise<void>) | null = null;
   onDisconnected: ((reason?: string) => void) | null = null;
   onStreamStateChanged: ((active: boolean) => void) | null = null;
   onStateChanged: ((state: OBSConnectionState) => void) | null = null;
