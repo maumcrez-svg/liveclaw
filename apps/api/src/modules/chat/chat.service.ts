@@ -161,13 +161,21 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
     await this.pub.del(`viewers:${streamId}`);
   }
 
-  /** Clear ALL viewer sets — used on server restart to prevent ghost viewers from previous deploy */
-  async clearAllViewers(): Promise<void> {
-    const keys = await this.pub.keys('viewers:*');
-    if (keys.length > 0) {
-      await this.pub.del(...keys);
-      console.log(`[ChatService] Cleared ${keys.length} stale viewer sets on startup`);
-    }
+  /** Get all socket IDs in a viewer set */
+  async getViewerSetMembers(streamId: string): Promise<string[]> {
+    return this.pub.smembers(`viewers:${streamId}`);
+  }
+
+  /** Get all Redis keys matching viewers:* */
+  async getAllViewerKeys(): Promise<string[]> {
+    return this.pub.keys('viewers:*');
+  }
+
+  /** Remove specific socket IDs from a viewer set in one call */
+  async removeViewersBatch(streamId: string, clientIds: string[]): Promise<number> {
+    if (clientIds.length === 0) return this.pub.scard(`viewers:${streamId}`);
+    await this.pub.srem(`viewers:${streamId}`, ...clientIds);
+    return this.pub.scard(`viewers:${streamId}`);
   }
 
   async setRedisKey(key: string, value: string, ttlSeconds?: number): Promise<void> {

@@ -32,6 +32,11 @@ function getOrCreateSocket(): Socket {
     // Socket exists but disconnected — refresh auth token before reconnect
     const freshToken = getAuthToken();
     sharedSocket.auth = freshToken ? { token: freshToken } : {};
+    // Force reconnect if Socket.IO auto-reconnect has given up.
+    // `active` = still trying to reconnect; only force when it's fully stopped.
+    if (!sharedSocket.connected && !sharedSocket.active) {
+      sharedSocket.connect();
+    }
     return sharedSocket;
   }
 

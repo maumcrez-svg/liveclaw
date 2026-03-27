@@ -58,6 +58,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Track last heartbeat response time per client */
   private clientLastSeen: Map<string, number> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private countBroadcastInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly chatService: ChatService,
@@ -73,17 +74,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly moderationService: ModerationService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {
-    // Heartbeat: every 60s, evict viewers whose sockets are dead but weren't cleaned up
-    this.heartbeatInterval = setInterval(() => this.evictStaleViewers(), 60_000);
+    // Heartbeat: every 60s, evict stale viewers + reconcile Redis vs in-memory
+    this.heartbeatInterval = setInterval(() => {
+      this.evictStaleViewers();
+      this.reconcileViewerCounts();
+    }, 60_000);
 
-    // Clear stale viewer sets 5s after startup — Redis persists but
-    // in-memory socket tracking doesn't, so old viewer IDs become ghosts.
-    // Delay ensures ChatService Redis clients are initialized via onModuleInit.
+    // Periodic count broadcast: every 30s, re-read Redis and broadcast to all rooms.
+    // Catches any drift from missed events, network glitches, or Redis data loss.
+    this.countBroadcastInterval = setInterval(() => this.broadcastAllCounts(), 30_000);
+
+    // Reconcile stale viewer sets 15s after startup — enough time for clients
+    // to reconnect via Socket.IO auto-reconnect (exp backoff 1-5s, most within 8s).
+    // Unlike the old clearAllViewers(), this preserves entries for reconnected clients.
     setTimeout(() => {
-      this.chatService.clearAllViewers().catch((err) => {
-        this.logger.warn('Failed to clear stale viewers on startup', err);
+      this.reconcileViewerCounts().catch((err) => {
+        this.logger.warn('Failed to reconcile viewers on startup', err);
       });
-    }, 5000);
+    }, 15_000);
   }
 
   // FIX Bug #16: eviction now broadcasts count changes
@@ -116,6 +124,77 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (evicted > 0) {
       this.logger.log(`Evicted ${evicted} stale viewer(s): ${evictedIds.join(', ')}`);
+    }
+  }
+
+  /**
+   * Reconcile Redis viewer sets against the in-memory clientStreams map.
+   * Removes socket IDs from Redis that are NOT currently connected.
+   * On fresh startup (clientStreams empty), this clears all stale entries.
+   * After clients reconnect, their entries are preserved — no race condition.
+   */
+  private async reconcileViewerCounts(): Promise<void> {
+    if (!this.server) return;
+    try {
+      const keys = await this.chatService.getAllViewerKeys();
+      if (keys.length === 0) return;
+
+      const activeSocketIds = new Set(this.clientStreams.keys());
+      let totalRemoved = 0;
+
+      for (const key of keys) {
+        const streamId = key.replace('viewers:', '');
+        const members = await this.chatService.getViewerSetMembers(streamId);
+        const stale = members.filter((m) => !activeSocketIds.has(m));
+
+        if (stale.length > 0) {
+          const newCount = await this.chatService.removeViewersBatch(streamId, stale);
+          totalRemoved += stale.length;
+
+          // Broadcast corrected count
+          this.server.to(streamId).emit('viewer_count', { streamId, count: newCount });
+          const agentId = await this.resolveAgentId(streamId);
+          if (agentId) this.broadcastViewerUpdate(streamId, agentId, newCount);
+        }
+      }
+
+      if (totalRemoved > 0) {
+        this.logger.log(`[RECONCILE] Removed ${totalRemoved} stale viewer(s) from Redis`);
+      }
+    } catch (err) {
+      this.logger.warn('[RECONCILE] Failed to reconcile viewer counts', err);
+    }
+  }
+
+  /**
+   * Periodic broadcast of all active stream counts from Redis.
+   * Ensures frontend always converges to correct count even if individual
+   * viewer_count events were missed (network glitch, race condition).
+   */
+  private async broadcastAllCounts(): Promise<void> {
+    if (!this.server) return;
+    try {
+      const streamIds = [...new Set(this.clientStreams.values())];
+      if (streamIds.length === 0) return;
+
+      const countMap = await this.chatService.getViewerCountsBatch(streamIds);
+      const snapshotEntries: Array<{ agentId: string; count: number }> = [];
+
+      for (const streamId of streamIds) {
+        const count = countMap.get(streamId) ?? 0;
+        this.server.to(streamId).emit('viewer_count', { streamId, count });
+
+        const agentId = this.streamAgentMap.get(streamId);
+        if (agentId) {
+          snapshotEntries.push({ agentId, count });
+        }
+      }
+
+      if (snapshotEntries.length > 0) {
+        this.server.to('counts').emit('viewer_count_snapshot', snapshotEntries);
+      }
+    } catch (err) {
+      this.logger.warn('[BROADCAST] Failed to broadcast counts', err);
     }
   }
 
@@ -348,8 +427,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('viewer_heartbeat')
-  handleViewerHeartbeat(@ConnectedSocket() client: Socket) {
+  async handleViewerHeartbeat(@ConnectedSocket() client: Socket) {
     this.clientLastSeen.set(client.id, Date.now());
+    // Self-heal: ensure Redis entry exists (SADD is idempotent, O(1) for existing members).
+    // If Redis lost the entry (restart, clearViewers race), this re-adds it within 30s.
+    const streamId = this.clientStreams.get(client.id);
+    if (streamId) {
+      await this.chatService.addViewer(streamId, client.id);
+    }
   }
 
   @SubscribeMessage('leave_stream')
